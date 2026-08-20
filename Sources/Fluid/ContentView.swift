@@ -1270,7 +1270,7 @@ struct ContentView: View {
                 .ignoresSafeArea()
 
             self.detailContent
-                .padding(.top, 14)
+                .padding(.top, 42)
                 .transaction { transaction in
                     transaction.animation = nil
                 }
