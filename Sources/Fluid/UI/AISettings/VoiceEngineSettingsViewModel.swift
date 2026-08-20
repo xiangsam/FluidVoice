@@ -27,6 +27,7 @@ final class VoiceEngineSettingsViewModel: ObservableObject {
 
     @Published var selectedSpeechProvider: SettingsStore.SpeechModel.Provider
     @Published var previewSpeechModel: SettingsStore.SpeechModel
+    @Published var isConfigPanelExpanded: Bool = true
     @Published var showAdvancedSpeechInfo: Bool = false
     @Published var suppressSpeechProviderSync: Bool = false
     @Published var skipNextSpeechModelSync: Bool = false

@@ -9,6 +9,7 @@ struct CloudSTTConfigView: View {
     let model: SettingsStore.SpeechModel
     let theme: AppTheme
     @ObservedObject var settings: SettingsStore
+    var onClose: (() -> Void)? = nil
 
     @State private var isShowingAPIKey = false
     @State private var isTesting = false
@@ -130,6 +131,18 @@ struct CloudSTTConfigView: View {
                     }
                     .buttonStyle(.plain)
                     .foregroundStyle(self.theme.palette.accent)
+                }
+
+                if let onClose = self.onClose {
+                    Button {
+                        onClose()
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 16))
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Close Configuration".loc)
                 }
             }
 
@@ -361,6 +374,27 @@ struct CloudSTTConfigView: View {
                             .foregroundStyle(self.testResultSuccess == true ? Color.fluidGreen : .red)
                             .lineLimit(2)
                     }
+                }
+            }
+
+            // Bottom Actions: Done / Return
+            if let onClose = self.onClose {
+                Divider().opacity(0.3)
+
+                HStack {
+                    Spacer()
+                    Button {
+                        onClose()
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "checkmark.circle.fill")
+                            Text("Done / Return to Models".loc)
+                        }
+                        .font(self.theme.typography.bodySmallStrong)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(Color.fluidGreen)
+                    .controlSize(.regular)
                 }
             }
         }

@@ -53,7 +53,7 @@ public enum CloudSTTType: String, CaseIterable, Identifiable {
                     name: "OpenAI: GPT-4o Mini Transcribe",
                     vendor: "OpenAI",
                     tag: "🔥 最热门",
-                    priceHint: "$1.25/M",
+                    priceHint: "$1.25 / M tok",
                     isPopular: true
                 ),
                 CloudSTTModelItem(
@@ -61,7 +61,7 @@ public enum CloudSTTType: String, CaseIterable, Identifiable {
                     name: "OpenAI: GPT-4o Transcribe",
                     vendor: "OpenAI",
                     tag: "💎 旗舰高精",
-                    priceHint: "$2.50/M",
+                    priceHint: "$2.50 / M tok",
                     isPopular: true
                 ),
                 CloudSTTModelItem(
@@ -69,7 +69,7 @@ public enum CloudSTTType: String, CaseIterable, Identifiable {
                     name: "Mistral: Voxtral Mini Transcribe",
                     vendor: "Mistral",
                     tag: "⚡️ 极速推荐",
-                    priceHint: "$0.003",
+                    priceHint: "$0.003 / min",
                     isPopular: true
                 ),
                 CloudSTTModelItem(
@@ -77,105 +77,105 @@ public enum CloudSTTType: String, CaseIterable, Identifiable {
                     name: "NVIDIA: Nemotron 3.5 ASR Streaming 0.6B",
                     vendor: "NVIDIA",
                     tag: "💰 超高性价比",
-                    priceHint: "$0.000003"
+                    priceHint: "$0.000003 / s"
                 ),
                 CloudSTTModelItem(
                     id: "mistralai/voxtral-small-24b-2507-stt",
                     name: "Mistral: Voxtral Small 24B 2507 STT",
                     vendor: "Mistral",
                     tag: "24B 大模型",
-                    priceHint: "$0.00005"
+                    priceHint: "$0.00005 / s"
                 ),
                 CloudSTTModelItem(
                     id: "mistralai/voxtral-mini-3b-2507",
                     name: "Mistral: Voxtral Mini 3B 2507",
                     vendor: "Mistral",
-                    priceHint: "$0.000017"
+                    priceHint: "$0.000017 / s"
                 ),
                 CloudSTTModelItem(
                     id: "qwen/qwen3-asr-1.7b",
                     name: "Qwen: Qwen3 ASR 1.7B",
                     vendor: "Alibaba Qwen",
                     tag: "🎯 中文极佳",
-                    priceHint: "$0.000008"
+                    priceHint: "$0.000008 / s"
                 ),
                 CloudSTTModelItem(
                     id: "qwen/qwen3-asr-0.6b",
                     name: "Qwen: Qwen3 ASR 0.6B",
                     vendor: "Alibaba Qwen",
                     tag: "中文极速",
-                    priceHint: "$0.000003"
+                    priceHint: "$0.000003 / s"
                 ),
                 CloudSTTModelItem(
                     id: "openai/gpt-transcribe",
                     name: "OpenAI: GPT Transcribe",
                     vendor: "OpenAI",
-                    priceHint: "$0.0045"
+                    priceHint: "$0.0045 / min"
                 ),
                 CloudSTTModelItem(
                     id: "fish-audio/transcribe-1",
                     name: "Fish Audio: Transcribe 1",
                     vendor: "Fish Audio",
-                    priceHint: "$0.0001"
+                    priceHint: "$0.0001 / s"
                 ),
                 CloudSTTModelItem(
                     id: "x-ai/grok-stt-1.0",
                     name: "SpaceXAI: Grok STT 1.0",
                     vendor: "xAI",
                     tag: "Grok 引擎",
-                    priceHint: "$0.10"
+                    priceHint: "$0.10 / min"
                 ),
                 CloudSTTModelItem(
                     id: "deepgram/nova-3",
                     name: "Deepgram: Nova-3",
                     vendor: "Deepgram",
                     tag: "工业级快速",
-                    priceHint: "from $0.0043"
+                    priceHint: "from $0.0043 / min"
                 ),
                 CloudSTTModelItem(
                     id: "microsoft/mai-transcribe-1.5",
                     name: "Microsoft: MAI-Transcribe 1.5",
                     vendor: "Microsoft",
-                    priceHint: "$0.36"
+                    priceHint: "$0.36 / min"
                 ),
                 CloudSTTModelItem(
                     id: "nvidia/parakeet-tdt-0.6b-v3",
                     name: "NVIDIA: Parakeet TDT 0.6B v3",
                     vendor: "NVIDIA",
-                    priceHint: "$0.0015"
+                    priceHint: "$0.0015 / min"
                 ),
                 CloudSTTModelItem(
                     id: "qwen/qwen3-asr-flash-2026-02-10",
                     name: "Qwen: Qwen3 ASR Flash",
                     vendor: "Alibaba Qwen",
-                    priceHint: "$0.000035"
+                    priceHint: "$0.000035 / s"
                 ),
                 CloudSTTModelItem(
                     id: "google/chirp-3",
                     name: "Google: Chirp 3",
                     vendor: "Google",
                     tag: "Google 旗舰",
-                    priceHint: "$0.016"
+                    priceHint: "$0.016 / min"
                 ),
                 CloudSTTModelItem(
                     id: "openai/whisper-large-v3-turbo",
                     name: "OpenAI: Whisper Large V3 Turbo",
                     vendor: "OpenAI",
                     tag: "经典 Turbo",
-                    priceHint: "$0.000003"
+                    priceHint: "$0.000003 / s"
                 ),
                 CloudSTTModelItem(
                     id: "openai/whisper-large-v3",
                     name: "OpenAI: Whisper Large V3",
                     vendor: "OpenAI",
                     tag: "经典高精度",
-                    priceHint: "$0.000008"
+                    priceHint: "$0.000008 / s"
                 ),
                 CloudSTTModelItem(
                     id: "openai/whisper-1",
                     name: "OpenAI: Whisper 1",
                     vendor: "OpenAI",
-                    priceHint: "$0.006"
+                    priceHint: "$0.006 / min"
                 ),
             ]
         case .openAI:

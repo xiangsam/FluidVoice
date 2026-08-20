@@ -33,17 +33,53 @@ extension VoiceEngineSettingsView {
                 }
 
                 // Stats Panel - Dynamic bars that update based on selected model
-                self.modelStatsPanel
-                    .padding(12)
+                if self.viewModel.isConfigPanelExpanded {
+                    self.modelStatsPanel
+                        .padding(12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(self.theme.palette.contentBackground.opacity(0.6))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(self.theme.palette.cardBorder.opacity(0.3), lineWidth: 1)
+                                )
+                                .shadow(color: self.theme.metrics.cardShadow.color.opacity(self.theme.metrics.cardShadow.opacity), radius: self.theme.metrics.cardShadow.radius, x: self.theme.metrics.cardShadow.x, y: self.theme.metrics.cardShadow.y)
+                        )
+                } else {
+                    // Collapsed summary banner
+                    HStack(spacing: 10) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundStyle(Color.fluidGreen)
+                        Text("\("Active Voice Model:".loc) \(self.viewModel.previewSpeechModel.humanReadableName)")
+                            .font(self.theme.typography.bodyStrong)
+                            .foregroundStyle(.primary)
+
+                        Spacer()
+
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                self.viewModel.isConfigPanelExpanded = true
+                            }
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "slider.horizontal.3")
+                                Text("Configure / Details".loc)
+                            }
+                            .font(self.theme.typography.bodySmallStrong)
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                    }
+                    .padding(10)
                     .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(self.theme.palette.contentBackground.opacity(0.6))
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(self.theme.palette.contentBackground.opacity(0.5))
                             .overlay(
-                                RoundedRectangle(cornerRadius: 12)
+                                RoundedRectangle(cornerRadius: 10)
                                     .stroke(self.theme.palette.cardBorder.opacity(0.3), lineWidth: 1)
                             )
-                            .shadow(color: self.theme.metrics.cardShadow.color.opacity(self.theme.metrics.cardShadow.opacity), radius: self.theme.metrics.cardShadow.radius, x: self.theme.metrics.cardShadow.x, y: self.theme.metrics.cardShadow.y)
                     )
+                }
 
                 ScrollView(.vertical, showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 14) {
@@ -223,6 +259,20 @@ extension VoiceEngineSettingsView {
                             }
 
                             Spacer()
+
+                            Button {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    self.viewModel.isConfigPanelExpanded = false
+                                }
+                            } label: {
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 11, weight: .semibold))
+                                    .foregroundStyle(.secondary)
+                                    .padding(5)
+                                    .background(Circle().fill(self.theme.palette.cardBorder.opacity(0.3)))
+                            }
+                            .buttonStyle(.plain)
+                            .help("Close Details".loc)
                         }
 
                         Text(model.cardDescription)
@@ -340,7 +390,12 @@ extension VoiceEngineSettingsView {
             }
 
             if model.isCloudModel {
-                CloudSTTConfigView(model: model, theme: self.theme, settings: self.settings)
+                CloudSTTConfigView(model: model, theme: self.theme, settings: self.settings) {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        self.viewModel.activateSpeechModel(model)
+                        self.viewModel.isConfigPanelExpanded = false
+                    }
+                }
             }
         }
         .padding(.vertical, 6)
@@ -581,7 +636,10 @@ extension VoiceEngineSettingsView {
                 )
         )
         .onTapGesture {
-            self.viewModel.previewSpeechModel = model
+            withAnimation(.easeInOut(duration: 0.2)) {
+                self.viewModel.previewSpeechModel = model
+                self.viewModel.isConfigPanelExpanded = true
+            }
         }
         .opacity(self.viewModel.asr.isRunning ? 0.6 : 1.0)
         .allowsHitTesting(!self.viewModel.asr.isRunning)
