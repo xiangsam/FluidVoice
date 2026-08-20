@@ -266,7 +266,7 @@ struct CloudSTTConfigView: View {
                     }
                     .padding(6)
                 }
-                .frame(maxHeight: 240)
+                .frame(height: 230)
                 .background(
                     RoundedRectangle(cornerRadius: 10)
                         .fill(self.theme.palette.contentBackground.opacity(0.6))
@@ -275,6 +275,7 @@ struct CloudSTTConfigView: View {
                                 .stroke(self.theme.palette.cardBorder.opacity(0.4), lineWidth: 1)
                         )
                 )
+                .clipped()
 
                 // Custom Model ID Input Toggle
                 VStack(alignment: .leading, spacing: 6) {
