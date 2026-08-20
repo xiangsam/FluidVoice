@@ -260,6 +260,7 @@ final class ASRService: ObservableObject {
     private var nemotronProviders: [NemotronProvider.Mode: NemotronProvider] = [:]
     private var whisperProvider: WhisperProvider?
     private var appleSpeechProvider: AppleSpeechProvider?
+    private var cloudProviders: [CloudSTTType: CloudTranscriptionProvider] = [:]
     /// Stored as Any? because @available cannot be applied to stored properties
     private var _appleSpeechAnalyzerProvider: Any?
 
@@ -337,6 +338,7 @@ final class ASRService: ObservableObject {
         self.whisperProvider = nil
         self.appleSpeechProvider = nil
         self._appleSpeechAnalyzerProvider = nil
+        self.cloudProviders.removeAll()
         self.isAsrReady = false
         self.isLoadingModel = false
         self.isDownloadingModel = false
@@ -348,6 +350,14 @@ final class ASRService: ObservableObject {
         let model = SettingsStore.shared.selectedSpeechModel
 
         switch model {
+        case .cloudOpenRouter:
+            return self.getCloudProvider(type: .openRouter)
+        case .cloudOpenAI:
+            return self.getCloudProvider(type: .openAI)
+        case .cloudGroq:
+            return self.getCloudProvider(type: .groq)
+        case .cloudCustom:
+            return self.getCloudProvider(type: .custom)
         case .appleSpeechAnalyzer:
             if #available(macOS 26.0, *) {
                 return self.getAppleSpeechAnalyzerProvider()
@@ -443,6 +453,16 @@ final class ASRService: ObservableObject {
         let provider = AppleSpeechAnalyzerProvider()
         self._appleSpeechAnalyzerProvider = provider
         DebugLogger.shared.info("ASRService: Created AppleSpeechAnalyzer provider", source: "ASRService")
+        return provider
+    }
+
+    private func getCloudProvider(type: CloudSTTType) -> CloudTranscriptionProvider {
+        if let existing = self.cloudProviders[type] {
+            return existing
+        }
+        let provider = CloudTranscriptionProvider(type: type)
+        self.cloudProviders[type] = provider
+        DebugLogger.shared.info("ASRService: Created \(provider.name) provider", source: "ASRService")
         return provider
     }
 

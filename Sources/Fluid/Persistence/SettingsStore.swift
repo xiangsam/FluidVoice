@@ -4471,6 +4471,13 @@ final class SettingsStore: ObservableObject {
         /// Flip to `true` in a future round to re-enable Qwen without deleting implementation.
         static let qwenPreviewEnabled = false
 
+        // MARK: - Cloud STT Models
+
+        case cloudOpenRouter = "cloud-openrouter"
+        case cloudOpenAI = "cloud-openai"
+        case cloudGroq = "cloud-groq"
+        case cloudCustom = "cloud-custom"
+
         // MARK: - FluidAudio Models (Apple Silicon Only)
 
         case parakeetTDT = "parakeet-tdt"
@@ -4500,10 +4507,23 @@ final class SettingsStore: ObservableObject {
             rawValue
         }
 
+        var isCloudModel: Bool {
+            switch self {
+            case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudCustom:
+                return true
+            default:
+                return false
+            }
+        }
+
         // MARK: - Display Properties
 
         var displayName: String {
             switch self {
+            case .cloudOpenRouter: return "OpenRouter Cloud STT"
+            case .cloudOpenAI: return "OpenAI Cloud STT"
+            case .cloudGroq: return "Groq Cloud STT (Ultra Fast)"
+            case .cloudCustom: return "Custom Cloud STT"
             case .parakeetTDT: return "Parakeet TDT v3 (Multilingual)"
             case .parakeetTDTv2: return "Parakeet TDT v2 (English Only)"
             case .parakeetRealtime: return "Parakeet Flash (Beta)"
@@ -4525,6 +4545,8 @@ final class SettingsStore: ObservableObject {
 
         var languageSupport: String {
             switch self {
+            case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudCustom:
+                return "99+ Languages"
             case .parakeetTDT:
                 return "25 Languages"
             case .parakeetTDTv2: return "English Only (Higher Accuracy)"
@@ -4541,6 +4563,8 @@ final class SettingsStore: ObservableObject {
 
         var downloadSize: String {
             switch self {
+            case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudCustom:
+                return "Cloud API"
             case .parakeetTDT: return "~460.9 MiB"
             case .parakeetTDTv2: return "~442.9 MiB"
             case .parakeetRealtime: return "~428.4 MiB"
@@ -4562,6 +4586,8 @@ final class SettingsStore: ObservableObject {
 
         var expectedDownloadBytes: Int64 {
             switch self {
+            case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudCustom:
+                return 0
             case .parakeetTDT: return 483_288_717
             case .parakeetTDTv2: return 464_421_712
             case .parakeetRealtime: return 449_190_189
@@ -4703,6 +4729,10 @@ final class SettingsStore: ObservableObject {
         /// Human-readable marketing name for the card UI
         var humanReadableName: String {
             switch self {
+            case .cloudOpenRouter: return "OpenRouter Cloud STT"
+            case .cloudOpenAI: return "OpenAI Whisper API"
+            case .cloudGroq: return "Groq Ultra-Fast Cloud"
+            case .cloudCustom: return "Custom OpenAI-Compatible"
             case .parakeetTDT: return "Blazing Fast - Multilingual"
             case .parakeetTDTv2: return "Blazing Fast - English"
             case .parakeetRealtime: return "Flash Dictation"
@@ -4725,6 +4755,14 @@ final class SettingsStore: ObservableObject {
         /// One-line description for the card UI
         var cardDescription: String {
             switch self {
+            case .cloudOpenRouter:
+                return "Transcribe audio using OpenRouter API. Supports OpenAI Whisper Large v3 and other cloud STT models."
+            case .cloudOpenAI:
+                return "Official OpenAI Whisper API. Fast and accurate cloud transcription."
+            case .cloudGroq:
+                return "Ultra-fast cloud Whisper transcription powered by Groq LPU inference."
+            case .cloudCustom:
+                return "Connect to any OpenAI-compatible audio transcription endpoint (e.g. self-hosted Whisper, SiliconFlow)."
             case .parakeetTDT:
                 return "Fast multilingual transcription. Supports Bulgarian, Croatian, Czech, Danish, " +
                     "Dutch, English, Estonian, Finnish, French, German, Greek, Hungarian, Italian, " +
@@ -4766,6 +4804,8 @@ final class SettingsStore: ObservableObject {
         /// Minimum recommended RAM in GB for this model to run safely
         var requiredMemoryGB: Double {
             switch self {
+            case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudCustom:
+                return 1.0
             case .parakeetTDT, .parakeetTDTv2, .parakeetRealtime:
                 return 4.0
             case .qwen3Asr:
@@ -4810,6 +4850,8 @@ final class SettingsStore: ObservableObject {
         /// Speed rating (1-5, higher is faster)
         var speedRating: Int {
             switch self {
+            case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudCustom:
+                return 5
             case .parakeetTDT: return 5
             case .parakeetTDTv2: return 5
             case .parakeetRealtime: return 5
@@ -4831,6 +4873,8 @@ final class SettingsStore: ObservableObject {
         /// Accuracy rating (1-5, higher is more accurate)
         var accuracyRating: Int {
             switch self {
+            case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudCustom:
+                return 5
             case .parakeetTDT: return 5
             case .parakeetTDTv2: return 5
             case .parakeetRealtime: return 4
@@ -4852,6 +4896,8 @@ final class SettingsStore: ObservableObject {
         /// Exact speed percentage (0.0 - 1.0) for the liquid bars
         var speedPercent: Double {
             switch self {
+            case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudCustom:
+                return 0.95
             case .parakeetTDT: return 1.0
             case .parakeetTDTv2: return 1.0
             case .parakeetRealtime: return 1.0
@@ -4873,6 +4919,8 @@ final class SettingsStore: ObservableObject {
         /// Exact accuracy percentage (0.0 - 1.0) for the liquid bars
         var accuracyPercent: Double {
             switch self {
+            case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudCustom:
+                return 0.98
             case .parakeetTDT: return 0.92
             case .parakeetTDTv2: return 0.96
             case .parakeetRealtime: return 0.75
@@ -4894,6 +4942,8 @@ final class SettingsStore: ObservableObject {
         /// Optional badge text for the card (e.g., "FluidVoice Pick")
         var badgeText: String? {
             switch self {
+            case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudCustom:
+                return "Cloud API"
             case .parakeetTDT: return "FluidVoice Pick"
             case .parakeetTDTv2: return "FluidVoice Pick"
             case .parakeetRealtime: return "Beta"
@@ -4908,6 +4958,8 @@ final class SettingsStore: ObservableObject {
         /// Optimization level for Apple Silicon (for display)
         var appleSiliconOptimized: Bool {
             switch self {
+            case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudCustom:
+                return false
             case .parakeetTDT, .parakeetTDTv2, .parakeetRealtime, .qwen3Asr, .cohereTranscribeSixBit, .nemotronOffline, .nemotronStreaming, .nemotronStreaming320, .appleSpeechAnalyzer:
                 return true
             default:
@@ -4919,6 +4971,8 @@ final class SettingsStore: ObservableObject {
         /// Large Whisper models are too slow for streaming, so they only do final transcription on stop.
         var supportsStreaming: Bool {
             switch self {
+            case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudCustom:
+                return false // Cloud models transcribe on stop
             case .qwen3Asr, .whisperMedium, .whisperLargeTurbo, .whisperLarge:
                 return false // Too slow for real-time chunk processing
             default:
@@ -4971,6 +5025,7 @@ final class SettingsStore: ObservableObject {
 
         /// Provider category for tab grouping
         enum Provider: String, CaseIterable {
+            case cloud = "Cloud"
             case nvidia = "NVIDIA"
             case apple = "Apple"
             case openai = "OpenAI"
@@ -4981,6 +5036,8 @@ final class SettingsStore: ObservableObject {
         /// Which provider this model belongs to
         var provider: Provider {
             switch self {
+            case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudCustom:
+                return .cloud
             case .parakeetTDT, .parakeetTDTv2, .parakeetRealtime, .nemotronOffline, .nemotronStreaming, .nemotronStreaming320:
                 return .nvidia
             case .appleSpeech, .appleSpeechAnalyzer:
@@ -5002,6 +5059,8 @@ final class SettingsStore: ObservableObject {
         /// Whether this model is built-in or already downloaded on disk
         var isInstalled: Bool {
             switch self {
+            case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudCustom:
+                return true
             case .appleSpeech, .appleSpeechAnalyzer:
                 return true
             case .parakeetTDT:
@@ -5107,9 +5166,17 @@ final class SettingsStore: ObservableObject {
         }
         #endif
 
-        /// Brand/provider name for the model (NVIDIA, Apple, OpenAI)
+        /// Brand/provider name for the model (NVIDIA, Apple, OpenAI, Cloud)
         var brandName: String {
             switch self {
+            case .cloudOpenRouter:
+                return "OpenRouter"
+            case .cloudOpenAI:
+                return "OpenAI"
+            case .cloudGroq:
+                return "Groq"
+            case .cloudCustom:
+                return "Custom"
             case .parakeetTDT, .parakeetTDTv2, .parakeetRealtime, .nemotronOffline, .nemotronStreaming, .nemotronStreaming320:
                 return "NVIDIA"
             case .qwen3Asr:
@@ -5134,6 +5201,14 @@ final class SettingsStore: ObservableObject {
         /// Brand color for the provider badge
         var brandColorHex: String {
             switch self {
+            case .cloudOpenRouter:
+                return "#6566F1"
+            case .cloudOpenAI:
+                return "#10A37F"
+            case .cloudGroq:
+                return "#F55036"
+            case .cloudCustom:
+                return "#3B82F6"
             case .parakeetTDT, .parakeetTDTv2, .parakeetRealtime, .nemotronOffline, .nemotronStreaming, .nemotronStreaming320:
                 return "#76B900"
             case .qwen3Asr:
@@ -5352,6 +5427,24 @@ private extension SettingsStore {
         static let selectedNemotronLanguage = "SelectedNemotronLanguage"
         static let selectedAppleSpeechLocaleIdentifier = "SelectedAppleSpeechLocaleIdentifier"
         static let externalCoreMLArtifactsDirectories = "ExternalCoreMLArtifactsDirectories"
+
+        // Language
+        static let appLanguage = "AppLanguagePreference"
+
+        // Cloud STT Keys
+        static let cloudSTTOpenRouterAPIKey = "CloudSTTOpenRouterAPIKey"
+        static let cloudSTTOpenRouterBaseURL = "CloudSTTOpenRouterBaseURL"
+        static let cloudSTTOpenRouterModel = "CloudSTTOpenRouterModel"
+        static let cloudSTTOpenAIAPIKey = "CloudSTTOpenAIAPIKey"
+        static let cloudSTTOpenAIBaseURL = "CloudSTTOpenAIBaseURL"
+        static let cloudSTTOpenAIModel = "CloudSTTOpenAIModel"
+        static let cloudSTTGroqAPIKey = "CloudSTTGroqAPIKey"
+        static let cloudSTTGroqBaseURL = "CloudSTTGroqBaseURL"
+        static let cloudSTTGroqModel = "CloudSTTGroqModel"
+        static let cloudSTTCustomBaseURL = "CloudSTTCustomBaseURL"
+        static let cloudSTTCustomAPIKey = "CloudSTTCustomAPIKey"
+        static let cloudSTTCustomModel = "CloudSTTCustomModel"
+        static let cloudSTTLanguage = "CloudSTTLanguage"
 
         // Overlay Position
         static let overlayPosition = "OverlayPosition"
@@ -5693,5 +5786,128 @@ extension SettingsStore {
         DebugLogger.shared.info("Migrated speech model settings: \(oldProvider)/\(oldWhisperSize) -> \(newModel.rawValue)", source: "SettingsStore")
 
         return newModel
+    }
+
+    // MARK: - App Language
+
+    var appLanguage: AppLanguage {
+        get {
+            if let raw = defaults.string(forKey: Keys.appLanguage),
+               let lang = AppLanguage(rawValue: raw) {
+                return lang
+            }
+            return .system
+        }
+        set {
+            objectWillChange.send()
+            self.defaults.set(newValue.rawValue, forKey: Keys.appLanguage)
+            LocalizationManager.shared.currentLanguage = newValue
+        }
+    }
+
+    // MARK: - Cloud STT Settings
+
+    var cloudSTTOpenRouterAPIKey: String {
+        get { self.defaults.string(forKey: Keys.cloudSTTOpenRouterAPIKey) ?? "" }
+        set {
+            objectWillChange.send()
+            self.defaults.set(newValue, forKey: Keys.cloudSTTOpenRouterAPIKey)
+        }
+    }
+
+    var cloudSTTOpenRouterBaseURL: String {
+        get { self.defaults.string(forKey: Keys.cloudSTTOpenRouterBaseURL) ?? "https://openrouter.ai/api/v1" }
+        set {
+            objectWillChange.send()
+            self.defaults.set(newValue, forKey: Keys.cloudSTTOpenRouterBaseURL)
+        }
+    }
+
+    var cloudSTTOpenRouterModel: String {
+        get { self.defaults.string(forKey: Keys.cloudSTTOpenRouterModel) ?? "openai/whisper-large-v3" }
+        set {
+            objectWillChange.send()
+            self.defaults.set(newValue, forKey: Keys.cloudSTTOpenRouterModel)
+        }
+    }
+
+    var cloudSTTOpenAIAPIKey: String {
+        get { self.defaults.string(forKey: Keys.cloudSTTOpenAIAPIKey) ?? "" }
+        set {
+            objectWillChange.send()
+            self.defaults.set(newValue, forKey: Keys.cloudSTTOpenAIAPIKey)
+        }
+    }
+
+    var cloudSTTOpenAIBaseURL: String {
+        get { self.defaults.string(forKey: Keys.cloudSTTOpenAIBaseURL) ?? "https://api.openai.com/v1" }
+        set {
+            objectWillChange.send()
+            self.defaults.set(newValue, forKey: Keys.cloudSTTOpenAIBaseURL)
+        }
+    }
+
+    var cloudSTTOpenAIModel: String {
+        get { self.defaults.string(forKey: Keys.cloudSTTOpenAIModel) ?? "whisper-1" }
+        set {
+            objectWillChange.send()
+            self.defaults.set(newValue, forKey: Keys.cloudSTTOpenAIModel)
+        }
+    }
+
+    var cloudSTTGroqAPIKey: String {
+        get { self.defaults.string(forKey: Keys.cloudSTTGroqAPIKey) ?? "" }
+        set {
+            objectWillChange.send()
+            self.defaults.set(newValue, forKey: Keys.cloudSTTGroqAPIKey)
+        }
+    }
+
+    var cloudSTTGroqBaseURL: String {
+        get { self.defaults.string(forKey: Keys.cloudSTTGroqBaseURL) ?? "https://api.groq.com/openai/v1" }
+        set {
+            objectWillChange.send()
+            self.defaults.set(newValue, forKey: Keys.cloudSTTGroqBaseURL)
+        }
+    }
+
+    var cloudSTTGroqModel: String {
+        get { self.defaults.string(forKey: Keys.cloudSTTGroqModel) ?? "whisper-large-v3" }
+        set {
+            objectWillChange.send()
+            self.defaults.set(newValue, forKey: Keys.cloudSTTGroqModel)
+        }
+    }
+
+    var cloudSTTCustomBaseURL: String {
+        get { self.defaults.string(forKey: Keys.cloudSTTCustomBaseURL) ?? "" }
+        set {
+            objectWillChange.send()
+            self.defaults.set(newValue, forKey: Keys.cloudSTTCustomBaseURL)
+        }
+    }
+
+    var cloudSTTCustomAPIKey: String {
+        get { self.defaults.string(forKey: Keys.cloudSTTCustomAPIKey) ?? "" }
+        set {
+            objectWillChange.send()
+            self.defaults.set(newValue, forKey: Keys.cloudSTTCustomAPIKey)
+        }
+    }
+
+    var cloudSTTCustomModel: String {
+        get { self.defaults.string(forKey: Keys.cloudSTTCustomModel) ?? "whisper-1" }
+        set {
+            objectWillChange.send()
+            self.defaults.set(newValue, forKey: Keys.cloudSTTCustomModel)
+        }
+    }
+
+    var cloudSTTLanguage: String {
+        get { self.defaults.string(forKey: Keys.cloudSTTLanguage) ?? "auto" }
+        set {
+            objectWillChange.send()
+            self.defaults.set(newValue, forKey: Keys.cloudSTTLanguage)
+        }
     }
 }

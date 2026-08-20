@@ -225,15 +225,15 @@ struct SettingsView: View {
                 ThemedCard(style: .standard) {
                     VStack(alignment: .leading, spacing: 14) {
                         // Section header
-                        Label("App Settings", systemImage: "power")
+                        Label("App Settings".loc, systemImage: "power")
                             .font(.headline)
                             .foregroundStyle(.primary)
 
                         VStack(spacing: 16) {
                             // Launch at startup
                             self.settingsToggleRow(
-                                title: "Launch at startup",
-                                description: "Automatically start FluidVoice when you log in",
+                                title: "Launch at startup".loc,
+                                description: "Automatically start FluidVoice when you log in".loc,
                                 footnote: self.settings.launchAtStartupStatusMessage,
                                 errorMessage: self.settings.launchAtStartupErrorMessage,
                                 isOn: self.launchAtStartupBinding
@@ -242,8 +242,8 @@ struct SettingsView: View {
 
                             // Show window when launched at login
                             self.settingsToggleRow(
-                                title: "Show window when launched at login",
-                                description: "When off, FluidVoice starts silently in the menu bar at login. Opening the app yourself always shows the window.",
+                                title: "Show window when launched at login".loc,
+                                description: "When off, FluidVoice starts silently in the menu bar at login. Opening the app yourself always shows the window.".loc,
                                 isOn: Binding(
                                     get: { SettingsStore.shared.showMainWindowAtLoginLaunch },
                                     set: { SettingsStore.shared.showMainWindowAtLoginLaunch = $0 }
@@ -253,9 +253,9 @@ struct SettingsView: View {
 
                             // Hide from Dock & App Switcher
                             self.settingsToggleRow(
-                                title: "Hide from Dock & App Switcher",
-                                description: "Keep FluidVoice in the menu bar only (hides Dock icon and Cmd+Tab entry)",
-                                footnote: "Note: May require app restart to take effect.",
+                                title: "Hide from Dock & App Switcher".loc,
+                                description: "Keep FluidVoice in the menu bar only (hides Dock icon and Cmd+Tab entry)".loc,
+                                footnote: "Note: May require app restart to take effect.".loc,
                                 isOn: Binding(
                                     get: { SettingsStore.shared.hideFromDockAndAppSwitcher },
                                     set: { SettingsStore.shared.hideFromDockAndAppSwitcher = $0 }
@@ -263,14 +263,37 @@ struct SettingsView: View {
                             )
                             Divider().opacity(0.2)
 
+                            // Display Language
+                            HStack {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Language".loc)
+                                        .font(self.theme.typography.bodyStrong)
+                                        .foregroundStyle(self.settingsTitleText)
+                                    Text("Choose the display language for the application.".loc)
+                                        .font(self.theme.typography.bodySmall)
+                                        .foregroundStyle(self.settingsSecondaryText)
+                                }
+
+                                Spacer()
+
+                                Picker("", selection: self.$settings.appLanguage) {
+                                    ForEach(AppLanguage.allCases) { lang in
+                                        Text(lang.displayName.loc).tag(lang)
+                                    }
+                                }
+                                .pickerStyle(.menu)
+                                .frame(width: 190)
+                            }
+                            Divider().opacity(0.2)
+
                             // Accent Color
                             VStack(alignment: .leading, spacing: 6) {
                                 HStack(alignment: .center) {
                                     VStack(alignment: .leading, spacing: 2) {
-                                        Text("Accent Color")
+                                        Text("Accent Color".loc)
                                             .font(self.theme.typography.bodyStrong)
                                             .foregroundStyle(self.settingsTitleText)
-                                        Text("Pick a preset accent color for the app.")
+                                        Text("Pick a preset accent color for the app.".loc)
                                             .font(self.theme.typography.bodySmall)
                                             .foregroundStyle(self.settingsSecondaryText)
                                     }
@@ -296,8 +319,8 @@ struct SettingsView: View {
                                                     .padding(4)
                                             }
                                             .buttonStyle(.plain)
-                                            .accessibilityLabel(option.rawValue)
-                                            .help(option.rawValue)
+                                            .accessibilityLabel(option.rawValue.loc)
+                                            .help(option.rawValue.loc)
                                         }
                                     }
                                     .padding(.horizontal, 6)
@@ -316,10 +339,10 @@ struct SettingsView: View {
 
                             HStack {
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text("Transcription Sounds")
+                                    Text("Transcription Sounds".loc)
                                         .font(self.theme.typography.bodyStrong)
                                         .foregroundStyle(self.settingsTitleText)
-                                    Text("Choose the sound cue for recording. Some cues include an end sound.")
+                                    Text("Choose the sound cue for recording. Some cues include an end sound.".loc)
                                         .font(self.theme.typography.bodySmall)
                                         .foregroundStyle(self.settingsSecondaryText)
                                 }
@@ -334,7 +357,7 @@ struct SettingsView: View {
                                     }
                                 )) {
                                     ForEach(SettingsStore.TranscriptionStartSound.allCases) { option in
-                                        Text(option.displayName).tag(option)
+                                        Text(option.displayName.loc).tag(option)
                                     }
                                 }
                                 .pickerStyle(.menu)
@@ -344,10 +367,10 @@ struct SettingsView: View {
                             if SettingsStore.shared.transcriptionStartSound != .none {
                                 HStack {
                                     VStack(alignment: .leading, spacing: 2) {
-                                        Text("Volume")
+                                        Text("Volume".loc)
                                             .font(self.theme.typography.bodyStrong)
                                             .foregroundStyle(self.settingsTitleText)
-                                        Text("Adjust the recording sound cue volume.")
+                                        Text("Adjust the recording sound cue volume.".loc)
                                             .font(self.theme.typography.bodySmall)
                                             .foregroundStyle(self.settingsSecondaryText)
                                     }
@@ -372,9 +395,9 @@ struct SettingsView: View {
                                 }
 
                                 self.settingsToggleRow(
-                                    title: "Independent Volume",
-                                    description: "Sound volume stays constant regardless of system volume. Mute is still respected.",
-                                    footnote: "Temporarily changes system volume during playback, which may briefly affect other audio.",
+                                    title: "Independent Volume".loc,
+                                    description: "Sound volume stays constant regardless of system volume. Mute is still respected.".loc,
+                                    footnote: "Temporarily changes system volume during playback, which may briefly affect other audio.".loc,
                                     isOn: Binding(
                                         get: { SettingsStore.shared.transcriptionSoundIndependentVolume },
                                         set: { SettingsStore.shared.transcriptionSoundIndependentVolume = $0 }
@@ -388,10 +411,10 @@ struct SettingsView: View {
                             VStack(alignment: .leading, spacing: 6) {
                                 HStack(alignment: .center) {
                                     VStack(alignment: .leading, spacing: 2) {
-                                        Text("Automatic Updates")
+                                        Text("Automatic Updates".loc)
                                             .font(self.theme.typography.bodyStrong)
                                             .foregroundStyle(self.settingsTitleText)
-                                        Text("Check for updates automatically once per hour")
+                                        Text("Check for updates automatically once per hour".loc)
                                             .font(self.theme.typography.bodySmall)
                                             .foregroundStyle(self.settingsSecondaryText)
                                     }
@@ -409,10 +432,10 @@ struct SettingsView: View {
 
                                 HStack(alignment: .center) {
                                     VStack(alignment: .leading, spacing: 2) {
-                                        Text("Beta Releases")
+                                        Text("Beta Releases".loc)
                                             .font(self.theme.typography.bodyStrong)
                                             .foregroundStyle(self.settingsTitleText)
-                                        Text("Opt in to preview builds that may be unstable")
+                                        Text("Opt in to preview builds that may be unstable".loc)
                                             .font(self.theme.typography.bodySmall)
                                             .foregroundStyle(self.settingsSecondaryText)
                                     }
@@ -429,13 +452,13 @@ struct SettingsView: View {
                                 }
 
                                 if SettingsStore.shared.betaReleasesEnabled {
-                                    Text("Beta opt-in enabled. Update checks include both stable and beta builds.")
+                                    Text("Beta opt-in enabled. Update checks include both stable and beta builds.".loc)
                                         .font(.caption)
                                         .foregroundStyle(self.theme.palette.warning)
                                 }
 
                                 if let lastCheck = SettingsStore.shared.lastUpdateCheckDate {
-                                    Text("Last checked: \(lastCheck.formatted(date: .abbreviated, time: .shortened))")
+                                    Text("\("Last checked:".loc) \(lastCheck.formatted(date: .abbreviated, time: .shortened))")
                                         .font(self.theme.typography.bodySmall)
                                         .foregroundStyle(self.settingsSecondaryText)
                                 }
@@ -1818,31 +1841,31 @@ struct SettingsView: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .center) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(title)
+                    Text(title.loc)
                         .font(self.theme.typography.bodyStrong)
                         .foregroundStyle(self.settingsTitleText)
-                    Text(description)
+                    Text(description.loc)
                         .font(self.theme.typography.bodySmall)
                         .foregroundStyle(self.settingsSecondaryText)
                 }
 
                 Spacer()
 
-                Toggle(title, isOn: isOn)
+                Toggle(title.loc, isOn: isOn)
                     .toggleStyle(.switch)
                     .tint(self.theme.palette.accent)
                     .labelsHidden()
-                    .accessibilityLabel(title)
+                    .accessibilityLabel(title.loc)
             }
 
             if let footnote = footnote {
-                Text(footnote)
+                Text(footnote.loc)
                     .font(self.theme.typography.bodySmall)
                     .foregroundStyle(self.settingsSecondaryText)
             }
 
             if let errorMessage = errorMessage {
-                Text(errorMessage)
+                Text(errorMessage.loc)
                     .font(.caption)
                     .foregroundStyle(self.theme.palette.warning)
             }

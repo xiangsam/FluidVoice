@@ -87,6 +87,8 @@ final class VoiceEngineSettingsViewModel: ObservableObject {
         switch self.providerFilter {
         case .all:
             break
+        case .cloud:
+            models = models.filter { $0.provider == .cloud }
         case .nvidia:
             models = models.filter { $0.provider == .nvidia }
         case .apple:

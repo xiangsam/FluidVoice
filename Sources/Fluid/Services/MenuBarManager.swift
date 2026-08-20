@@ -67,6 +67,14 @@ final class MenuBarManager: NSObject, ObservableObject, NSMenuDelegate {
                 self?.openMicrophoneSettingsFromUI()
             }
             .store(in: &self.cancellables)
+
+        NotificationCenter.default.publisher(for: .appLanguageDidChange)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.buildMenuStructure()
+                self?.updateMenuItemsText()
+            }
+            .store(in: &self.cancellables)
     }
 
     func initializeMenuBar() {
@@ -496,7 +504,7 @@ final class MenuBarManager: NSObject, ObservableObject, NSMenuDelegate {
         }
 
         let copyLastTranscriptItem = NSMenuItem(
-            title: "Copy Last Transcript",
+            title: "Copy Last Transcript".loc,
             action: #selector(copyLastTranscript(_:)),
             keyEquivalent: ""
         )
@@ -507,26 +515,26 @@ final class MenuBarManager: NSObject, ObservableObject, NSMenuDelegate {
         menu.addItem(.separator())
 
         // Open Main Window
-        let openItem = NSMenuItem(title: "Open Fluid Voice", action: #selector(openMainWindow), keyEquivalent: "")
+        let openItem = NSMenuItem(title: "Open Fluid Voice".loc, action: #selector(openMainWindow), keyEquivalent: "")
         openItem.target = self
         menu.addItem(openItem)
 
         // Preferences
-        let preferencesItem = NSMenuItem(title: "Settings...", action: #selector(openPreferences), keyEquivalent: ",")
+        let preferencesItem = NSMenuItem(title: "Settings...".loc, action: #selector(openPreferences), keyEquivalent: ",")
         preferencesItem.target = self
         preferencesItem.keyEquivalentModifierMask = [.command]
         menu.addItem(preferencesItem)
 
         let customDictionaryItem = NSMenuItem(
-            title: "Custom Dictionary",
+            title: "Custom Dictionary".loc,
             action: #selector(openCustomDictionary),
             keyEquivalent: ""
         )
         customDictionaryItem.target = self
         menu.addItem(customDictionaryItem)
 
-        let microphoneSubmenu = NSMenu(title: "Microphone")
-        let microphoneMenuItem = NSMenuItem(title: "Microphone", action: nil, keyEquivalent: "")
+        let microphoneSubmenu = NSMenu(title: "Microphone".loc)
+        let microphoneMenuItem = NSMenuItem(title: "Microphone".loc, action: nil, keyEquivalent: "")
         microphoneMenuItem.submenu = microphoneSubmenu
         menu.addItem(microphoneMenuItem)
         self.microphoneMenuItem = microphoneMenuItem
@@ -534,7 +542,7 @@ final class MenuBarManager: NSObject, ObservableObject, NSMenuDelegate {
 
         // Check for Updates
         let updateItem = NSMenuItem(
-            title: "Check for Updates...",
+            title: "Check for Updates...".loc,
             action: #selector(checkForUpdates(_:)),
             keyEquivalent: ""
         )
@@ -544,7 +552,7 @@ final class MenuBarManager: NSObject, ObservableObject, NSMenuDelegate {
         menu.addItem(.separator())
 
         let rollbackMenuItem = NSMenuItem(
-            title: "Rollback to Previous Version...",
+            title: "Rollback to Previous Version...".loc,
             action: #selector(rollbackToPreviousVersion(_:)),
             keyEquivalent: ""
         )
@@ -557,7 +565,7 @@ final class MenuBarManager: NSObject, ObservableObject, NSMenuDelegate {
 
         // Quit
         let quitItem = NSMenuItem(
-            title: "Quit Fluid Voice",
+            title: "Quit Fluid Voice".loc,
             action: #selector(NSApplication.terminate(_:)),
             keyEquivalent: "q"
         )
@@ -582,7 +590,7 @@ final class MenuBarManager: NSObject, ObservableObject, NSMenuDelegate {
         // Update status text with hotkey info
         let hotkeyDisplay = SettingsStore.shared.primaryDictationShortcutDisplayString
         let hotkeyInfo = hotkeyDisplay.isEmpty ? "" : " (\(hotkeyDisplay))"
-        let statusTitle = self.isRecording ? "Recording...\(hotkeyInfo)" : "Ready to Record\(hotkeyInfo)"
+        let statusTitle = self.isRecording ? "\("Recording...".loc)\(hotkeyInfo)" : "\("Ready to Record".loc)\(hotkeyInfo)"
         self.statusMenuItem?.title = statusTitle
         self.copyLastTranscriptMenuItem?.isEnabled = self.canCopyLastTranscript
         self.microphoneMenuItem?.isEnabled = true

@@ -26,7 +26,7 @@ extension VoiceEngineSettingsView {
                     Image(systemName: "waveform")
                         .font(.title2)
                         .foregroundStyle(self.theme.palette.accent)
-                    Text("Voice Engine")
+                    Text("Voice Engine".loc)
                         .font(.title3)
                         .fontWeight(.semibold)
                     Spacer()
@@ -51,75 +51,59 @@ extension VoiceEngineSettingsView {
                             Image(systemName: "info.circle")
                                 .font(self.theme.typography.bodySmall)
                                 .foregroundStyle(self.voiceEngineSecondaryText)
-                            Text("Click a row to preview. Press Activate to load the model.")
+                            Text("Click a row to preview. Press Activate to load the model.".loc)
                                 .font(self.theme.typography.bodySmall)
                                 .foregroundStyle(self.voiceEngineSecondaryText)
                             Spacer()
+
                             Menu {
                                 ForEach(SpeechProviderFilter.allCases) { option in
-                                    Button(option.rawValue) {
+                                    Button(option.localizedTitle) {
                                         self.viewModel.providerFilter = option
                                     }
                                 }
                             } label: {
-                                HStack(spacing: 6) {
+                                HStack(spacing: 4) {
                                     Image(systemName: "line.3.horizontal.decrease.circle")
-                                        .font(self.theme.typography.bodySmallStrong)
-                                    Text("Filter: \(self.viewModel.providerFilter.rawValue)")
-                                        .font(self.theme.typography.bodySmallStrong)
+                                    Text("\("Filter:".loc) \(self.viewModel.providerFilter.localizedTitle)")
                                 }
-                                .foregroundStyle(self.voiceEngineTitleText)
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 6)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 9)
-                                        .fill(self.theme.palette.cardBackground.opacity(0.8))
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 9)
-                                                .stroke(self.theme.palette.cardBorder.opacity(0.5), lineWidth: 1)
-                                        )
-                                )
+                                .font(self.theme.typography.bodySmallStrong)
                             }
+                            .menuStyle(.borderedButton)
+                            .fixedSize()
+
                             Menu {
                                 ForEach(ModelSortOption.allCases) { option in
-                                    Button(option.rawValue) {
+                                    Button(option.localizedTitle) {
                                         self.viewModel.modelSortOption = option
                                     }
                                 }
                             } label: {
-                                HStack(spacing: 6) {
-                                    Text("Sort by: \(self.viewModel.modelSortOption.rawValue)")
-                                        .font(self.theme.typography.bodySmallStrong)
+                                HStack(spacing: 4) {
+                                    Image(systemName: "arrow.up.arrow.down")
+                                    Text("\("Sort by:".loc) \(self.viewModel.modelSortOption.localizedTitle)")
                                 }
-                                .foregroundStyle(self.voiceEngineTitleText)
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 6)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 9)
-                                        .fill(self.theme.palette.cardBackground.opacity(0.8))
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 9)
-                                                .stroke(self.theme.palette.cardBorder.opacity(0.5), lineWidth: 1)
-                                        )
-                                )
+                                .font(self.theme.typography.bodySmallStrong)
                             }
+                            .menuStyle(.borderedButton)
+                            .fixedSize()
                         }
 
-                        // Active + Other models list
-                        VStack(alignment: .leading, spacing: 10) {
+                        // Active + Grouped models list
+                        VStack(alignment: .leading, spacing: 14) {
                             if let activeModel {
                                 VStack(alignment: .leading, spacing: 6) {
-                                    Text("Active Model")
+                                    Text("Active Model".loc)
                                         .font(self.theme.typography.sectionTitle)
                                         .foregroundStyle(self.voiceEngineTitleText)
                                     self.speechModelCard(for: activeModel)
                                 }
                             } else {
                                 VStack(alignment: .leading, spacing: 6) {
-                                    Text("Active Model")
+                                    Text("Active Model".loc)
                                         .font(self.theme.typography.sectionTitle)
                                         .foregroundStyle(self.voiceEngineTitleText)
-                                    Label("No active model yet. Download and activate one below.", systemImage: "arrow.down.circle")
+                                    Label("No active model yet. Download and activate one below.".loc, systemImage: "arrow.down.circle")
                                         .font(self.theme.typography.bodySmall)
                                         .foregroundStyle(self.voiceEngineSecondaryText)
                                 }
@@ -127,13 +111,66 @@ extension VoiceEngineSettingsView {
 
                             Divider().padding(.vertical, 2)
 
-                            VStack(alignment: .leading, spacing: 6) {
-                                Text(hasActiveModel ? "Other Models" : "Available Models")
-                                    .font(self.theme.typography.sectionTitle)
-                                    .foregroundStyle(self.voiceEngineTitleText)
-                                VStack(spacing: 8) {
-                                    ForEach(otherModels) { model in
-                                        self.speechModelCard(for: model)
+                            if self.viewModel.providerFilter == .all {
+                                // 1. Cloud Models Group
+                                let cloudModels = otherModels.filter { $0.isCloudModel }
+                                if !cloudModels.isEmpty {
+                                    VStack(alignment: .leading, spacing: 6) {
+                                        HStack(spacing: 6) {
+                                            Image(systemName: "cloud.fill")
+                                                .font(.system(size: 13))
+                                                .foregroundStyle(self.theme.palette.accent)
+                                            Text("Cloud STT Models (API)".loc)
+                                                .font(self.theme.typography.sectionTitle)
+                                                .foregroundStyle(self.voiceEngineTitleText)
+                                            Spacer()
+                                            Text("No GPU required".loc)
+                                                .font(self.theme.typography.caption)
+                                                .foregroundStyle(self.voiceEngineSecondaryText)
+                                        }
+
+                                        VStack(spacing: 8) {
+                                            ForEach(cloudModels) { model in
+                                                self.speechModelCard(for: model)
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // 2. Local Models Group
+                                let localModels = otherModels.filter { !$0.isCloudModel }
+                                if !localModels.isEmpty {
+                                    VStack(alignment: .leading, spacing: 6) {
+                                        HStack(spacing: 6) {
+                                            Image(systemName: "laptopcomputer")
+                                                .font(.system(size: 13))
+                                                .foregroundStyle(Color.fluidGreen)
+                                            Text("On-Device Local Models (Offline)".loc)
+                                                .font(self.theme.typography.sectionTitle)
+                                                .foregroundStyle(self.voiceEngineTitleText)
+                                            Spacer()
+                                            Text("Private & Offline".loc)
+                                                .font(self.theme.typography.caption)
+                                                .foregroundStyle(self.voiceEngineSecondaryText)
+                                        }
+
+                                        VStack(spacing: 8) {
+                                            ForEach(localModels) { model in
+                                                self.speechModelCard(for: model)
+                                            }
+                                        }
+                                    }
+                                }
+                            } else {
+                                // Filtered view
+                                VStack(alignment: .leading, spacing: 6) {
+                                    Text(hasActiveModel ? "Other Models".loc : "Available Models".loc)
+                                        .font(self.theme.typography.sectionTitle)
+                                        .foregroundStyle(self.voiceEngineTitleText)
+                                    VStack(spacing: 8) {
+                                        ForEach(otherModels) { model in
+                                            self.speechModelCard(for: model)
+                                        }
                                     }
                                 }
                             }
@@ -301,6 +338,10 @@ extension VoiceEngineSettingsView {
                         )
                 )
             }
+
+            if model.isCloudModel {
+                CloudSTTConfigView(model: model, theme: self.theme, settings: self.settings)
+            }
         }
         .padding(.vertical, 6)
     }
@@ -335,7 +376,7 @@ extension VoiceEngineSettingsView {
                         Image(systemName: "bolt.fill")
                             .font(.system(size: 11))
                             .foregroundStyle(.yellow)
-                        Text("Speed \(Int(model.speedPercent * 100))%")
+                        Text("\("Speed".loc) \(Int(model.speedPercent * 100))%")
                             .font(self.theme.typography.bodyStrong)
                             .foregroundStyle(self.voiceEngineSecondaryText)
                     }
@@ -344,13 +385,13 @@ extension VoiceEngineSettingsView {
                         Image(systemName: "target")
                             .font(.system(size: 11))
                             .foregroundStyle(Color.fluidGreen)
-                        Text("Acc \(Int(model.accuracyPercent * 100))%")
+                        Text("\("Acc".loc) \(Int(model.accuracyPercent * 100))%")
                             .font(self.theme.typography.bodyStrong)
                             .foregroundStyle(self.voiceEngineSecondaryText)
                     }
 
                     if isSelected && !isActive {
-                        Text("Previewing")
+                        Text("Previewing".loc)
                             .font(self.theme.typography.bodyStrong)
                             .foregroundStyle(self.voiceEngineSecondaryText)
                     }
@@ -366,7 +407,7 @@ extension VoiceEngineSettingsView {
                         if self.viewModel.isCancellingModelDownload {
                             ProgressView()
                                 .controlSize(.mini)
-                            Text("Cancelling…")
+                            Text("Cancelling…".loc)
                                 .font(self.theme.typography.bodySmall)
                                 .foregroundStyle(self.voiceEngineSecondaryText)
                         } else if self.viewModel.asr.modelPreparationPhase == .downloading,
@@ -387,7 +428,7 @@ extension VoiceEngineSettingsView {
                         }
                     }
 
-                    Button(self.viewModel.isCancellingModelDownload ? "Cancelling…" : "Cancel") {
+                    Button(self.viewModel.isCancellingModelDownload ? "Cancelling…".loc : "Cancel".loc) {
                         self.viewModel.cancelSpeechModelDownload()
                     }
                     .buttonStyle(.bordered)
@@ -406,7 +447,7 @@ extension VoiceEngineSettingsView {
                         if self.viewModel.asr.isCancellingModelPreparation {
                             ProgressView()
                                 .controlSize(.mini)
-                            Text("Cancelling…")
+                            Text("Cancelling…".loc)
                                 .font(self.theme.typography.bodySmall)
                                 .foregroundStyle(self.voiceEngineSecondaryText)
                         } else if self.viewModel.asr.isDownloadingModel,
@@ -428,7 +469,7 @@ extension VoiceEngineSettingsView {
                         }
                     }
 
-                    Button(self.viewModel.asr.isCancellingModelPreparation ? "Cancelling…" : "Cancel") {
+                    Button(self.viewModel.asr.isCancellingModelPreparation ? "Cancelling…".loc : "Cancel".loc) {
                         self.viewModel.cancelActiveModelPreparation()
                     }
                     .buttonStyle(.bordered)
@@ -441,14 +482,14 @@ extension VoiceEngineSettingsView {
                         self.speechModelLanguagePicker(for: model)
                             .disabled(self.viewModel.areSpeechModelActionsBlocked)
 
-                        Text("Active")
+                        Text("Active".loc)
                             .font(self.theme.typography.bodySmallStrong)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 4)
                             .background(Capsule().fill(Color.fluidGreen.opacity(0.25)))
                             .foregroundStyle(Color.fluidGreen)
                     } else {
-                        Button("Activate") {
+                        Button("Activate".loc) {
                             self.viewModel.activateSpeechModel(model)
                         }
                         .buttonStyle(.borderedProminent)
@@ -491,7 +532,7 @@ extension VoiceEngineSettingsView {
                                 .disabled(self.viewModel.areSpeechModelActionsBlocked)
                             }
 
-                            Button("Download") {
+                            Button("Download".loc) {
                                 self.viewModel.previewSpeechModel = model
                                 self.viewModel.downloadSpeechModel(model)
                             }
@@ -503,12 +544,12 @@ extension VoiceEngineSettingsView {
                         .offset(x: isSelected ? 0 : 16)
                         .opacity(isSelected ? 1 : 0)
                     } else {
-                        Text("Not downloaded")
+                        Text("Not downloaded".loc)
                             .font(self.theme.typography.bodySmall)
                             .foregroundStyle(self.voiceEngineTertiaryText)
                             .opacity(isSelected ? 0 : 1)
 
-                        Button("Download") {
+                        Button("Download".loc) {
                             self.viewModel.previewSpeechModel = model
                             self.viewModel.downloadSpeechModel(model)
                         }
@@ -780,6 +821,9 @@ extension VoiceEngineSettingsView {
     }
 
     private func speechModelBackgroundColor(for model: SettingsStore.SpeechModel) -> Color {
+        if model.isCloudModel {
+            return Color(hex: model.brandColorHex)?.opacity(0.18) ?? self.theme.palette.cardBackground
+        }
         let brand = model.brandName.lowercased()
 
         // Both NVIDIA and OpenAI use white/light gray bg (transparent logos)
@@ -793,6 +837,19 @@ extension VoiceEngineSettingsView {
     }
 
     private func speechModelImageName(for model: SettingsStore.SpeechModel) -> String? {
+        if model == .cloudOpenRouter {
+            return "Provider_OpenRouter"
+        }
+        if model == .cloudOpenAI {
+            return "Provider_OpenAI"
+        }
+        if model == .cloudGroq {
+            return "Provider_Cerebras" // Or standard cloud icon
+        }
+        if model == .cloudCustom {
+            return "Provider_Compatible"
+        }
+
         let brand = model.brandName.lowercased()
 
         if brand.contains("nvidia") {

@@ -194,6 +194,7 @@ struct ContentView: View {
     @StateObject private var rewriteModeService = RewriteModeService()
     @EnvironmentObject private var menuBarManager: MenuBarManager
     @ObservedObject private var settings = SettingsStore.shared
+    @ObservedObject private var localization = LocalizationManager.shared
 
     /// Computed properties to access shared services from AppServices container
     /// This maintains backward compatibility with the existing code while
@@ -357,6 +358,8 @@ struct ContentView: View {
                 if !self.settings.shouldShowOnboarding {
                     ToolbarItemGroup(placement: .primaryAction) {
                         self.todayStatsButton
+
+                        self.languagePreferenceButton
 
                         self.themePreferenceButton
 
@@ -1158,34 +1161,34 @@ struct ContentView: View {
     private var sidebarView: some View {
         List(selection: self.$selectedSidebarItem) {
             Section {
-                self.sidebarNavigationLink(.preferences, title: "Settings", systemImage: "gearshape.fill")
-                self.sidebarNavigationLink(.voiceEngine, title: "Voice Engine", systemImage: "waveform")
-                self.sidebarNavigationLink(.aiEnhancements, title: "AI Enhancement", systemImage: "brain")
-                self.sidebarNavigationLink(.customDictionary, title: "Custom Dictionary", systemImage: "text.book.closed.fill")
+                self.sidebarNavigationLink(.preferences, title: "Settings".loc, systemImage: "gearshape.fill")
+                self.sidebarNavigationLink(.voiceEngine, title: "Voice Engine".loc, systemImage: "waveform")
+                self.sidebarNavigationLink(.aiEnhancements, title: "AI Enhancement".loc, systemImage: "brain")
+                self.sidebarNavigationLink(.customDictionary, title: "Custom Dictionary".loc, systemImage: "text.book.closed.fill")
             } header: {
-                self.sidebarSectionHeader("Configure")
+                self.sidebarSectionHeader("Configure".loc)
             }
 
             Section {
-                self.sidebarNavigationLink(.commandMode, title: "Command Mode", systemImage: "terminal.fill")
-                self.sidebarNavigationLink(.meetingTools, title: "File Transcription", systemImage: "doc.text.fill")
+                self.sidebarNavigationLink(.commandMode, title: "Command Mode".loc, systemImage: "terminal.fill")
+                self.sidebarNavigationLink(.meetingTools, title: "File Transcription".loc, systemImage: "doc.text.fill")
             } header: {
-                self.sidebarSectionHeader("Use")
+                self.sidebarSectionHeader("Use".loc)
             }
 
             Section {
-                self.sidebarNavigationLink(.history, title: "History", systemImage: "clock.arrow.circlepath")
-                self.sidebarNavigationLink(.stats, title: "Stats", systemImage: "chart.bar.fill")
+                self.sidebarNavigationLink(.history, title: "History".loc, systemImage: "clock.arrow.circlepath")
+                self.sidebarNavigationLink(.stats, title: "Stats".loc, systemImage: "chart.bar.fill")
             } header: {
-                self.sidebarSectionHeader("Activity")
+                self.sidebarSectionHeader("Activity".loc)
             }
 
             Section {
-                self.sidebarNavigationLink(.welcome, title: "Getting Started", systemImage: "house.fill")
-                self.sidebarNavigationLink(.changelog, title: "Change logs", systemImage: "doc.text.magnifyingglass")
-                self.sidebarNavigationLink(.feedback, title: "Feedback", systemImage: "envelope.fill")
+                self.sidebarNavigationLink(.welcome, title: "Getting Started".loc, systemImage: "house.fill")
+                self.sidebarNavigationLink(.changelog, title: "Change logs".loc, systemImage: "doc.text.magnifyingglass")
+                self.sidebarNavigationLink(.feedback, title: "Feedback".loc, systemImage: "envelope.fill")
             } header: {
-                self.sidebarSectionHeader("Help")
+                self.sidebarSectionHeader("Help".loc)
             }
         }
         .listStyle(.sidebar)
@@ -1210,6 +1213,31 @@ struct ContentView: View {
                 .frame(minHeight: 24, alignment: .leading)
                 .padding(.vertical, self.theme.metrics.spacing.xs / 2)
         }
+    }
+
+    private var languagePreferenceButton: some View {
+        Menu {
+            ForEach(AppLanguage.allCases) { lang in
+                Button {
+                    self.settings.appLanguage = lang
+                } label: {
+                    HStack {
+                        Text(lang.displayName)
+                        if self.settings.appLanguage == lang {
+                            Image(systemName: "checkmark")
+                        }
+                    }
+                }
+            }
+        } label: {
+            HStack(spacing: 3) {
+                Image(systemName: "globe")
+                Text(self.settings.appLanguage.shortName)
+                    .font(.system(size: 11, weight: .medium))
+            }
+        }
+        .menuStyle(.borderlessButton)
+        .help("Language / 语言")
     }
 
     private var themePreferenceButton: some View {
@@ -1242,6 +1270,7 @@ struct ContentView: View {
                 .ignoresSafeArea()
 
             self.detailContent
+                .padding(.top, 14)
                 .transaction { transaction in
                     transaction.animation = nil
                 }

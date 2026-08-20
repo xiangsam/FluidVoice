@@ -65,16 +65,36 @@ enum ModelSortOption: String, CaseIterable, Identifiable {
     case speed = "Speed"
 
     var id: String { self.rawValue }
+
+    var localizedTitle: String {
+        switch self {
+        case .provider: return "Provider".loc
+        case .accuracy: return "Accuracy".loc
+        case .speed: return "Speed".loc
+        }
+    }
 }
 
 enum SpeechProviderFilter: String, CaseIterable, Identifiable {
     case all = "All"
+    case cloud = "Cloud"
     case nvidia = "NVIDIA"
     case apple = "Apple"
     case cohere = "Cohere"
     case openai = "OpenAI"
 
     var id: String { self.rawValue }
+
+    var localizedTitle: String {
+        switch self {
+        case .all: return "All".loc
+        case .cloud: return "Cloud".loc
+        case .nvidia: return "NVIDIA"
+        case .apple: return "Apple"
+        case .cohere: return "Cohere"
+        case .openai: return "OpenAI"
+        }
+    }
 }
 
 enum AISettingsLayout {
