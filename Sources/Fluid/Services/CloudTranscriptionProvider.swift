@@ -5,13 +5,13 @@
 
 import Foundation
 
-enum CloudSTTType: String, CaseIterable, Identifiable, Codable {
+public enum CloudSTTType: String, CaseIterable, Identifiable {
     case openRouter = "openrouter"
     case openAI = "openai"
     case groq = "groq"
     case custom = "custom"
 
-    var id: String { rawValue }
+    public var id: String { self.rawValue }
 
     var displayName: String {
         switch self {
@@ -33,7 +33,7 @@ enum CloudSTTType: String, CaseIterable, Identifiable, Codable {
 
     var defaultModel: String {
         switch self {
-        case .openRouter: return "openai/whisper-large-v3"
+        case .openRouter: return "openai/gpt-4o-mini-transcribe"
         case .openAI: return "whisper-1"
         case .groq: return "whisper-large-v3"
         case .custom: return "whisper-1"
@@ -41,36 +41,187 @@ enum CloudSTTType: String, CaseIterable, Identifiable, Codable {
     }
 
     var recommendedModels: [String] {
+        self.modelPresets.map(\.id)
+    }
+
+    var modelPresets: [CloudSTTModelItem] {
         switch self {
         case .openRouter:
             return [
-                "openai/whisper-large-v3",
-                "openai/whisper-large-v3-turbo",
-                "openai/whisper-small",
-                "openai/whisper-base",
-                "openai/whisper-tiny",
-                "google/gemini-2.0-flash-exp:free",
-                "google/gemini-flash-1.5-8b",
-                "google/gemini-flash-1.5",
-                "meta-llama/llama-3.2-11b-vision-instruct",
+                CloudSTTModelItem(
+                    id: "openai/gpt-4o-mini-transcribe",
+                    name: "OpenAI: GPT-4o Mini Transcribe",
+                    vendor: "OpenAI",
+                    tag: "🔥 最热门",
+                    priceHint: "$1.25/M",
+                    isPopular: true
+                ),
+                CloudSTTModelItem(
+                    id: "openai/gpt-4o-transcribe",
+                    name: "OpenAI: GPT-4o Transcribe",
+                    vendor: "OpenAI",
+                    tag: "💎 旗舰高精",
+                    priceHint: "$2.50/M",
+                    isPopular: true
+                ),
+                CloudSTTModelItem(
+                    id: "mistralai/voxtral-mini-transcribe",
+                    name: "Mistral: Voxtral Mini Transcribe",
+                    vendor: "Mistral",
+                    tag: "⚡️ 极速推荐",
+                    priceHint: "$0.003",
+                    isPopular: true
+                ),
+                CloudSTTModelItem(
+                    id: "nvidia/nemotron-3.5-asr-streaming-multilingual-0.6b",
+                    name: "NVIDIA: Nemotron 3.5 ASR Streaming 0.6B",
+                    vendor: "NVIDIA",
+                    tag: "💰 超高性价比",
+                    priceHint: "$0.000003"
+                ),
+                CloudSTTModelItem(
+                    id: "mistralai/voxtral-small-24b-2507-stt",
+                    name: "Mistral: Voxtral Small 24B 2507 STT",
+                    vendor: "Mistral",
+                    tag: "24B 大模型",
+                    priceHint: "$0.00005"
+                ),
+                CloudSTTModelItem(
+                    id: "mistralai/voxtral-mini-3b-2507",
+                    name: "Mistral: Voxtral Mini 3B 2507",
+                    vendor: "Mistral",
+                    priceHint: "$0.000017"
+                ),
+                CloudSTTModelItem(
+                    id: "qwen/qwen3-asr-1.7b",
+                    name: "Qwen: Qwen3 ASR 1.7B",
+                    vendor: "Alibaba Qwen",
+                    tag: "🎯 中文极佳",
+                    priceHint: "$0.000008"
+                ),
+                CloudSTTModelItem(
+                    id: "qwen/qwen3-asr-0.6b",
+                    name: "Qwen: Qwen3 ASR 0.6B",
+                    vendor: "Alibaba Qwen",
+                    tag: "中文极速",
+                    priceHint: "$0.000003"
+                ),
+                CloudSTTModelItem(
+                    id: "openai/gpt-transcribe",
+                    name: "OpenAI: GPT Transcribe",
+                    vendor: "OpenAI",
+                    priceHint: "$0.0045"
+                ),
+                CloudSTTModelItem(
+                    id: "fish-audio/transcribe-1",
+                    name: "Fish Audio: Transcribe 1",
+                    vendor: "Fish Audio",
+                    priceHint: "$0.0001"
+                ),
+                CloudSTTModelItem(
+                    id: "x-ai/grok-stt-1.0",
+                    name: "SpaceXAI: Grok STT 1.0",
+                    vendor: "xAI",
+                    tag: "Grok 引擎",
+                    priceHint: "$0.10"
+                ),
+                CloudSTTModelItem(
+                    id: "deepgram/nova-3",
+                    name: "Deepgram: Nova-3",
+                    vendor: "Deepgram",
+                    tag: "工业级快速",
+                    priceHint: "from $0.0043"
+                ),
+                CloudSTTModelItem(
+                    id: "microsoft/mai-transcribe-1.5",
+                    name: "Microsoft: MAI-Transcribe 1.5",
+                    vendor: "Microsoft",
+                    priceHint: "$0.36"
+                ),
+                CloudSTTModelItem(
+                    id: "nvidia/parakeet-tdt-0.6b-v3",
+                    name: "NVIDIA: Parakeet TDT 0.6B v3",
+                    vendor: "NVIDIA",
+                    priceHint: "$0.0015"
+                ),
+                CloudSTTModelItem(
+                    id: "qwen/qwen3-asr-flash-2026-02-10",
+                    name: "Qwen: Qwen3 ASR Flash",
+                    vendor: "Alibaba Qwen",
+                    priceHint: "$0.000035"
+                ),
+                CloudSTTModelItem(
+                    id: "google/chirp-3",
+                    name: "Google: Chirp 3",
+                    vendor: "Google",
+                    tag: "Google 旗舰",
+                    priceHint: "$0.016"
+                ),
+                CloudSTTModelItem(
+                    id: "openai/whisper-large-v3-turbo",
+                    name: "OpenAI: Whisper Large V3 Turbo",
+                    vendor: "OpenAI",
+                    tag: "经典 Turbo",
+                    priceHint: "$0.000003"
+                ),
+                CloudSTTModelItem(
+                    id: "openai/whisper-large-v3",
+                    name: "OpenAI: Whisper Large V3",
+                    vendor: "OpenAI",
+                    tag: "经典高精度",
+                    priceHint: "$0.000008"
+                ),
+                CloudSTTModelItem(
+                    id: "openai/whisper-1",
+                    name: "OpenAI: Whisper 1",
+                    vendor: "OpenAI",
+                    priceHint: "$0.006"
+                ),
             ]
         case .openAI:
             return [
-                "whisper-1",
+                CloudSTTModelItem(id: "whisper-1", name: "OpenAI Whisper 1", vendor: "OpenAI", tag: "标准转录", priceHint: "$0.006/min"),
+                CloudSTTModelItem(id: "gpt-4o-mini-transcribe", name: "GPT-4o Mini Transcribe", vendor: "OpenAI", tag: "极速轻量"),
+                CloudSTTModelItem(id: "gpt-4o-transcribe", name: "GPT-4o Transcribe", vendor: "OpenAI", tag: "旗舰精度"),
             ]
         case .groq:
             return [
-                "whisper-large-v3",
-                "whisper-large-v3-turbo",
-                "distil-whisper-large-v3-en",
+                CloudSTTModelItem(id: "whisper-large-v3", name: "Whisper Large V3", vendor: "Groq", tag: "极速 LPU 加速"),
+                CloudSTTModelItem(id: "whisper-large-v3-turbo", name: "Whisper Large V3 Turbo", vendor: "Groq", tag: "超低延迟"),
+                CloudSTTModelItem(id: "distil-whisper-large-v3-en", name: "Distil-Whisper Large V3 (English)", vendor: "Groq", tag: "英文专精"),
             ]
         case .custom:
             return [
-                "whisper-1",
-                "whisper-large-v3",
-                "whisper-large-v3-turbo",
+                CloudSTTModelItem(id: "whisper-1", name: "Whisper 1", vendor: "Custom"),
+                CloudSTTModelItem(id: "whisper-large-v3", name: "Whisper Large V3", vendor: "Custom"),
+                CloudSTTModelItem(id: "whisper-large-v3-turbo", name: "Whisper Large V3 Turbo", vendor: "Custom"),
             ]
         }
+    }
+}
+
+public struct CloudSTTModelItem: Identifiable, Hashable {
+    public let id: String
+    public let name: String
+    public let vendor: String
+    public let tag: String?
+    public let priceHint: String?
+    public let isPopular: Bool
+
+    public init(
+        id: String,
+        name: String,
+        vendor: String,
+        tag: String? = nil,
+        priceHint: String? = nil,
+        isPopular: Bool = false
+    ) {
+        self.id = id
+        self.name = name
+        self.vendor = vendor
+        self.tag = tag
+        self.priceHint = priceHint
+        self.isPopular = isPopular
     }
 }
 
@@ -90,8 +241,8 @@ enum CloudTranscriptionError: LocalizedError {
             return "Invalid Cloud STT API Base URL.".loc
         case let .networkError(msg):
             return "\("Network error during cloud transcription:".loc) \(msg)"
-        case let .serverError(code, msg):
-            return "\("Cloud STT API error (HTTP".loc) \(code)): \(msg)"
+        case let .serverError(statusCode, msg):
+            return "\("Cloud STT API error (HTTP".loc) \(statusCode)): \(msg)"
         case .invalidResponseData:
             return "Invalid response data received from cloud STT provider.".loc
         case .emptyTranscriptionResult:
@@ -155,7 +306,6 @@ final class CloudTranscriptionProvider: TranscriptionProvider {
         case .openRouter:
             let key = self.settings.cloudSTTOpenRouterAPIKey
             if !key.isEmpty { return key }
-            // Fallback to AI Enhancement OpenRouter API Key if available
             return self.settings.getAPIKey(for: "openrouter") ?? ""
         case .openAI:
             let key = self.settings.cloudSTTOpenAIAPIKey
@@ -205,7 +355,6 @@ final class CloudTranscriptionProvider: TranscriptionProvider {
         let base = self.resolvedBaseURL()
         guard !base.isEmpty else { return nil }
 
-        // Construct standard /audio/transcriptions endpoint
         let endpointString: String
         if base.hasSuffix("/audio/transcriptions") {
             endpointString = base
@@ -236,7 +385,6 @@ final class CloudTranscriptionProvider: TranscriptionProvider {
     }
 
     func transcribeStreaming(_ samples: [Float]) async throws -> ASRTranscriptionResult {
-        // Cloud APIs are typically batch request based. Return empty during live stream preview to save quota
         ASRTranscriptionResult(text: "", confidence: 1.0)
     }
 
@@ -256,7 +404,7 @@ final class CloudTranscriptionProvider: TranscriptionProvider {
         )
     }
 
-    // MARK: - HTTP Multipart Request
+    // MARK: - HTTP Multipart Request with Auto-Fallback
 
     private func sendAudioData(_ audioData: Data, fileName: String, mimeType: String) async throws -> String {
         guard let url = self.endpointURL else {
@@ -276,7 +424,7 @@ final class CloudTranscriptionProvider: TranscriptionProvider {
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
 
         if self.type == .openRouter {
-            request.setValue("FluidVoice macOS", forHTTPHeaderField: "HTTP-Referer")
+            request.setValue("https://github.com/xiangsam/FluidVoice", forHTTPHeaderField: "HTTP-Referer")
             request.setValue("FluidVoice macOS App", forHTTPHeaderField: "X-Title")
         }
 
@@ -284,22 +432,14 @@ final class CloudTranscriptionProvider: TranscriptionProvider {
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
 
         var body = Data()
-
-        // 1. model parameter
         body.appendMultipartField(name: "model", value: model, boundary: boundary)
 
-        // 2. language parameter (if specified and not "auto")
         if language != "auto" && !language.isEmpty {
             body.appendMultipartField(name: "language", value: language, boundary: boundary)
         }
 
-        // 3. response_format = json
         body.appendMultipartField(name: "response_format", value: "json", boundary: boundary)
-
-        // 4. file parameter
         body.appendMultipartFile(name: "file", fileName: fileName, mimeType: mimeType, fileData: audioData, boundary: boundary)
-
-        // End boundary
         body.append("--\(boundary)--\r\n".data(using: .utf8)!)
 
         request.httpBody = body
@@ -321,10 +461,8 @@ final class CloudTranscriptionProvider: TranscriptionProvider {
             throw CloudTranscriptionError.serverError(statusCode: httpResponse.statusCode, message: errorBody)
         }
 
-        // Parse JSON response: {"text": "..."}
         guard let jsonObject = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let text = jsonObject["text"] as? String else {
-            // Try fallback plain text response
             if let plain = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines), !plain.isEmpty {
                 return plain
             }
@@ -346,73 +484,62 @@ final class CloudTranscriptionProvider: TranscriptionProvider {
         let subchunk2Size: Int32 = Int32(samples.count * 2)
         let chunkSize: Int32 = 36 + subchunk2Size
 
-        // RIFF header
         data.append("RIFF".data(using: .utf8)!)
         data.append(withUnsafeBytes(of: chunkSize.littleEndian) { Data($0) })
         data.append("WAVE".data(using: .utf8)!)
 
-        // fmt chunk
         data.append("fmt ".data(using: .utf8)!)
         let subchunk1Size: Int32 = 16
+        let audioFormat: Int16 = 1
         data.append(withUnsafeBytes(of: subchunk1Size.littleEndian) { Data($0) })
-        let audioFormat: Int16 = 1 // PCM
         data.append(withUnsafeBytes(of: audioFormat.littleEndian) { Data($0) })
         data.append(withUnsafeBytes(of: numChannels.littleEndian) { Data($0) })
-        let sampleRateInt32: Int32 = Int32(sampleRate)
-        data.append(withUnsafeBytes(of: sampleRateInt32.littleEndian) { Data($0) })
+        data.append(withUnsafeBytes(of: Int32(sampleRate).littleEndian) { Data($0) })
         data.append(withUnsafeBytes(of: byteRate.littleEndian) { Data($0) })
         data.append(withUnsafeBytes(of: blockAlign.littleEndian) { Data($0) })
         data.append(withUnsafeBytes(of: bitsPerSample.littleEndian) { Data($0) })
 
-        // data chunk
         data.append("data".data(using: .utf8)!)
         data.append(withUnsafeBytes(of: subchunk2Size.littleEndian) { Data($0) })
 
-        // PCM Samples (Float -> Int16)
         for sample in samples {
             let clamped = max(-1.0, min(1.0, sample))
-            let int16Sample = Int16(clamped * 32767.0)
-            data.append(withUnsafeBytes(of: int16Sample.littleEndian) { Data($0) })
+            let intSample = Int16(clamped * 32767.0)
+            data.append(withUnsafeBytes(of: intSample.littleEndian) { Data($0) })
         }
 
         return data
     }
 
-    private func mimeType(for ext: String) -> String {
-        switch ext.lowercased() {
+    private func mimeType(for pathExtension: String) -> String {
+        switch pathExtension.lowercased() {
         case "wav": return "audio/wav"
-        case "mp3": return "audio/mpeg"
         case "m4a": return "audio/m4a"
+        case "mp3": return "audio/mp3"
         case "ogg": return "audio/ogg"
         case "flac": return "audio/flac"
-        case "webm": return "audio/webm"
-        default: return "application/octet-stream"
+        case "aac": return "audio/aac"
+        default: return "audio/wav"
         }
     }
 }
 
-// MARK: - Multipart Data Helpers
+// MARK: - Data Multipart Extension
 
 private extension Data {
     mutating func appendMultipartField(name: String, value: String, boundary: String) {
-        var fieldString = "--\(boundary)\r\n"
-        fieldString += "Content-Disposition: form-data; name=\"\(name)\"\r\n\r\n"
-        fieldString += "\(value)\r\n"
+        let fieldString = "--\(boundary)\r\nContent-Disposition: form-data; name=\"\(name)\"\r\n\r\n\(value)\r\n"
         if let data = fieldString.data(using: .utf8) {
             self.append(data)
         }
     }
 
     mutating func appendMultipartFile(name: String, fileName: String, mimeType: String, fileData: Data, boundary: String) {
-        var headerString = "--\(boundary)\r\n"
-        headerString += "Content-Disposition: form-data; name=\"\(name)\"; filename=\"\(fileName)\"\r\n"
-        headerString += "Content-Type: \(mimeType)\r\n\r\n"
-        if let headerData = headerString.data(using: .utf8) {
+        let header = "--\(boundary)\r\nContent-Disposition: form-data; name=\"\(name)\"; filename=\"\(fileName)\"\r\nContent-Type: \(mimeType)\r\n\r\n"
+        if let headerData = header.data(using: .utf8) {
             self.append(headerData)
         }
         self.append(fileData)
-        if let trailing = "\r\n".data(using: .utf8) {
-            self.append(trailing)
-        }
+        self.append("\r\n".data(using: .utf8)!)
     }
 }

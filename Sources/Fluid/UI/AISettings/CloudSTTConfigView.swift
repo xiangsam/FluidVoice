@@ -14,6 +14,9 @@ struct CloudSTTConfigView: View {
     @State private var isTesting = false
     @State private var testResultMessage: String?
     @State private var testResultSuccess: Bool?
+    @State private var searchText = ""
+    @State private var showCustomModelInput = false
+    @State private var copiedModelID: String?
 
     private var cloudSTTType: CloudSTTType {
         switch self.model {
@@ -88,8 +91,23 @@ struct CloudSTTConfigView: View {
         )
     }
 
+    private var filteredModels: [CloudSTTModelItem] {
+        let presets = self.cloudSTTType.modelPresets
+        if self.searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return presets
+        }
+        let query = self.searchText.lowercased()
+        return presets.filter {
+            $0.name.lowercased().contains(query)
+                || $0.id.lowercased().contains(query)
+                || $0.vendor.lowercased().contains(query)
+                || ($0.tag?.lowercased().contains(query) ?? false)
+        }
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 14) {
+            // Header
             HStack(spacing: 8) {
                 Image(systemName: "cloud.fill")
                     .foregroundStyle(self.theme.palette.accent)
@@ -123,7 +141,6 @@ struct CloudSTTConfigView: View {
                         .foregroundStyle(.secondary)
                     Spacer()
 
-                    // Import from AI Enhancement
                     let aiEnhanceKey = self.settings.getAPIKey(for: self.cloudSTTType.rawValue) ?? ""
                     if !aiEnhanceKey.isEmpty, self.apiKeyBinding.wrappedValue.isEmpty {
                         Button("Use AI Enhancement API Key".loc) {
@@ -155,32 +172,6 @@ struct CloudSTTConfigView: View {
                 }
             }
 
-            // Model ID Row
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Model Name / ID".loc)
-                    .font(self.theme.typography.bodySmallStrong)
-                    .foregroundStyle(.secondary)
-
-                HStack(spacing: 8) {
-                    TextField("e.g. openai/whisper-large-v3", text: self.modelBinding)
-                        .textFieldStyle(.roundedBorder)
-
-                    // Preset menu
-                    Menu {
-                        ForEach(self.cloudSTTType.recommendedModels, id: \.self) { preset in
-                            Button(preset) {
-                                self.modelBinding.wrappedValue = preset
-                            }
-                        }
-                    } label: {
-                        Text("Presets".loc)
-                            .font(self.theme.typography.bodySmall)
-                    }
-                    .menuStyle(.borderedButton)
-                    .fixedSize()
-                }
-            }
-
             // Base URL Row
             VStack(alignment: .leading, spacing: 6) {
                 Text("Base URL".loc)
@@ -202,8 +193,128 @@ struct CloudSTTConfigView: View {
                 }
             }
 
-            // Language Selection & Test Connection
-            HStack(alignment: .center, spacing: 12) {
+            Divider().opacity(0.3)
+
+            // Embedded Model Selection Area
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(alignment: .center) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Speech-to-Text Model".loc)
+                            .font(self.theme.typography.bodyStrong)
+                            .foregroundStyle(.primary)
+
+                        let currentModelID = self.modelBinding.wrappedValue.isEmpty ? self.cloudSTTType.defaultModel : self.modelBinding.wrappedValue
+                        Text("\("Active Selection:".loc) \(currentModelID)")
+                            .font(self.theme.typography.caption)
+                            .foregroundStyle(self.theme.palette.accent)
+                    }
+
+                    Spacer()
+
+                    // Search input
+                    HStack(spacing: 6) {
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                        TextField("Search models...".loc, text: self.$searchText)
+                            .textFieldStyle(.plain)
+                            .font(self.theme.typography.bodySmall)
+                            .frame(width: 130)
+
+                        if !self.searchText.isEmpty {
+                            Button {
+                                self.searchText = ""
+                            } label: {
+                                Image(systemName: "xmark.circle.fill")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.secondary)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(
+                        RoundedRectangle(cornerRadius: 7)
+                            .fill(self.theme.palette.contentBackground)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 7)
+                                    .stroke(self.theme.palette.cardBorder.opacity(0.5), lineWidth: 1)
+                            )
+                    )
+                }
+
+                // Scrollable Embedded Models Card Grid/List
+                ScrollView(.vertical, showsIndicators: true) {
+                    LazyVStack(spacing: 6) {
+                        ForEach(self.filteredModels) { item in
+                            self.modelCardRow(item: item)
+                        }
+
+                        if self.filteredModels.isEmpty {
+                            VStack(spacing: 6) {
+                                Image(systemName: "magnifyingglass")
+                                    .font(.title3)
+                                    .foregroundStyle(.secondary)
+                                Text("No matching models found".loc)
+                                    .font(self.theme.typography.bodySmall)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 24)
+                        }
+                    }
+                    .padding(6)
+                }
+                .frame(maxHeight: 240)
+                .background(
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(self.theme.palette.contentBackground.opacity(0.6))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(self.theme.palette.cardBorder.opacity(0.4), lineWidth: 1)
+                        )
+                )
+
+                // Custom Model ID Input Toggle
+                VStack(alignment: .leading, spacing: 6) {
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            self.showCustomModelInput.toggle()
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: self.showCustomModelInput ? "chevron.down" : "chevron.right")
+                                .font(.system(size: 10))
+                            Text("Custom Model ID".loc)
+                                .font(self.theme.typography.bodySmall)
+                        }
+                        .foregroundStyle(self.theme.palette.accent)
+                    }
+                    .buttonStyle(.plain)
+
+                    if self.showCustomModelInput {
+                        HStack(spacing: 8) {
+                            TextField("Enter any custom model ID, e.g. openai/whisper-large-v3", text: self.modelBinding)
+                                .textFieldStyle(.roundedBorder)
+                                .font(self.theme.typography.bodySmall)
+
+                            if !self.modelBinding.wrappedValue.isEmpty {
+                                Button("Reset".loc) {
+                                    self.modelBinding.wrappedValue = self.cloudSTTType.defaultModel
+                                }
+                                .buttonStyle(.bordered)
+                                .controlSize(.small)
+                            }
+                        }
+                    }
+                }
+            }
+
+            Divider().opacity(0.3)
+
+            // Target Language & Connection Test
+            HStack(alignment: .center, spacing: 16) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Target Language".loc)
                         .font(self.theme.typography.bodySmallStrong)
@@ -252,39 +363,174 @@ struct CloudSTTConfigView: View {
                 }
             }
         }
-        .padding(12)
+        .padding(14)
         .background(
-            RoundedRectangle(cornerRadius: 10)
-                .fill(self.theme.palette.contentBackground.opacity(0.8))
+            RoundedRectangle(cornerRadius: 12)
+                .fill(self.theme.palette.cardBackground)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 10)
-                        .stroke(self.theme.palette.cardBorder.opacity(0.4), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(self.theme.palette.cardBorder.opacity(0.3), lineWidth: 1)
                 )
         )
     }
+
+    // MARK: - Model Card Row Component
+
+    private func modelCardRow(item: CloudSTTModelItem) -> some View {
+        let currentModel = self.modelBinding.wrappedValue.isEmpty ? self.cloudSTTType.defaultModel : self.modelBinding.wrappedValue
+        let isSelected = currentModel == item.id
+        let vendorTheme = self.vendorInfo(for: item.vendor)
+
+        return Button {
+            self.modelBinding.wrappedValue = item.id
+        } label: {
+            HStack(spacing: 10) {
+                // Vendor Icon Badge
+                ZStack {
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(vendorTheme.color.opacity(0.18))
+                        .frame(width: 28, height: 28)
+                    Image(systemName: vendorTheme.icon)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(vendorTheme.color)
+                }
+
+                // Name & ID
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 6) {
+                        Text(item.name)
+                            .font(self.theme.typography.bodyStrong)
+                            .foregroundStyle(isSelected ? Color.primary : Color.primary.opacity(0.85))
+
+                        if let tag = item.tag {
+                            Text(tag.loc)
+                                .font(.system(size: 9, weight: .semibold))
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 1.5)
+                                .background(
+                                    Capsule()
+                                        .fill(item.isPopular ? Color.orange.opacity(0.2) : Color.blue.opacity(0.2))
+                                )
+                                .foregroundStyle(item.isPopular ? Color.orange : Color.blue)
+                        }
+                    }
+
+                    HStack(spacing: 4) {
+                        Text(item.id)
+                            .font(.system(size: 11, design: .monospaced))
+                            .foregroundStyle(.secondary)
+
+                        Button {
+                            NSPasteboard.general.clearContents()
+                            NSPasteboard.general.setString(item.id, forType: .string)
+                            self.copiedModelID = item.id
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                                if self.copiedModelID == item.id {
+                                    self.copiedModelID = nil
+                                }
+                            }
+                        } label: {
+                            Image(systemName: self.copiedModelID == item.id ? "checkmark" : "doc.on.doc")
+                                .font(.system(size: 10))
+                                .foregroundStyle(self.copiedModelID == item.id ? Color.fluidGreen : .secondary.opacity(0.6))
+                        }
+                        .buttonStyle(.plain)
+                        .help("Copy Model ID".loc)
+                    }
+                }
+
+                Spacer()
+
+                // Price Hint & Selection Checkmark
+                HStack(spacing: 10) {
+                    if let price = item.priceHint {
+                        Text(price)
+                            .font(.system(size: 11, design: .monospaced))
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(
+                                RoundedRectangle(cornerRadius: 4)
+                                    .fill(self.theme.palette.cardBackground.opacity(0.8))
+                            )
+                    }
+
+                    ZStack {
+                        Circle()
+                            .stroke(isSelected ? Color.fluidGreen : self.theme.palette.cardBorder.opacity(0.4), lineWidth: 1.5)
+                            .frame(width: 18, height: 18)
+
+                        if isSelected {
+                            Circle()
+                                .fill(Color.fluidGreen)
+                                .frame(width: 10, height: 10)
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(isSelected ? Color.fluidGreen.opacity(0.1) : self.theme.palette.cardBackground.opacity(0.5))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(isSelected ? Color.fluidGreen.opacity(0.6) : Color.clear, lineWidth: 1.2)
+                    )
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func vendorInfo(for vendor: String) -> (icon: String, color: Color) {
+        let lower = vendor.lowercased()
+        if lower.contains("openai") {
+            return ("sparkle", Color(red: 0.06, green: 0.65, blue: 0.52))
+        } else if lower.contains("mistral") {
+            return ("flame.fill", Color(red: 0.98, green: 0.45, blue: 0.18))
+        } else if lower.contains("nvidia") {
+            return ("cpu", Color(red: 0.46, green: 0.72, blue: 0.0))
+        } else if lower.contains("qwen") || lower.contains("alibaba") {
+            return ("cube.transparent.fill", Color(red: 0.38, green: 0.38, blue: 0.92))
+        } else if lower.contains("google") {
+            return ("sparkles", Color(red: 0.26, green: 0.52, blue: 0.96))
+        } else if lower.contains("xai") || lower.contains("spacex") {
+            return ("bolt.horizontal.fill", Color.white.opacity(0.9))
+        } else if lower.contains("deepgram") {
+            return ("waveform.badge.magnifyingglass", Color(red: 0.12, green: 0.84, blue: 0.64))
+        } else if lower.contains("microsoft") {
+            return ("square.grid.2x2.fill", Color(red: 0.0, green: 0.64, blue: 0.94))
+        } else if lower.contains("fish") {
+            return ("waveform", Color(red: 0.96, green: 0.36, blue: 0.62))
+        } else if lower.contains("groq") {
+            return ("bolt.fill", Color.orange)
+        } else {
+            return ("cloud.fill", Color.blue)
+        }
+    }
+
+    // MARK: - Connectivity Test
 
     private func testCloudConnection() {
         self.isTesting = true
         self.testResultMessage = nil
         self.testResultSuccess = nil
 
-        let provider = CloudTranscriptionProvider(type: self.cloudSTTType, settings: self.settings)
-
         Task {
+            let provider = CloudTranscriptionProvider(type: self.cloudSTTType, settings: self.settings)
             do {
-                // Test with 0.5s of audio samples (PCM 16kHz silence)
-                let dummySamples: [Float] = Array(repeating: 0.0, count: 8000)
-                let _ = try await provider.transcribe(dummySamples)
+                let dummyAudio = [Float](repeating: 0.0, count: 16000)
+                _ = try await provider.transcribe(dummyAudio)
                 await MainActor.run {
                     self.isTesting = false
                     self.testResultSuccess = true
-                    self.testResultMessage = "Connection successful!".loc
+                    self.testResultMessage = "✓ " + ("Connection successful!".loc)
                 }
             } catch {
                 await MainActor.run {
                     self.isTesting = false
                     self.testResultSuccess = false
-                    self.testResultMessage = "\("Connection failed".loc): \(error.localizedDescription)"
+                    self.testResultMessage = "✕ " + error.localizedDescription
                 }
             }
         }
