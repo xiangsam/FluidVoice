@@ -873,7 +873,7 @@ struct OnboardingFlowView: View {
     }
 
     private var isAccessibilityReady: Bool {
-        self.accessibilityEnabled
+        self.accessibilityEnabled || AXIsProcessTrusted()
     }
 
     private var isPermissionsReady: Bool {
@@ -1819,10 +1819,43 @@ struct OnboardingFlowView: View {
                                 }
 
                                 if !self.isAccessibilityReady {
-                                    Text("Already enabled it? FluidVoice will update when macOS confirms access.")
-                                        .font(.system(size: 12, weight: .medium))
-                                        .foregroundStyle(Color.white.opacity(0.42))
-                                        .padding(.top, 2)
+                                    VStack(spacing: 8) {
+                                        Text("Already enabled it? FluidVoice will update when macOS confirms access.".loc)
+                                            .font(.system(size: 12, weight: .medium))
+                                            .foregroundStyle(Color.white.opacity(0.42))
+
+                                        HStack(spacing: 16) {
+                                            Button {
+                                                if AXIsProcessTrusted() {
+                                                    self.goNext()
+                                                } else {
+                                                    let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
+                                                    _ = AXIsProcessTrustedWithOptions(options)
+                                                }
+                                            } label: {
+                                                HStack(spacing: 4) {
+                                                    Image(systemName: "arrow.clockwise")
+                                                    Text("Check Again".loc)
+                                                }
+                                                .font(.system(size: 12, weight: .semibold))
+                                                .foregroundStyle(Color.fluidGreen)
+                                            }
+                                            .buttonStyle(.plain)
+
+                                            Button {
+                                                self.goNext()
+                                            } label: {
+                                                HStack(spacing: 4) {
+                                                    Text("Skip for Now".loc)
+                                                    Image(systemName: "arrow.right")
+                                                }
+                                                .font(.system(size: 12, weight: .regular))
+                                                .foregroundStyle(Color.white.opacity(0.5))
+                                            }
+                                            .buttonStyle(.plain)
+                                        }
+                                    }
+                                    .padding(.top, 4)
                                 }
                             }
                             .frame(width: 560)
@@ -2628,11 +2661,11 @@ struct OnboardingFlowView: View {
 
             VStack(alignment: .leading, spacing: 5) {
                 HStack(spacing: 8) {
-                    Text(title)
+                    Text(title.loc)
                         .font(.system(size: 17, weight: .semibold))
                         .foregroundStyle(.white)
 
-                    Text(resolvedStatusTitle)
+                    Text(resolvedStatusTitle.loc)
                         .font(.system(size: 10, weight: .bold))
                         .foregroundStyle(isReady ? Color.green.opacity(0.92) : FluidOnboardingLandingColors.blue)
                         .padding(.horizontal, 7)
@@ -2643,7 +2676,7 @@ struct OnboardingFlowView: View {
                         )
                 }
 
-                Text(subtitle)
+                Text(subtitle.loc)
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(Color.white.opacity(0.55))
                     .lineLimit(2)
@@ -2657,7 +2690,7 @@ struct OnboardingFlowView: View {
 
                 self.onboardingPillButton(
                     configuration: OnboardingPillButtonConfiguration(
-                        title: actionTitle,
+                        title: actionTitle.loc,
                         systemImage: actionIcon,
                         tone: .primary,
                         width: 132,
