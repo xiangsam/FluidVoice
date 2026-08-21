@@ -15,6 +15,27 @@
 
 ---
 
+## 📸 应用界面预览 (Screenshots)
+
+<table width="100%">
+  <tr>
+    <td width="50%" align="center"><b>🎙️ 语音引擎选择与离线模型矩阵</b></td>
+    <td width="50%" align="center"><b>🧠 AI 大模型文本智能润色预设</b></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/images/voice_engine_settings.png" alt="Voice Engine Settings" width="100%" /></td>
+    <td width="50%"><img src="docs/images/ai_enhancement_settings.png" alt="AI Enhancement Settings" width="100%" /></td>
+  </tr>
+  <tr>
+    <td colspan="2" align="center"><b>⚙️ 系统偏好与全局快捷键设置</b></td>
+  </tr>
+  <tr>
+    <td colspan="2" align="center"><img src="docs/images/preferences_settings.png" alt="Preferences Settings" width="70%" /></td>
+  </tr>
+</table>
+
+---
+
 ## 🌟 核心特色 (Key Highlights)
 
 ### 1. ⚡ 全系列语音引擎支持 (Multi-Engine STT Matrix)
