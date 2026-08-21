@@ -23,14 +23,14 @@
     <td width="50%" align="center"><b>🧠 AI 大模型文本智能润色预设</b></td>
   </tr>
   <tr>
-    <td width="50%"><img src="docs/images/voice_engine_settings.png" alt="Voice Engine Settings" width="100%" /></td>
-    <td width="50%"><img src="docs/images/ai_enhancement_settings.png" alt="AI Enhancement Settings" width="100%" /></td>
+    <td width="50%"><img src="assets/screenshots/voice_engine_settings.png" alt="Voice Engine Settings" width="100%" /></td>
+    <td width="50%"><img src="assets/screenshots/ai_enhancement_settings.png" alt="AI Enhancement Settings" width="100%" /></td>
   </tr>
   <tr>
     <td colspan="2" align="center"><b>⚙️ 系统偏好与全局快捷键设置</b></td>
   </tr>
   <tr>
-    <td colspan="2" align="center"><img src="docs/images/preferences_settings.png" alt="Preferences Settings" width="70%" /></td>
+    <td colspan="2" align="center"><img src="assets/screenshots/preferences_settings.png" alt="Preferences Settings" width="70%" /></td>
   </tr>
 </table>
 
