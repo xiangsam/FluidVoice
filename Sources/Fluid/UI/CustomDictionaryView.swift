@@ -332,7 +332,7 @@ struct CustomDictionaryView: View {
             self.settingsIconTile(systemName: "text.book.closed.fill")
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("Custom Dictionary")
+                Text("Custom Dictionary".loc)
                     .font(self.theme.typography.title)
                 Text("Correct recurring mistakes and teach the voice engine the words you use.")
                     .font(self.theme.typography.bodySmall)
@@ -360,7 +360,7 @@ struct CustomDictionaryView: View {
     private var automaticLearningToggle: some View {
         HStack(spacing: self.theme.metrics.spacing.sm) {
             VStack(alignment: .leading, spacing: 1) {
-                Text("Auto-learn words")
+                Text("Auto-learn words".loc)
                     .font(self.theme.typography.captionStrong)
                     .foregroundStyle(self.theme.palette.primaryText)
                     .lineLimit(1)
@@ -1057,7 +1057,7 @@ struct CustomDictionaryView: View {
 
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 6) {
-                        Text("Custom Words")
+                        Text("Custom Words".loc)
                             .font(self.theme.typography.sectionTitle)
                         if !self.boostTerms.isEmpty {
                             Text("(\(self.boostTerms.count))")
@@ -1114,10 +1114,10 @@ struct CustomDictionaryView: View {
         VStack(alignment: .leading, spacing: self.theme.metrics.spacing.lg) {
             HStack(alignment: .top, spacing: self.theme.metrics.spacing.md) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Custom Words")
+                    Text("Custom Words".loc)
                         .font(self.theme.typography.sectionTitle)
 
-                    Text("Add names, products, and uncommon terms for Parakeet to recognize.")
+                    Text("Add names, products, and uncommon terms for Parakeet to recognize.".loc)
                         .font(self.theme.typography.caption)
                         .foregroundStyle(self.theme.palette.secondaryText)
                 }
@@ -1241,7 +1241,7 @@ struct CustomDictionaryView: View {
 
                 Spacer()
 
-                Button("Cancel") {
+                Button("Cancel".loc) {
                     self.dismissBoostTermEditor()
                 }
                 .fluidButton(.compact, size: .compact)
@@ -1367,7 +1367,7 @@ struct CustomDictionaryView: View {
             Button("Reset All Defaults", role: .destructive) {
                 self.resetPunctuationDictionary()
             }
-            Button("Cancel", role: .cancel) {}
+            Button("Cancel".loc, role: .cancel) {}
         } message: {
             Text("This replaces the start word, formatting action phrases and enabled states, and every punctuation rule with their defaults.")
         }
@@ -1507,7 +1507,7 @@ struct CustomDictionaryView: View {
 
             Spacer(minLength: self.theme.metrics.spacing.md)
 
-            Button("Edit") {
+            Button("Edit".loc) {
                 self.startEditingFormattingAction(action)
             }
             .fluidButton(.compact, size: .compact)
@@ -1548,7 +1548,7 @@ struct CustomDictionaryView: View {
 
             HStack {
                 Spacer()
-                Button("Cancel") {
+                Button("Cancel".loc) {
                     self.dismissFormattingActionEditor()
                 }
                 .fluidButton(.compact, size: .compact)
@@ -1575,7 +1575,7 @@ struct CustomDictionaryView: View {
             Text("Say the start word first, then a formatting action or punctuation name.")
             Text("When you say \"\(self.punctuationPreviewPrefix) next line\", it starts a new line.")
             Text("When you say \"\(self.punctuationPreviewPrefix) comma\", it types \",\".")
-            Text("Add one spoken phrase per line. Formatting actions always keep their fixed output.")
+            Text("Add one spoken phrase per line. Formatting actions always keep their fixed output.".loc)
         }
         .font(self.theme.typography.caption)
         .foregroundStyle(self.theme.palette.secondaryText)
@@ -1656,7 +1656,7 @@ struct CustomDictionaryView: View {
 
                 Spacer()
 
-                Button("Cancel") {
+                Button("Cancel".loc) {
                     self.dismissPunctuationRuleEditor()
                 }
                 .fluidButton(.compact, size: .compact)
@@ -2559,7 +2559,7 @@ private struct VoiceMatchingSettingsRow: View {
                 }
                 .padding(.horizontal, 2)
             } else if !self.isAdvancedAvailable {
-                Text("Advanced voice matching requires Parakeet TDT on Apple Silicon.")
+                Text("Advanced voice matching requires Parakeet TDT on Apple Silicon.".loc)
                     .font(self.theme.typography.caption)
                     .foregroundStyle(self.theme.palette.secondaryText)
                     .padding(.horizontal, 2)
@@ -3467,10 +3467,10 @@ struct AddDictionaryEntrySheet: View {
         VStack(alignment: .leading, spacing: 16) {
             // Header
             HStack {
-                Text("Add Dictionary Entry")
+                Text("Add Dictionary Entry".loc)
                     .font(.headline)
                 Spacer()
-                Button("Cancel") { self.dismiss() }
+                Button("Cancel".loc) { self.dismiss() }
                     .buttonStyle(.bordered)
             }
 
@@ -3480,7 +3480,7 @@ struct AddDictionaryEntrySheet: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text("Misheard Words (triggers)")
                     .font(.subheadline.weight(.medium))
-                Text("Add one version per line. Commas can be saved too.")
+                Text("Add one version per line. Commas can be saved too.".loc)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 TextEditor(text: self.$triggersText)
@@ -3561,7 +3561,7 @@ struct AddDictionaryEntrySheet: View {
             // Save button
             HStack {
                 Spacer()
-                Button("Add Replacement") { self.saveIfValid() }
+                Button("Add Replacement".loc) { self.saveIfValid() }
                     .buttonStyle(.borderedProminent)
                     .tint(self.theme.palette.accent)
                     .disabled(!self.canSave)
@@ -3622,7 +3622,7 @@ struct EditDictionaryEntrySheet: View {
                 Text("Edit Dictionary Entry")
                     .font(.headline)
                 Spacer()
-                Button("Cancel") { self.dismiss() }
+                Button("Cancel".loc) { self.dismiss() }
                     .buttonStyle(.bordered)
             }
 
@@ -3632,7 +3632,7 @@ struct EditDictionaryEntrySheet: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text("Misheard Words (triggers)")
                     .font(.subheadline.weight(.medium))
-                Text("Add one version per line. Commas can be saved too.")
+                Text("Add one version per line. Commas can be saved too.".loc)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 TextEditor(text: self.$triggersText)

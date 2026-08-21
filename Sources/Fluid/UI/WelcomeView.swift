@@ -206,7 +206,7 @@ struct WelcomeView: View {
                                         Circle()
                                             .fill(.red)
                                             .frame(width: 6, height: 6)
-                                        Text("Recording...")
+                                        Text("Recording...".loc)
                                             .font(self.theme.typography.captionStrong)
                                             .foregroundStyle(.red)
                                     }
@@ -438,7 +438,7 @@ struct WelcomeView: View {
             .buttonStyle(.plain)
             .accessibilityLabel(Text(title))
             .accessibilityValue(Text(isExpanded.wrappedValue ? "Expanded" : "Collapsed"))
-            .accessibilityHint(Text("Activates to expand or collapse"))
+            .accessibilityHint(Text("Activates to expand or collapse".loc))
 
             if isExpanded.wrappedValue {
                 content()
@@ -465,7 +465,7 @@ struct WelcomeView: View {
             }
 
             VStack(alignment: .leading, spacing: 6) {
-                Text("Getting Started")
+                Text("Getting Started".loc)
                     .font(self.theme.typography.bodySmallStrong)
                     .foregroundStyle(self.commandModeColor)
 
@@ -492,7 +492,7 @@ struct WelcomeView: View {
                 Image(systemName: "exclamationmark.triangle.fill")
                     .font(self.theme.typography.captionSmall)
                     .foregroundStyle(self.commandModeColor)
-                Text("AI can make mistakes. Avoid destructive commands.")
+                Text("AI can make mistakes. Avoid destructive commands.".loc)
                     .font(self.theme.typography.caption)
                     .foregroundStyle(.secondary)
             }
@@ -502,7 +502,7 @@ struct WelcomeView: View {
     private var editModeGuide: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("AI-powered editing assistant. Write fresh content or edit selected text with voice.")
+                Text("AI-powered editing assistant. Write fresh content or edit selected text with voice.".loc)
                     .font(self.theme.typography.bodySmall)
                     .foregroundStyle(.secondary)
 
@@ -1040,7 +1040,7 @@ struct OnboardingFlowView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Welcome to FluidVoice")
+            Text("Welcome to FluidVoice".loc)
                 .font(self.theme.typography.title)
                 .foregroundStyle(self.theme.palette.primaryText)
 
@@ -1776,7 +1776,7 @@ struct OnboardingFlowView: View {
                                 .lineSpacing(4)
                                 .padding(.bottom, 16)
 
-                            Text("Two quick permissions make dictation work anywhere.")
+                            Text("Two quick permissions make dictation work anywhere.".loc)
                                 .font(.system(size: 15, weight: .medium))
                                 .foregroundStyle(Color.white.opacity(0.62))
                                 .padding(.bottom, 28)

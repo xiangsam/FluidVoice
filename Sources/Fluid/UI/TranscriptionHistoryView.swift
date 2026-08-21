@@ -62,8 +62,8 @@ struct TranscriptionHistoryView: View {
             }
         }
         .alert("Clear All History", isPresented: self.$showClearConfirmation) {
-            Button("Cancel", role: .cancel) {}
-            Button("Clear All", role: .destructive) {
+            Button("Cancel".loc, role: .cancel) {}
+            Button("Clear All".loc, role: .destructive) {
                 withAnimation(.easeInOut(duration: 0.2)) {
                     self.historyStore.clearAllHistory()
                     self.selectedEntryID = nil
@@ -73,7 +73,7 @@ struct TranscriptionHistoryView: View {
             Text("This will permanently delete all \(self.historyStore.entries.count) transcription entries. This action cannot be undone.")
         }
         .alert("Report Sent", isPresented: self.$showReportConfirmation) {
-            Button("OK", role: .cancel) {}
+            Button("OK".loc, role: .cancel) {}
         } message: {
             Text("Thank you for helping improve FluidVoice dictation.")
         }
@@ -306,7 +306,7 @@ struct TranscriptionHistoryView: View {
                     Button {
                         self.showClearConfirmation = true
                     } label: {
-                        Text("Clear All")
+                        Text("Clear All".loc)
                             .font(.system(size: 11, weight: .medium))
                             .foregroundStyle(.secondary)
                     }
@@ -405,7 +405,7 @@ struct TranscriptionHistoryView: View {
                         Image(systemName: "exclamationmark.triangle.fill")
                             .foregroundStyle(Color.orange)
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("AI Enhancement failed - raw transcription was typed instead")
+                            Text("AI Enhancement failed - raw transcription was typed instead".loc)
                                 .font(.system(size: 12, weight: .semibold))
                             Text(aiError)
                                 .font(.system(size: 11))
@@ -674,7 +674,7 @@ private struct TranscriptionFeedbackReportSheet: View {
 
             HStack {
                 Spacer()
-                Button("Cancel") {
+                Button("Cancel".loc) {
                     self.dismiss()
                 }
                 .keyboardShortcut(.cancelAction)

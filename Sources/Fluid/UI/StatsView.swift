@@ -70,7 +70,7 @@ struct StatsView: View {
                 // Greeting + streak badge
                 HStack(alignment: .firstTextBaseline) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Today")
+                        Text("Today".loc)
                             .font(.system(size: 28, weight: .bold, design: .rounded))
                             .foregroundStyle(.primary)
 
@@ -224,12 +224,12 @@ struct StatsView: View {
                 .foregroundStyle(.tertiary)
 
             HStack {
-                Button("Cancel") {
+                Button("Cancel".loc) {
                     self.showWPMEditor = false
                 }
                 .fluidButton(.compact, size: .small)
 
-                Button("Save") {
+                Button("Save".loc) {
                     if let wpm = Int(editingWPM), wpm > 0 {
                         self.settings.userTypingWPM = wpm
                     }
@@ -316,8 +316,8 @@ struct StatsView: View {
                     Spacer()
 
                     Picker("", selection: self.$chartDays) {
-                        Text("7 days").tag(7)
-                        Text("30 days").tag(30)
+                        Text("7 days".loc).tag(7)
+                        Text("30 days".loc).tag(30)
                     }
                     .pickerStyle(.segmented)
                     .frame(width: 140)
@@ -642,7 +642,7 @@ struct StatsView: View {
         }
         .padding(.top, 8)
         .alert("Reset All Stats", isPresented: self.$showResetConfirmation) {
-            Button("Cancel", role: .cancel) {}
+            Button("Cancel".loc, role: .cancel) {}
             Button("Reset Everything", role: .destructive) {
                 self.historyStore.clearAllHistory()
             }

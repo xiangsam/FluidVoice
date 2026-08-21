@@ -32,7 +32,7 @@ struct RecordingView: View {
                                 Text("Voice Dictation")
                                     .font(.title2)
                                     .fontWeight(.bold)
-                                Text("AI-powered speech recognition")
+                                Text("AI-powered speech recognition".loc)
                                     .font(.subheadline)
                                     .foregroundStyle(.secondary)
                             }

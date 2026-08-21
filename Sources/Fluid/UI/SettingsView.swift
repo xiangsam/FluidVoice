@@ -190,14 +190,14 @@ struct SettingsView: View {
         let profiles = self.settings.promptProfiles(for: .dictate)
         let privateAILocked = PrivateAIProviderPromptFormat.isAvailable(settings: self.settings)
         HStack {
-            Text("AI Prompt")
+            Text("AI Prompt".loc)
                 .font(self.theme.typography.bodySmall)
                 .foregroundStyle(self.settingsSecondaryText)
                 .padding(.leading, 30)
             Spacer()
             Picker("", selection: self.dictationPromptSelectionBinding(for: slot)) {
                 Text("Off").tag("__OFF__")
-                Text("Default").tag("__DEFAULT__").disabled(privateAILocked)
+                Text("Default".loc).tag("__DEFAULT__").disabled(privateAILocked)
                 if PrivateFeatures.privateAIProvider {
                     Text(PrivateAIProviderFeature.displayName)
                         .tag(PrivateAIProviderPromptFormat.promptSelectionID)
@@ -556,7 +556,7 @@ struct SettingsView: View {
                                         Image(systemName: "checkmark.circle.fill")
                                             .foregroundStyle(Color.fluidGreen)
                                             .font(.caption)
-                                        Text("Active")
+                                        Text("Active".loc)
                                             .font(.caption.weight(.semibold))
                                             .foregroundStyle(self.settingsSecondaryText)
                                     }
@@ -592,7 +592,7 @@ struct SettingsView: View {
                                 // MARK: - Shortcuts Section
 
                                 VStack(alignment: .leading, spacing: 8) {
-                                    Text("Shortcuts")
+                                    Text("Shortcuts".loc)
                                         .font(self.theme.typography.bodySmallStrong)
                                         .foregroundStyle(self.settingsTitleText)
 
@@ -715,7 +715,7 @@ struct SettingsView: View {
                                 VStack(spacing: 12) {
                                     HStack(alignment: .center) {
                                         VStack(alignment: .leading, spacing: 2) {
-                                            Text("Activation Mode")
+                                            Text("Activation Mode".loc)
                                                 .font(self.theme.typography.bodyStrong)
                                                 .foregroundStyle(self.settingsTitleText)
                                             Text(self.hotkeyMode.description)
@@ -871,7 +871,7 @@ struct SettingsView: View {
                                         HStack(spacing: 6) {
                                             Image(systemName: "exclamationmark.triangle.fill")
                                                 .foregroundStyle(self.theme.palette.warning)
-                                            Text("Accessibility permissions required")
+                                            Text("Accessibility permissions required".loc)
                                                 .font(self.theme.typography.bodyStrong)
                                                 .foregroundStyle(self.theme.palette.warning)
                                         }
@@ -1056,14 +1056,14 @@ struct SettingsView: View {
                                 }
 
                             HStack {
-                                Text("Output Device")
+                                Text("Output Device".loc)
                                     .font(self.theme.typography.bodyStrong)
                                     .foregroundStyle(self.settingsTitleText)
                                 Spacer()
                                 Picker("", selection: self.$selectedOutputUID) {
                                     // Handle empty state gracefully
                                     if self.outputDevices.isEmpty {
-                                        Text("Loading...").tag("")
+                                        Text("Loading...".loc).tag("")
                                     } else {
                                         ForEach(self.outputDevices, id: \.uid) { dev in
                                             // Add "(System Default)" tag using cached name to avoid CoreAudio calls during layout
@@ -1140,7 +1140,7 @@ struct SettingsView: View {
 
                                 Spacer()
 
-                                Button("Reset") {
+                                Button("Reset".loc) {
                                     self.visualizerNoiseThreshold = 0.4
                                     SettingsStore.shared.visualizerNoiseThreshold = self.visualizerNoiseThreshold
                                 }
@@ -1791,7 +1791,7 @@ struct SettingsView: View {
         VStack(spacing: 12) {
             HStack(alignment: .center, spacing: 12) {
                 VStack(alignment: .leading, spacing: 5) {
-                    Text("Audio Storage")
+                    Text("Audio Storage".loc)
                         .font(self.theme.typography.bodyStrong)
                         .foregroundStyle(self.settingsTitleText)
                     Text("Audio history: \(DictationAudioHistoryStore.formattedGigabytes(self.audioHistoryUsageBytes)) / \(Self.audioBudgetText(for: SettingsStore.shared.audioHistoryBudgetGB)) GB Budget")
@@ -1818,7 +1818,7 @@ struct SettingsView: View {
                         .font(.caption)
                         .foregroundStyle(self.settingsSecondaryText)
 
-                    Button("Apply") {
+                    Button("Apply".loc) {
                         self.applyAudioHistoryBudget()
                     }
                     .controlSize(.small)
@@ -2649,7 +2649,7 @@ struct FillerWordsEditor: View {
 
                 Spacer()
 
-                Button("Reset") {
+                Button("Reset".loc) {
                     self.fillerWords = SettingsStore.defaultFillerWords
                     SettingsStore.shared.fillerWords = self.fillerWords
                 }
@@ -2776,7 +2776,7 @@ struct AnalyticsConfirmationView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Are you sure you want to stop sharing anonymous analytics?")
+            Text("Are you sure you want to stop sharing anonymous analytics?".loc)
                 .font(.headline)
 
             Text("By sharing anonymous usage data, you help us build the features you care about most. We never collect personal information (Audio, Transcription text etc), ever. Your support simply helps us make FluidVoice better for you.")
@@ -2802,7 +2802,7 @@ struct AnalyticsConfirmationView: View {
             HStack {
                 Spacer()
 
-                Button("Cancel") {
+                Button("Cancel".loc) {
                     self.onCancel()
                 }
 
