@@ -435,99 +435,35 @@ struct SettingsView: View {
                                     .foregroundStyle(self.settingsSecondaryText)
                             }
 
-                            // Update Buttons
-                            HStack(spacing: 10) {
-                                Button("Check for Updates".loc) {
-                                    let msg = NSAlert()
-                                    msg.messageText = "Custom Fork Build".loc
-                                    msg.informativeText = "Automatic binary updates are disabled to protect your custom features (Chinese localization & Cloud STT). Please sync updates via Git repository.".loc
-                                    msg.alertStyle = .informational
-                                    msg.addButton(withTitle: "OK".loc)
-                                    msg.runModal()
+                            // Info & Links
+                            HStack(spacing: 12) {
+                                Button {
+                                    if let url = URL(string: "https://github.com/xiangsam/FluidVoice") {
+                                        NSWorkspace.shared.open(url)
+                                    }
+                                } label: {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "arrow.triangle.branch")
+                                        Text("Fork Repository (GitHub)".loc)
+                                    }
                                 }
-                                .buttonStyle(.borderedProminent)
-                                .tint(self.theme.palette.accent)
-                                .controlSize(.regular)
+                                .buttonStyle(.bordered)
+                                .controlSize(.small)
 
-                                Button("Release Notes") {
+                                Button {
                                     if let url = URL(string: "https://github.com/altic-dev/Fluid-oss/releases") {
                                         NSWorkspace.shared.open(url)
                                     }
-                                }
-                                .buttonStyle(.bordered)
-                                .controlSize(.regular)
-
-                                Button(self.rollbackVersion.isEmpty ? "Rollback" : "Rollback to \(self.rollbackVersion)") {
-                                    guard !self.isRollingBack else { return }
-
-                                    let infoText = self.rollbackVersion.isEmpty ? "your previously installed version" : self.rollbackVersion
-                                    let targetVersion = self.rollbackVersion
-                                    let confirm = NSAlert()
-                                    confirm.messageText = "Rollback to \(infoText)?"
-                                    confirm.informativeText = "This will restore a previous app version and relaunch FluidVoice."
-                                    confirm.alertStyle = .warning
-                                    confirm.addButton(withTitle: "Rollback")
-                                    confirm.addButton(withTitle: "Cancel")
-
-                                    guard confirm.runModal() == .alertFirstButtonReturn else { return }
-
-                                    self.isRollingBack = true
-                                    Task {
-                                        defer {
-                                            Task { @MainActor in
-                                                self.isRollingBack = false
-                                            }
-                                        }
-
-                                        do {
-                                            try await SimpleUpdater.shared.rollbackToLatestBackup()
-                                            await MainActor.run {
-                                                let success = NSAlert()
-                                                success.messageText = "Rollback Successful"
-                                                success.informativeText = "Rolled back to \(targetVersion). FluidVoice will relaunch shortly."
-                                                success.alertStyle = .informational
-                                                success.addButton(withTitle: "Report Bug")
-                                                success.addButton(withTitle: "OK")
-                                                let response = success.runModal()
-                                                if response == .alertFirstButtonReturn {
-                                                    self.openIssueReportingPage()
-                                                }
-                                            }
-                                        } catch {
-                                            await MainActor.run {
-                                                let fail = NSAlert()
-                                                fail.messageText = "Rollback Failed"
-                                                fail.informativeText = error.localizedDescription
-                                                fail.alertStyle = .critical
-                                                fail.addButton(withTitle: "OK")
-                                                fail.runModal()
-                                                self.refreshRollbackState()
-                                            }
-                                        }
+                                } label: {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "arrow.up.right.square")
+                                        Text("Upstream Releases".loc)
                                     }
                                 }
                                 .buttonStyle(.bordered)
-                                .controlSize(.regular)
-                                .disabled(self.rollbackVersion.isEmpty || self.isRollingBack)
-                                .opacity(self.isRollingBack ? 0.7 : 1.0)
-
-                                Button("Get Previous Builds") {
-                                    self.openPreviousBuildPicker()
-                                }
-                                .buttonStyle(.bordered)
-                                .controlSize(.regular)
+                                .controlSize(.small)
                             }
-                            .padding(.top, 12)
-
-                            if self.rollbackVersion.isEmpty {
-                                Text("No rollback backup found.")
-                                    .font(self.theme.typography.bodySmall)
-                                    .foregroundStyle(self.settingsSecondaryText)
-                            } else {
-                                Text("Rollback target: \(self.rollbackVersion)")
-                                    .font(self.theme.typography.bodySmall)
-                                    .foregroundStyle(self.settingsSecondaryText)
-                            }
+                            .padding(.top, 4)
                         }
                     }
                     .padding(16)
