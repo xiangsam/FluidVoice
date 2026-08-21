@@ -498,9 +498,9 @@ struct SettingsView: View {
 
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(
-                                        self.asr.micStatus == .authorized ? "Microphone access granted" :
-                                            self.asr.micStatus == .denied ? "Microphone access denied" :
-                                            "Microphone access not determined"
+                                        self.asr.micStatus == .authorized ? "Microphone access granted".loc :
+                                            self.asr.micStatus == .denied ? "Microphone access denied".loc :
+                                            "Microphone access not determined".loc
                                     )
                                     .font(self.theme.typography.bodyStrong)
                                     .foregroundStyle(self.asr.micStatus == .authorized ? .primary : self.theme.palette.warning)
@@ -537,11 +537,11 @@ struct SettingsView: View {
                                 self.instructionsBox(
                                     title: "How to enable microphone access:".loc,
                                     steps: self.asr.micStatus == .notDetermined
-                                        ? ["Click **Grant Access** above", "Choose **Allow** in the system dialog"]
+                                        ? ["点击上方的 **授予权限**".loc, "在系统弹窗中选择 **允许**".loc]
                                         : [
-                                            "Click **Open Settings** above",
-                                            "Find **\(self.appDisplayName)** in the microphone list",
-                                            "Toggle **\(self.appDisplayName) ON** to allow access",
+                                            "点击上方的 **打开系统设置**".loc,
+                                            "在麦克风权限列表中找到 **\(self.appDisplayName)**".loc,
+                                            "将 **\(self.appDisplayName)** 开关开启以允许访问".loc,
                                         ]
                                 )
                             }

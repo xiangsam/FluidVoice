@@ -28,38 +28,26 @@ struct ThemedCard<Content: View>: View {
     }
 
     var body: some View {
-        let configuration = CardConfiguration(style: style, theme: theme)
-        let shape = RoundedRectangle(cornerRadius: configuration.cornerRadius, style: .continuous)
+        let shape = RoundedRectangle(cornerRadius: 12, style: .continuous)
 
         self.content
-            .padding(self.padding ?? self.theme.metrics.cardSurface.defaultPadding)
-            .background(configuration.material, in: shape)
+            .padding(self.padding ?? 14)
             .background(
                 shape
-                    .fill(configuration.background)
+                    .fill(Color(nsColor: .controlBackgroundColor))
                     .overlay(
                         shape.stroke(
-                            configuration.border.opacity(
-                                self.isHovered && self.hoverEffect ? configuration.hoverBorderOpacity : configuration.borderOpacity
-                            ),
-                            lineWidth: configuration.borderWidth
+                            self.isHovered && self.hoverEffect ? self.theme.palette.accent.opacity(0.45) : Color.secondary.opacity(0.18),
+                            lineWidth: 1
                         )
                     )
-                    .shadow(
-                        color: configuration.shadow.color.opacity(
-                            self.isHovered && self.hoverEffect ? min(configuration.shadow.opacity + configuration.hoverShadowBoost, 1.0) : configuration.shadow.opacity
-                        ),
-                        radius: configuration.shadow.radius,
-                        x: configuration.shadow.x,
-                        y: self.isHovered && self.hoverEffect ? configuration.shadow.y + 1 : configuration.shadow.y
-                    )
             )
-            .scaleEffect(self.isHovered && self.hoverEffect ? 1.01 : 1.0)
+            .contentShape(shape)
             .onHover { hovering in
                 guard self.hoverEffect else { return }
                 self.isHovered = hovering
             }
-            .animation(.easeOut(duration: 0.18), value: self.isHovered)
+            .animation(.easeOut(duration: 0.15), value: self.isHovered)
     }
 }
 

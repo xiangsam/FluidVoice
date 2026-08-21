@@ -264,8 +264,7 @@ struct CustomDictionaryView: View {
                     self.aiPostProcessingSection
                 }
             }
-            .frame(maxWidth: 860, alignment: .leading)
-            .padding(self.theme.metrics.spacing.xl)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .dismissTextFocusOnBackgroundTap()
         .overlay {

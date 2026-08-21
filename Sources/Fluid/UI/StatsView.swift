@@ -52,7 +52,7 @@ struct StatsView: View {
                 // Reset Button
                 self.resetSection
             }
-            .padding(20)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
