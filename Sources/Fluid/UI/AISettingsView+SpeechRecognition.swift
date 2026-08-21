@@ -50,9 +50,29 @@ extension VoiceEngineSettingsView {
                     HStack(spacing: 10) {
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundStyle(Color.fluidGreen)
-                        Text("\("Active Voice Model:".loc) \(self.viewModel.previewSpeechModel.humanReadableName)")
-                            .font(self.theme.typography.bodyStrong)
-                            .foregroundStyle(.primary)
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            HStack(spacing: 6) {
+                                Text("\("Active Voice Model:".loc) \(self.viewModel.previewSpeechModel.humanReadableName)")
+                                    .font(self.theme.typography.bodyStrong)
+                                    .foregroundStyle(.primary)
+
+                                if self.viewModel.previewSpeechModel == .cloudOpenRouter {
+                                    Text(self.selectedOpenRouterModelName)
+                                        .font(.system(size: 11, weight: .bold))
+                                        .padding(.horizontal, 6)
+                                        .padding(.vertical, 2)
+                                        .background(Capsule().fill(Color.fluidGreen.opacity(0.18)))
+                                        .foregroundStyle(Color.fluidGreen)
+                                }
+                            }
+
+                            if self.viewModel.previewSpeechModel == .cloudOpenRouter {
+                                Text(self.selectedOpenRouterModelSubtitle)
+                                    .font(self.theme.typography.caption)
+                                    .foregroundStyle(self.voiceEngineSecondaryText)
+                            }
+                        }
 
                         Spacer()
 
@@ -248,6 +268,16 @@ extension VoiceEngineSettingsView {
                                 .font(.system(size: 16, weight: .bold))
                                 .foregroundStyle(self.theme.palette.primaryText)
 
+                            if model == .cloudOpenRouter {
+                                Text(self.selectedOpenRouterModelName)
+                                    .font(.caption2)
+                                    .fontWeight(.bold)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(Capsule().fill(Color.fluidGreen.opacity(0.2)))
+                                    .foregroundStyle(Color.fluidGreen)
+                            }
+
                             if let badge = model.badgeText {
                                 Text(badge)
                                     .font(.caption2)
@@ -419,9 +449,21 @@ extension VoiceEngineSettingsView {
                 .frame(width: 28, height: 28)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(model.humanReadableName)
-                    .font(self.theme.typography.bodyStrong)
-                    .foregroundStyle(self.voiceEngineTitleText)
+                HStack(spacing: 6) {
+                    Text(model.humanReadableName)
+                        .font(self.theme.typography.bodyStrong)
+                        .foregroundStyle(self.voiceEngineTitleText)
+
+                    if model == .cloudOpenRouter {
+                        Text(self.selectedOpenRouterModelName)
+                            .font(.system(size: 10, weight: .bold))
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Capsule().fill(Color.fluidGreen.opacity(0.18)))
+                            .foregroundStyle(Color.fluidGreen)
+                    }
+                }
+
                 Text(self.speechModelSubtitle(for: model))
                     .font(self.theme.typography.body)
                     .foregroundStyle(self.voiceEngineSecondaryText)
@@ -700,6 +742,8 @@ extension VoiceEngineSettingsView {
         switch model {
         case .nemotronStreaming, .nemotronStreaming320:
             return "Nemotron Speech 3.5 - Streaming Capable"
+        case .cloudOpenRouter:
+            return self.selectedOpenRouterModelSubtitle
         default:
             return model.displayName
         }
@@ -920,6 +964,24 @@ extension VoiceEngineSettingsView {
             return "Provider_OpenAI"
         }
         return nil
+    }
+
+    private var selectedOpenRouterModelItem: CloudSTTModelItem? {
+        let rawID = self.settings.cloudSTTOpenRouterModel
+        let modelID = rawID.isEmpty ? "openai/gpt-4o-mini-transcribe" : rawID
+        return CloudSTTModelItem.openRouterOfficialModels.first { $0.id == modelID }
+    }
+
+    private var selectedOpenRouterModelName: String {
+        self.selectedOpenRouterModelItem?.name ?? (self.settings.cloudSTTOpenRouterModel.isEmpty ? "GPT-4o Mini Transcribe" : self.settings.cloudSTTOpenRouterModel)
+    }
+
+    private var selectedOpenRouterModelSubtitle: String {
+        if let item = self.selectedOpenRouterModelItem {
+            let price = (item.priceHint ?? "").loc
+            return "\(item.vendor) · \(price)"
+        }
+        return self.settings.cloudSTTOpenRouterModel
     }
 }
 

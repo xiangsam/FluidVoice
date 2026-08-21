@@ -251,6 +251,12 @@ enum CloudTranscriptionError: LocalizedError {
     }
 }
 
+extension CloudSTTModelItem {
+    public static var openRouterOfficialModels: [CloudSTTModelItem] {
+        CloudSTTType.openRouter.modelPresets
+    }
+}
+
 final class CloudTranscriptionProvider: TranscriptionProvider {
     let type: CloudSTTType
     private let settings: SettingsStore
