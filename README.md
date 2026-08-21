@@ -13,6 +13,10 @@
   <a href="https://github.com/xiangsam/FluidVoice"><img src="https://img.shields.io/badge/Language-100%25%20SwiftUI-red?logo=swift" alt="SwiftUI"/></a>
 </p>
 
+> 📌 **项目声明与致谢**：
+> 本项目是基于优秀开源项目 **[altic-dev/FluidVoice](https://github.com/altic-dev/FluidVoice)** 深度二次开发的增强版本（Fork）。
+> 在继承原项目优秀的音频底层与高效架构基础上，本项目新增了 **100% 中文本地化支持**、**Ollama 局域网私有化大模型语音识别**、**macOS 26+ 现代 Speech Analyzer 适配**、**智能容灾故障兜底机制** 以及 **现代原生 Apple HIG 界面重构**。向原作者团队 **[@altic-dev](https://github.com/altic-dev)** 的卓越工作致以崇高敬意！
+
 ---
 
 ## 📸 应用界面预览 (Screenshots)
@@ -134,6 +138,17 @@ open DerivedData/Build/Products/Release/FluidVoice.app
 - **主听写模式 (Dictate)**：按住或点按 `Right Option (⌥)` 触发录音，松开或再次按下自动完成转录并键入。
 - **改写润色模式 (Rewrite)**：选中文本后按下 `Shift + Right Option`，选中的内容将被大模型重写并替换。
 - **取消录音**：按 `Escape` 键随时丢弃当前音频。
+
+---
+
+## 💖 致谢与开源生态 (Acknowledgements)
+
+本项目离不开开源社区的伟大贡献，特别鸣谢以下项目与团队：
+
+- **[altic-dev/FluidVoice](https://github.com/altic-dev/FluidVoice)**：原始项目的核心架构与卓越的音频处理管线。
+- **[whisper.cpp](https://github.com/ggerganov/whisper.cpp)**：高性能 C/C++ Whisper 推理引擎。
+- **[FluidAudio](https://github.com/altic-dev/FluidAudio)**：针对 Apple 芯片优化的神经网络音频运行时。
+- **[Ollama](https://ollama.com)**：极简的本地大模型与多模态运行框架。
 
 ---
 
