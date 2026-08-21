@@ -25,20 +25,12 @@ enum ModelCategoryTab: String, CaseIterable, Identifiable {
     }
 }
 
-enum LocalModelSubgroup: String, CaseIterable, Identifiable {
-    case whisper = "Whisper 全系列"
-    case neural = "FluidAudio 神经网络"
-
-    var id: String { self.rawValue }
-}
-
 struct NativeVoiceEngineSettingsView: View {
     @ObservedObject var viewModel: VoiceEngineSettingsViewModel
     @ObservedObject var settings: SettingsStore
     let theme: AppTheme
 
     @State private var selectedTab: ModelCategoryTab = .apple
-    @State private var localSubgroup: LocalModelSubgroup = .whisper
     @State private var isTestingConnection: Bool = false
     @State private var connectionTestMessage: String? = nil
     @State private var connectionTestSuccess: Bool? = nil
@@ -178,63 +170,93 @@ struct NativeVoiceEngineSettingsView: View {
 
     // MARK: - 3. Category Picker Section
     private var categoryPickerSection: some View {
-        VStack(spacing: 8) {
-            Picker("", selection: self.$selectedTab) {
-                ForEach(ModelCategoryTab.allCases) { tab in
-                    Label(tab.rawValue.loc, systemImage: tab.icon).tag(tab)
-                }
-            }
-            .pickerStyle(.segmented)
-
-            if self.selectedTab == .local {
-                Picker("", selection: self.$localSubgroup) {
-                    ForEach(LocalModelSubgroup.allCases) { subgroup in
-                        Text(subgroup.rawValue.loc).tag(subgroup)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .controlSize(.small)
-                .padding(.horizontal, 40)
+        Picker("", selection: self.$selectedTab) {
+            ForEach(ModelCategoryTab.allCases) { tab in
+                Label(tab.rawValue.loc, systemImage: tab.icon).tag(tab)
             }
         }
+        .pickerStyle(.segmented)
     }
 
     // MARK: - 4. Model Group Section
+    @ViewBuilder
     private var modelGroupSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(self.categorySectionTitle)
-                .font(.headline)
-                .foregroundStyle(.primary)
-
-            VStack(spacing: 10) {
-                ForEach(self.displayedModels) { model in
-                    self.modelCard(for: model)
-                }
-            }
-        }
-    }
-
-    private var categorySectionTitle: String {
-        switch self.selectedTab {
-        case .apple: return "Apple Built-in Engines (Zero Download)".loc
-        case .local:
-            return self.localSubgroup == .whisper ? "Whisper 本地离线全系列".loc : "FluidAudio 神经网络模型 (Apple Silicon)".loc
-        case .cloud: return "Cloud & LAN Servers (Ollama / Cloud APIs)".loc
-        }
-    }
-
-    private var displayedModels: [SpeechModel] {
         switch self.selectedTab {
         case .apple:
-            return [.appleSpeechAnalyzer, .appleSpeech]
-        case .local:
-            if self.localSubgroup == .whisper {
-                return [.whisperLargeTurbo, .whisperLarge, .whisperMedium, .whisperSmall, .whisperBase, .whisperTiny]
-            } else {
-                return [.parakeetTDT, .parakeetTDTv2, .parakeetRealtime, .qwen3Asr, .nemotronOffline, .cohereTranscribeSixBit]
+            VStack(alignment: .leading, spacing: 10) {
+                Label("Apple Built-in Engines (Zero Download)".loc, systemImage: "apple.logo")
+                    .font(.headline)
+                    .foregroundStyle(.primary)
+
+                VStack(spacing: 10) {
+                    self.modelCard(for: .appleSpeechAnalyzer)
+                    self.modelCard(for: .appleSpeech)
+                }
             }
+
+        case .local:
+            VStack(alignment: .leading, spacing: 20) {
+                // Whisper Group
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "waveform.badge.magnifyingglass")
+                            .foregroundStyle(self.theme.palette.accent)
+                        Text("Whisper 本地离线全系列".loc)
+                            .font(.headline)
+                            .foregroundStyle(.primary)
+                        Text("(whisper.cpp 高精度通用转录)".loc)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    VStack(spacing: 10) {
+                        self.modelCard(for: .whisperLargeTurbo)
+                        self.modelCard(for: .whisperLarge)
+                        self.modelCard(for: .whisperMedium)
+                        self.modelCard(for: .whisperSmall)
+                        self.modelCard(for: .whisperBase)
+                        self.modelCard(for: .whisperTiny)
+                    }
+                }
+
+                // FluidAudio Neural Group
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "bolt.badge.sparkle")
+                            .foregroundStyle(.orange)
+                        Text("FluidAudio 神经网络模型".loc)
+                            .font(.headline)
+                            .foregroundStyle(.primary)
+                        Text("(Apple Silicon 极速低延迟)".loc)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    VStack(spacing: 10) {
+                        self.modelCard(for: .parakeetTDT)
+                        self.modelCard(for: .parakeetTDTv2)
+                        self.modelCard(for: .parakeetRealtime)
+                        self.modelCard(for: .qwen3Asr)
+                        self.modelCard(for: .nemotronOffline)
+                        self.modelCard(for: .cohereTranscribeSixBit)
+                    }
+                }
+            }
+
         case .cloud:
-            return [.cloudOllama, .cloudOpenAI, .cloudGroq, .cloudOpenRouter, .cloudCustom]
+            VStack(alignment: .leading, spacing: 10) {
+                Label("Cloud & LAN Servers (Ollama / Cloud APIs)".loc, systemImage: "network")
+                    .font(.headline)
+                    .foregroundStyle(.primary)
+
+                VStack(spacing: 10) {
+                    self.modelCard(for: .cloudOllama)
+                    self.modelCard(for: .cloudOpenAI)
+                    self.modelCard(for: .cloudGroq)
+                    self.modelCard(for: .cloudOpenRouter)
+                    self.modelCard(for: .cloudCustom)
+                }
+            }
         }
     }
 

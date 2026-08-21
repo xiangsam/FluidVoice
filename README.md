@@ -1,297 +1,121 @@
-# FluidVoice
+# 🎙️ FluidVoice (流式语音助手)
 
 <p align="center">
-  <a href="https://github.com/altic-dev/FluidVoice/stargazers"><img src="https://img.shields.io/github/stars/altic-dev/FluidVoice?style=social" alt="GitHub stars"/></a>
-  <a href="https://github.com/sponsors/altic-dev"><img src="https://img.shields.io/badge/Sponsor-GitHub%20Sponsors-ea4aaa?logo=githubsponsors&logoColor=white" alt="Sponsor FluidVoice"/></a>
-  <a href="https://x.com/fluidvoiceapp"><img src="https://img.shields.io/badge/X-%40fluidvoiceapp-black?logo=x&logoColor=white" alt="X @fluidvoiceapp"/></a>
+  <b>极速、私密、优雅的 macOS 原生 AI 语音听写与大模型智能润色助手</b>
   <br />
-  <a href="https://huggingface.co/nvidia/parakeet_realtime_eou_120m-v1"><img src="https://img.shields.io/badge/Models-Nemotron%20Speech%203.5%20%7C%20Parakeet%20Flash%20%7C%20Parakeet%20v3%20%26%20v2%20%7C%20Cohere%20%7C%20Apple%20Speech%20%7C%20Whisper-blue" alt="Supported Models"/></a>
-  <br /><br />
-  <a href="https://trendshift.io/repositories/16601?utm_source=repository-badge&utm_medium=badge&utm_campaign=badge-repository-16601" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/repositories/16601" alt="altic-dev%2FFluidVoice | Trendshift" width="250" height="55"/></a>
+  <i>Next-generation on-device Speech-to-Text & LLM post-processing for macOS</i>
 </p>
 
-Open source voice-to-text dictation app for macOS with on-device AI enhancement.
-
-**Install with Homebrew:** `brew install --cask fluidvoice`
-
-**Manual download:** [latest release](https://github.com/altic-dev/FluidVoice/releases/latest)
-
-> [!NOTE]
-> FluidVoice is on macOS today. **iOS and Windows are on the way** — join the waitlist to get notified when we launch: **[altic.dev/fluid/waitlist](https://www.altic.dev/fluid/waitlist)**
-
-
-> [!IMPORTANT]
-> This project is free and open source under GPLv3. If FluidVoice is useful to you, please star the repository — it helps visibility and keeps development going.
+<p align="center">
+  <a href="https://github.com/xiangsam/FluidVoice/releases/latest"><img src="https://img.shields.io/badge/macOS-15.0%2B%20%7C%20Apple%20Silicon-blue?logo=apple" alt="macOS Version"/></a>
+  <a href="https://github.com/xiangsam/FluidVoice/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-GPLv3-green.svg" alt="License: GPLv3"/></a>
+  <a href="https://ollama.com"><img src="https://img.shields.io/badge/Ollama-LAN%20%26%20Local-orange?logo=ollama" alt="Ollama STT"/></a>
+  <a href="https://github.com/xiangsam/FluidVoice"><img src="https://img.shields.io/badge/Language-100%25%20SwiftUI-red?logo=swift" alt="SwiftUI"/></a>
+</p>
 
 ---
 
-## Support FluidVoice
+## 🌟 核心特色 (Key Highlights)
 
-If FluidVoice helps you, you can support continued development and future platform work for iOS and Windows on [GitHub Sponsors](https://github.com/sponsors/altic-dev).
+### 1. ⚡ 全系列语音引擎支持 (Multi-Engine STT Matrix)
+- **🍏 Apple 现代内置引擎**：零下载、零内存占用，原生支持 macOS 26+ 现代流式 `Speech Analyzer` 与经典 `SFSpeechRecognizer`。
+- **💻 本地离线高精度引擎**：
+  - **Whisper 全系列**（基于 `whisper.cpp`，支持 Large-Turbo / Large-V3 / Medium / Small / Base / Tiny，完全离线高精度）。
+  - **FluidAudio 神经网络模型**（针对 Apple Silicon 深度优化，包括 Parakeet TDT、Nemotron、Qwen3-ASR）。
+- **☁️ Ollama 局域网与私有云大模型**：支持将家庭/公司局域网内部署的 Ollama 服务器作为语音转录后端，极速利用远程算力。
 
----
+### 2. 🧠 AI 大模型文本智能润色 (LLM Post-Processing)
+- 语音识别完成后，自动将原始口语文字交由大模型二次加工：
+  - 🧹 **去除语气词与杂音**：自动剔除“呃、啊、然后、那个”等冗余停顿词。
+  - ✍️ **口语转标准书面语**：理顺长句倒装、纠正口语语病，输出得体公文/邮件/报告。
+  - 🔤 **中英文排版规范化**：自动在中文与英文/数字间补充空格，规范标点符号。
+  - 💻 **编程与专业代码词识别**：智能匹配驼峰命名、函数名、API 与技术专业术语。
+  - ⚙️ **自定义 Prompt Playground**：支持实时对比改写前后的效果与自由编写 System Prompt。
+- 支持 **Ollama 本地大模型**、**DeepSeek**、**OpenRouter**、**Groq**、**OpenAI** 等多种提供商。
 
-## What's New in 1.6.0
+### 3. 🛡️ 智能容灾与故障兜底 (Smart STT Fallback)
+- 当开启远程 Ollama 或云端 API 模式时，如果遇到局域网掉线、服务器高负载超时或认证错误，系统将在指定超时内**毫秒级自动平滑回退至 Apple 本地语音引擎**完成转录。
+- **彻底告别长语音录制失败的挫败感**，保障每一次说话都有稳定输出。
 
-- **Insanely fast Parakeet** — rebuilt Parakeet implementation with pretty much zero delay between speaking and seeing words on screen
-- **Fluid Intelligence** — fully local AI model for on-device dictation enhancement. No cloud, no API keys, no data leaving your Mac
-- **Better Theming** — adaptive light/dark theme with a compact toolbar switcher
-- **Refreshed Onboarding** — language-first voice engine setup, real dictation tryout, and AI enhancement setup in one clean pass
-
-> [!WARNING]
-> Based on early feedback, Fluid Intelligence may cause you to unsubscribe from other dictation apps and save money. You've been warned.
-
-## Fluid Intelligence
-
-FluidVoice is fully open source under GPLv3. **Fluid Intelligence** is a separate, privately maintained local AI runtime that powers advanced on-device dictation enhancement — smart formatting, context-aware capitalization, and post-processing — all running locally on your Mac.
-
-The app works great on its own with any supported speech model and optional cloud AI providers. Fluid Intelligence adds a fully local, private AI layer for users who want on-device enhancement without sending data anywhere.
-
-We're keeping Fluid Intelligence private for now so we can sustainably offer the core dictation experience for free. This may change in the future.
-
----
-
-## Fluid Intelligence Sneak Peek
-
-<table>
-  <tr>
-    <td width="50%" align="center"><b>Email Template</b></td>
-    <td width="50%" align="center"><b>Flowers</b></td>
-  </tr>
-  <tr>
-    <td width="50%"><video src="https://github.com/user-attachments/assets/36747e9d-1ea3-4d27-8d38-eaacb6d57285" width="100%"></video></td>
-    <td width="50%"><video src="https://github.com/user-attachments/assets/5f6063ab-0506-4687-b825-c7bf4ab66ed6" width="100%"></video></td>
-  </tr>
-  <tr>
-    <td width="50%" align="center"><b>Change Time & Name</b></td>
-    <td width="50%" align="center"><b>Emoji</b></td>
-  </tr>
-  <tr>
-    <td width="50%"><video src="https://github.com/user-attachments/assets/6c7a7c4c-17a8-453d-8eff-1aa1fa9f6077" width="100%"></video></td>
-    <td width="50%"><video src="https://github.com/user-attachments/assets/04e00f3d-a602-448d-9bde-50b5e8f61ac6" width="100%"></video></td>
-  </tr>
-  <tr>
-    <td width="50%" align="center"><b>Hyphens & Numbers</b></td>
-    <td width="50%"></td>
-  </tr>
-  <tr>
-    <td width="50%"><video src="https://github.com/user-attachments/assets/47175f2b-9f06-452e-b892-42488e4ba536" width="100%"></video></td>
-    <td width="50%"></td>
-  </tr>
-</table>
-
-## Demo
-
-### Command Mode — Take any action on your Mac using FluidVoice
-
-https://github.com/user-attachments/assets/ffb47afd-1621-432a-bdca-baa4b8526301
-
-### Write Mode — Write or rewrite text in any text box in any app
-
-https://github.com/user-attachments/assets/c57ef6d5-f0a1-4a3f-a121-637533442c24
+### 4. 🎨 100% 原生 macOS HIG 现代界面
+- 采用 macOS 现代设计规范：全中文本地化、通透的毛玻璃卡片体系、刘海屏 Notch 灵动岛悬浮条、全局毫秒级全局快捷键唤起。
+- 拥有打字速度 (WPM) 与今日节省时间生产力统计、个性化发音纠错词典。
 
 ---
 
-## Features
+## 🏗️ 架构概览 (Architecture)
 
-- **Fluid Intelligence** — on-device AI enhancement for smart formatting, context-aware capitalization, and post-processing, all running locally on your Mac with zero data leaving your machine
-- **Command Mode** — control your Mac by voice: launch apps, run shortcuts, trigger system actions, and automate workflows without touching the keyboard
-- **Write Mode** — write or rewrite text directly in any text field across any app. Select text and rewrite it, or dictate new content inline
-- **Live Preview** — real-time transcription overlay with notch support, so you see words appear as you speak
-- **Multiple Speech Models** — Nemotron Speech 3.5, Parakeet Flash, Parakeet TDT v3 & v2, Cohere Transcribe, Apple Speech, and Whisper. Pick the model that fits your language and latency needs
-- **AI Enhancement** — optional post-processing via OpenAI, Groq, custom providers, or local Fluid Intelligence for cleaner, more accurate transcripts
-- **Audio History** — optional local recording history with budget controls and ZIP export, so you can review past dictations without cloud storage
-- **Today-Usage Stats** — daily usage tracking at a glance with a stats header card and toolbar pill
-- **Adaptive Theming** — light/dark theme that follows your system, with a compact toolbar switcher
-- **Global Hotkey** — instant voice capture from anywhere, no app switching needed
-- **Smart Typing** — direct insertion into any app via accessibility APIs for reliable, app-independent text entry
-- **Menu Bar Integration** — quick access, status, and settings from the menu bar
-- **Auto-Updates** — seamless updates with an optional beta channel for early previews
-- **Per-App Configuration** — assign different prompt sets to different apps, so your dictation adapts to whatever you're working in. Fully optional
-- **Notch-Aware Overlay** — transcription overlay that fits cleanly around the MacBook notch, or use a standard overlay if your Mac doesn't have one
-- **Local-First** — your voice and text never leave your machine unless you opt in to a cloud AI provider
-- **Fastest Parakeet on Mac** — one of the fastest native implementations of Parakeet on macOS, with near-instant transcription and minimal latency
-- **Configurable Overlay** — choose from pill-shaped to large overlay sizes to show live preview, or keep it minimal. Everything is optional
-- **Everything is Optional** — AI enhancement, Fluid Intelligence, audio history, analytics, and beta builds are all opt-in. The core dictation experience works out of the box with zero configuration beyond permissions and a hotkey
-
----
-
-## Supported Models
-
-| Model | Best for | Language support | Download size | Hardware |
-| --- | --- | --- | --- | --- |
-| Nemotron Speech 3.5 — Ultra Fast Low Latency | Streaming-capable multilingual dictation | ~40 languages | ~670 MB | Apple Silicon |
-| Nemotron 3.5 Multilingual | Higher-accuracy multilingual dictation | ~40 languages | ~530 MB | Apple Silicon |
-| [Parakeet Flash (Beta)](https://huggingface.co/nvidia/parakeet_realtime_eou_120m-v1) | Lowest-latency live English dictation | English | ~250 MB | Apple Silicon |
-| Parakeet TDT v3 | Fast default multilingual dictation | [25 languages](#parakeet-tdt-v3-languages) | ~500 MB | Apple Silicon |
-| Parakeet TDT v2 | Fastest English-only dictation | [English](#parakeet-tdt-v2-languages) | ~500 MB | Apple Silicon |
-| Cohere Transcribe | High-accuracy multilingual dictation | [14 languages](#cohere-transcribe-languages) | ~1.4 GB | Apple Silicon |
-| Apple Speech | Zero-download native macOS speech | [System languages](#apple-speech-languages) | Built-in | Apple Silicon + Intel |
-| Whisper Tiny / Base / Small / Medium / Large | Broad compatibility, including Intel Macs | [99 languages](#whisper-language-support) | ~75 MB to ~2.9 GB | Apple Silicon + Intel |
-
-### Parakeet TDT v3 Languages
-
-Bulgarian, Croatian, Czech, Danish, Dutch, English, Estonian, Finnish, French, German, Greek, Hungarian, Italian, Latvian, Lithuanian, Maltese, Polish, Portuguese, Romanian, Russian, Slovak, Slovenian, Spanish, Swedish, and Ukrainian.
-
-### Parakeet TDT v2 Languages
-
-English.
-
-### Cohere Transcribe Languages
-
-English, French, German, Italian, Spanish, Portuguese, Greek, Dutch, Polish, Mandarin, Japanese, Korean, Vietnamese, and Arabic.
-
-### Apple Speech Languages
-
-System language support depends on the macOS speech recognition languages available on your machine.
-
-### Whisper Language Support
-
-Whisper supports up to 99 languages, depending on the model size you choose.
+```mermaid
+graph TD
+    User([🗣️ 用户说话 / 快捷键唤起]) --> AudioCapture[🎙️ CoreAudio 高保真音频流捕获]
+    AudioCapture --> EngineSelector{语音引擎分流调度}
+    
+    EngineSelector -->|🍏 系统级| AppleSpeech[Apple Speech Analyzer]
+    EngineSelector -->|💻 本地离线| WhisperCpp[Whisper / FluidAudio 神经网络]
+    EngineSelector -->|☁️ 局域网/云端| CloudSTT[Ollama / 云端 STT 引擎]
+    
+    CloudSTT -.->|⚠️ 超时/异常触发| Fallback[🛡️ 智能故障兜底 -> Apple Speech]
+    
+    AppleSpeech --> RawText[原始听写文本]
+    WhisperCpp --> RawText
+    CloudSTT --> RawText
+    Fallback --> RawText
+    
+    RawText --> LLMPipeline{是否开启 AI 智能润色?}
+    LLMPipeline -->|是| LLMEnhance[🧠 大模型后处理: 语气词剔除 / 语句通顺 / 规范排版]
+    LLMPipeline -->|否| DirectOutput[直接输出]
+    
+    LLMEnhance --> SmartInsert[⌨️ macOS Accessibility 模拟输入到当前光标处]
+    DirectOutput --> SmartInsert
+```
 
 ---
 
-## Quick Start
+## 🚀 快速上手 (Quick Start)
 
-1. **Install** with Homebrew:
-   ```bash
-   brew install --cask fluidvoice
-   ```
-   Or download the [latest release](https://github.com/altic-dev/FluidVoice/releases/latest).
+### 方式一：直接下载发布包 (Recommended)
+1. 前往 [Releases](https://github.com/xiangsam/FluidVoice/releases) 下载最新的 `FluidVoice.dmg` 或 `FluidVoice.app.zip`。
+2. 解压并拖动到 `/Applications`（应用程序）文件夹。
+3. 打开应用，根据引导授予**麦克风**与**辅助功能**权限。
 
-2. **Grant permissions** — FluidVoice will ask for microphone and accessibility access. Both are required for dictation and typing into other apps.
-
-3. **Set your hotkey** — pick a global hotkey in settings that triggers voice capture from anywhere.
-
-4. **Go through onboarding** — choose your voice model based on your language and latency needs. Models range from zero-download Apple Speech to high-accuracy Nemotron and Whisper.
-
-5. **(Optional) Enable Fluid Intelligence** — download the local AI model during onboarding for on-device dictation enhancement. Everything runs locally, no data leaves your Mac.
-
-6. **(Optional) Bring your own AI provider** — add an OpenAI, Groq, or custom provider API key for cloud-based enhancement. Keys are stored securely in macOS Keychain. Select "Always allow" for key access.
-
-7. **(Optional) Opt in to beta builds** — `Settings → Automatic Updates → Beta Releases` for early access to new features.
-
----
-
-## Requirements
-
-- macOS 15.0 (Sequoia) or later
-- Apple Silicon Mac for all models
-- Intel Macs supported via Whisper models (from 1.5.1+)
-- ~1 GB disk space for a voice model
-- ~3.5 GB disk space for the Fluid Intelligence model (optional)
-- Microphone access
-- Accessibility permissions for typing
-
----
-
-## Building from Source
+### 方式二：从源码本地编译
 
 ```bash
-git clone https://github.com/altic-dev/FluidVoice.git
+# 1. 克隆代码仓库
+git clone https://github.com/xiangsam/FluidVoice.git
 cd FluidVoice
-open Fluid.xcodeproj
-```
 
-Build and run in Xcode. All dependencies are managed via Swift Package Manager.
+# 2. 一键编译并签名 Release 版本
+./build.sh release
 
-Run a signed Debug build using the script:
-
-```bash
-./build.sh
-```
-
-The signed build is written to `DerivedData/Build/Products/Debug/FluidVoice Debug.app`.
-Keep launching that product after each rebuild so macOS can preserve its Accessibility
-authorization.
-
-For CI or contributors who do not have a signing identity, use the explicit unsigned
-fallback:
-
-```bash
-./build.sh unsigned
-```
-
-Unsigned builds are tied to a specific executable version and may require Accessibility
-permission to be removed and granted again after rebuilding.
-
----
-
-## Contributing
-
-Contributions are welcome! Please create an issue first to discuss major changes before submitting a pull request.
-
-### Development Setup
-
-1. Clone and open in Xcode as above.
-2. **Signing:** `FluidVoice → Signing & Capabilities → Automatically manage signing → pick your Team` (Personal Team is fine). If you have certificates for multiple teams, select one without changing the project by running `FLUIDVOICE_DEVELOPMENT_TEAM=YOUR_TEAM_ID ./build.sh`.
-3. Build and run — SPM handles dependencies.
-4. **(Optional) Pre-commit hook** to prevent accidental team ID commits:
-   ```bash
-   cp scripts/check-team-id.sh .git/hooks/pre-commit
-   chmod +x .git/hooks/pre-commit
-   ```
-
-### Pull Request Guidelines
-
-- **One feature or fix per PR** — keep changes focused and atomic
-- **Create an issue first** so work is trackable before review
-- **Discuss non-trivial changes** before opening a PR
-- **Follow the PR template**
-- **Test thoroughly** on your machine
-- **Never commit personal team IDs or API keys**
-- **Check `git diff`** before committing
-
----
-
-## Run Integration Tests
-
-```bash
-xcodebuild test -project Fluid.xcodeproj -scheme Fluid -destination 'platform=macOS'
-```
-
-CI uses unsigned builds:
-
-```bash
-xcodebuild test -project Fluid.xcodeproj -scheme Fluid -destination 'platform=macOS' CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
+# 3. 运行应用程序
+open DerivedData/Build/Products/Release/FluidVoice.app
 ```
 
 ---
 
-## Privacy & Analytics
+## ⚙️ 模型与后端支持一览 (STT Models & Providers)
 
-FluidVoice is **local-first**. Your voice, audio, and transcribed text never leave your machine unless you explicitly opt in to a cloud AI provider.
-
-### What's Collected (Opt-In)
-
-Anonymous analytics are enabled by default to track app health and feature usage. You can disable at any time from `Settings → Share Anonymous Analytics`.
-
-**Collected:**
-
-- App version, build, macOS version
-- Low-cardinality feature/config flags (e.g. app mode, major settings)
-- Approximate usage ranges (not exact values)
-- High-level success/error outcomes
-
-**Not Collected:**
-
-- Voice, raw audio, or transcribed text
-- Selected text, prompts, or AI responses
-- Terminal commands, window titles, file paths, clipboard, or typed content
-- Any personal or private information
+| 分类 | 引擎 / 模型 | 适用场景 | 网络需求 | 硬件要求 |
+| :--- | :--- | :--- | :--- | :--- |
+| **Apple 内置** | Apple Speech Analyzer | 零下载即开即用、日常快速记录 | 纯离线 | macOS 15+ / 26+ |
+| **Apple 内置** | Apple Speech (经典) | 系统内置多语言识别 | 纯离线 | 所有 Mac 机型 |
+| **本地离线** | Whisper Large Turbo | 顶尖中文/英文识别准确率，极快推理 | 需首次下载 | Apple Silicon |
+| **本地离线** | Whisper Small / Base | 轻量省电，适合低功耗或老款 Mac | 需首次下载 | Apple Silicon / Intel |
+| **本地离线** | FluidAudio Parakeet | 针对 M 系列芯片神经网络深度加速 | 需首次下载 | Apple Silicon |
+| **局域网/私有云** | Ollama STT | 调用家庭服务器/公司算力私有化转录 | 局域网 | 支持 Ollama 的设备 |
+| **云端 API** | OpenAI / Groq / OpenRouter | 云端超高并发高精度转录 | 需要外网 | 所有 Mac 机型 |
 
 ---
 
-## Community
+## ⌨️ 常用快捷键 (Default Shortcuts)
 
-Join our Discord: https://discord.gg/VUPHaKSvYV
-
-Follow development on X: [@fluidvoiceapp](https://x.com/fluidvoiceapp)
+- **主听写模式 (Dictate)**：按住或点按 `Right Option (⌥)` 触发录音，松开或再次按下自动完成转录并键入。
+- **改写润色模式 (Rewrite)**：选中文本后按下 `Shift + Right Option`，选中的内容将被大模型重写并替换。
+- **取消录音**：按 `Escape` 键随时丢弃当前音频。
 
 ---
 
-## License
+## 📄 开源许可证 (License)
 
-From 2026-02-23 onward, this project is licensed under the [GNU General Public License, Version 3.0 (GPLv3)](LICENSE).
-
-Versions published before this date were licensed under Apache License 2.0.
+本项目采用 [GPL-3.0 License](LICENSE) 开源。欢迎提交 Pull Request 和 Issue！
