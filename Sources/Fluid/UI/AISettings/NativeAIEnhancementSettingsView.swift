@@ -2,10 +2,80 @@
 //  NativeAIEnhancementSettingsView.swift
 //  FluidVoice
 //
-//  Modern, native SwiftUI AI Enhancement & Post-Processing View adhering to Apple HIG.
+//  Modern, card-styled native SwiftUI AI Enhancement View adhering to Apple HIG.
 //
 
 import SwiftUI
+
+enum RefinementPreset: String, CaseIterable, Identifiable {
+    case cleanFillers = "cleanFillers"
+    case writtenText = "writtenText"
+    case typography = "typography"
+    case coding = "coding"
+    case custom = "custom"
+
+    var id: String { self.rawValue }
+
+    var title: String {
+        switch self {
+        case .cleanFillers: return "去除语气词与杂音".loc
+        case .writtenText: return "口语转标准书面语".loc
+        case .typography: return "中英文排版与标点".loc
+        case .coding: return "编程与代码专有词".loc
+        case .custom: return "自定义提示词 (Prompt)".loc
+        }
+    }
+
+    var subtitle: String {
+        switch self {
+        case .cleanFillers:
+            return "自动过滤口语中的“嗯、啊、那个、就是”等词，准确保留全部原意，输出干净纯粹的文本。".loc
+        case .writtenText:
+            return "理顺语句逻辑，修复语病和逻辑停顿，适当补充标准标点，整理为连贯通顺的书面表达。".loc
+        case .typography:
+            return "在中英文与数字间自动补充标准空格，修正误标点与漏标点，排版整洁美观。".loc
+        case .coding:
+            return "精准保留技术术语、库名与变量名（camelCase、snake_case 等），输出开发笔记格式。".loc
+        case .custom:
+            return "自由编写定制化的 System Prompt，打造专属于您的 AI 语音处理助手。".loc
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .cleanFillers: return "sparkles"
+        case .writtenText: return "text.badge.checkmark"
+        case .typography: return "character.bubble.fill"
+        case .coding: return "curlybraces"
+        case .custom: return "slider.horizontal.3"
+        }
+    }
+
+    var iconColor: Color {
+        switch self {
+        case .cleanFillers: return Color.fluidGreen
+        case .writtenText: return Color.blue
+        case .typography: return Color.orange
+        case .coding: return Color.purple
+        case .custom: return Color.secondary
+        }
+    }
+
+    var defaultPrompt: String {
+        switch self {
+        case .cleanFillers:
+            return "你是一个专业的语音文本整理助手。请准确保留用户的全部原意，自动去除语音中的'嗯'、'啊'、'那个'、'就是'、'然后'等口语语气词和多余重复词，修正错别字，输出干净规范的中文。"
+        case .writtenText:
+            return "请将用户的口语表述整理为优雅、连贯的标准书面语，修复病句与逻辑停顿，适当补充规范标点符号，保持说话者的核心原意不变。"
+        case .typography:
+            return "请规范用户的文本排版：在中文字符与英文单词、数字之间自动添加标准空格，纠正漏标点和误标点，输出排版规范的中文。"
+        case .coding:
+            return "用户正在口述编程与技术内容。请精准保留所有的技术术语、库名、函数名与变量名（如 camelCase、snake_case），输出清晰简洁的开发笔记格式。"
+        case .custom:
+            return ""
+        }
+    }
+}
 
 struct NativeAIEnhancementSettingsView: View {
     @ObservedObject var viewModel: AIEnhancementSettingsViewModel
@@ -13,13 +83,14 @@ struct NativeAIEnhancementSettingsView: View {
     @ObservedObject var promptTest: DictationPromptTestCoordinator
     let theme: AppTheme
 
+    @State private var selectedPreset: RefinementPreset = .cleanFillers
     @State private var isTestingConnection: Bool = false
     @State private var connectionMessage: String? = nil
     @State private var connectionSuccess: Bool? = nil
 
-    @State private var sandboxInput: String = "呃，那个，我今天测试了一下Ollama模型，感觉速度还可以啊。"
-    @State private var sandboxOutput: String = ""
-    @State private var isTestingSandbox: Bool = false
+    @State private var playgroundInput: String = "呃，那个，我今天测试了一下Ollama模型，感觉速度还可以啊。"
+    @State private var playgroundOutput: String = ""
+    @State private var isTestingPlayground: Bool = false
 
     private var isAIEnabledBinding: Binding<Bool> {
         Binding(
@@ -39,18 +110,21 @@ struct NativeAIEnhancementSettingsView: View {
             self.masterToggleCard
 
             if self.isAIEnabledBinding.wrappedValue {
-                // 3. Provider & Model Configuration
-                self.providerConfigurationSection
+                // 3. Preset Gallery
+                self.presetGallerySection
 
-                // 4. Prompt Presets & Custom Instructions
-                self.promptPresetsSection
+                // 4. LLM Provider Settings
+                self.providerCardSection
 
-                // 5. Interactive Testing Sandbox
-                self.sandboxSection
+                // 5. Interactive Playground
+                self.playgroundSection
             }
         }
         .padding(.horizontal, 4)
         .padding(.vertical, 8)
+        .onAppear {
+            self.detectCurrentPreset()
+        }
     }
 
     // MARK: - 1. Header
@@ -74,20 +148,31 @@ struct NativeAIEnhancementSettingsView: View {
     private var masterToggleCard: some View {
         HStack(spacing: 14) {
             ZStack {
-                Circle()
-                    .fill(self.isAIEnabledBinding.wrappedValue ? self.theme.palette.accent.opacity(0.15) : Color.secondary.opacity(0.15))
-                    .frame(width: 44, height: 44)
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(self.isAIEnabledBinding.wrappedValue ? self.theme.palette.accent.opacity(0.15) : Color.secondary.opacity(0.12))
+                    .frame(width: 48, height: 48)
                 Image(systemName: "brain.head.profile")
-                    .font(.system(size: 20))
+                    .font(.system(size: 22))
                     .foregroundStyle(self.isAIEnabledBinding.wrappedValue ? self.theme.palette.accent : .secondary)
             }
 
             VStack(alignment: .leading, spacing: 3) {
-                Text("Enable AI Post-Processing".loc)
-                    .font(.headline)
-                    .fontWeight(.semibold)
+                HStack(spacing: 6) {
+                    Text("Enable AI Post-Processing".loc)
+                        .font(.headline)
+                        .fontWeight(.semibold)
 
-                Text(self.isAIEnabledBinding.wrappedValue ? "AI enhancements will run automatically after recording finishes.".loc : "Transcripts will be typed directly without LLM post-processing.".loc)
+                    if self.isAIEnabledBinding.wrappedValue {
+                        Text("Active".loc)
+                            .font(.system(size: 10, weight: .bold))
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Capsule().fill(Color.fluidGreen.opacity(0.2)))
+                            .foregroundStyle(Color.fluidGreen)
+                    }
+                }
+
+                Text(self.isAIEnabledBinding.wrappedValue ? "录音结束后将由大模型自动润色并输出完美文本".loc : "语音识别文字将直接秒级打字上屏，不经过大模型处理".loc)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -104,68 +189,163 @@ struct NativeAIEnhancementSettingsView: View {
                 .fill(Color(nsColor: .controlBackgroundColor))
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
+                        .stroke(Color.secondary.opacity(0.18), lineWidth: 1)
                 )
         )
     }
 
-    // MARK: - 3. Provider & Model Configuration
-    private var providerConfigurationSection: some View {
+    // MARK: - 3. Preset Gallery Section
+    private var presetGallerySection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("AI Model Provider".loc)
+            Text("Refinement Preset & Rules".loc)
+                .font(.headline)
+                .foregroundStyle(.primary)
+
+            VStack(spacing: 8) {
+                ForEach(RefinementPreset.allCases) { preset in
+                    self.presetCard(for: preset)
+                }
+            }
+
+            // Expanded Custom Prompt Editor
+            if self.selectedPreset == .custom {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Custom System Prompt:".loc)
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundStyle(.secondary)
+
+                    TextEditor(text: self.customPromptBinding)
+                        .font(.system(.subheadline, design: .monospaced))
+                        .frame(minHeight: 80)
+                        .padding(6)
+                        .background(RoundedRectangle(cornerRadius: 8).fill(Color(nsColor: .textBackgroundColor)))
+                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.secondary.opacity(0.2), lineWidth: 1))
+                }
+                .padding(.top, 4)
+            }
+        }
+    }
+
+    private func presetCard(for preset: RefinementPreset) -> some View {
+        let isSelected = self.selectedPreset == preset
+
+        return Button {
+            withAnimation(.easeInOut(duration: 0.15)) {
+                self.selectedPreset = preset
+                if preset != .custom {
+                    self.settings.dictationCustomPromptText = preset.defaultPrompt
+                }
+                self.settings.setDictationPromptSelection(.default)
+            }
+        } label: {
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(preset.iconColor.opacity(0.14))
+                        .frame(width: 32, height: 32)
+                    Image(systemName: preset.icon)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(preset.iconColor)
+                }
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(preset.title)
+                        .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
+                        .foregroundStyle(.primary)
+
+                    Text(preset.subtitle)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                }
+
+                Spacer()
+
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(self.theme.palette.accent)
+                        .font(.system(size: 17))
+                } else {
+                    Circle()
+                        .strokeBorder(Color.secondary.opacity(0.35), lineWidth: 1.5)
+                        .frame(width: 17, height: 17)
+                }
+            }
+            .padding(12)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(isSelected ? self.theme.palette.accent.opacity(0.06) : Color(nsColor: .controlBackgroundColor).opacity(0.6))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(isSelected ? self.theme.palette.accent.opacity(0.45) : Color.secondary.opacity(0.14), lineWidth: 1)
+                    )
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - 4. LLM Provider Card Section
+    private var providerCardSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("LLM Provider Configuration".loc)
                 .font(.headline)
                 .foregroundStyle(.primary)
 
             VStack(spacing: 12) {
-                // Provider Selection
-                HStack(alignment: .center) {
-                    Text("Provider".loc)
-                        .font(.subheadline)
-                        .frame(width: 130, alignment: .leading)
+                // Provider Segmented
+                Picker("", selection: self.$settings.selectedProviderID) {
+                    Text("Ollama (局域网)".loc).tag("ollama")
+                    Text("DeepSeek").tag("deepseek")
+                    Text("OpenRouter").tag("openrouter")
+                    Text("Groq").tag("groq")
+                    Text("OpenAI").tag("openai")
+                }
+                .pickerStyle(.segmented)
 
-                    Picker("", selection: self.$settings.selectedProviderID) {
-                        Text("Ollama (Local / LAN)".loc).tag("ollama")
-                        Text("OpenAI").tag("openai")
-                        Text("DeepSeek").tag("deepseek")
-                        Text("OpenRouter").tag("openrouter")
-                        Text("Groq").tag("groq")
-                        Text("Custom Provider".loc).tag("custom")
+                Divider().opacity(0.3)
+
+                // Simplified Provider Inputs
+                if self.settings.selectedProviderID == "ollama" {
+                    HStack {
+                        Text("Ollama 地址".loc)
+                            .font(.subheadline)
+                            .frame(width: 110, alignment: .leading)
+                        TextField("http://192.168.7.136:11434", text: self.baseURLBinding)
+                            .textFieldStyle(.roundedBorder)
                     }
-                    .labelsHidden()
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-
-                // Base URL
-                HStack(alignment: .center) {
-                    Text("Base URL".loc)
-                        .font(.subheadline)
-                        .frame(width: 130, alignment: .leading)
-                    TextField(self.defaultBaseURL(for: self.settings.selectedProviderID), text: self.baseURLBinding)
-                        .textFieldStyle(.roundedBorder)
-                }
-
-                // API Key (for non-local providers)
-                if self.settings.selectedProviderID != "ollama" {
-                    HStack(alignment: .center) {
+                    HStack {
+                        Text("模型名称".loc)
+                            .font(.subheadline)
+                            .frame(width: 110, alignment: .leading)
+                        TextField("qwen2.5:7b", text: self.modelBinding)
+                            .textFieldStyle(.roundedBorder)
+                    }
+                } else {
+                    HStack {
                         Text("API Key".loc)
                             .font(.subheadline)
-                            .frame(width: 130, alignment: .leading)
-                        SecureField("API Key...", text: self.apiKeyBinding)
+                            .frame(width: 110, alignment: .leading)
+                        SecureField("sk-...", text: self.apiKeyBinding)
+                            .textFieldStyle(.roundedBorder)
+                    }
+                    HStack {
+                        Text("模型名称".loc)
+                            .font(.subheadline)
+                            .frame(width: 110, alignment: .leading)
+                        TextField(self.defaultModel(for: self.settings.selectedProviderID), text: self.modelBinding)
                             .textFieldStyle(.roundedBorder)
                     }
                 }
 
-                // Model Name
-                HStack(alignment: .center) {
-                    Text("Model Name".loc)
-                        .font(.subheadline)
-                        .frame(width: 130, alignment: .leading)
-                    TextField(self.defaultModel(for: self.settings.selectedProviderID), text: self.modelBinding)
-                        .textFieldStyle(.roundedBorder)
-                }
-
                 // Test Connection Row
                 HStack {
+                    if let message = self.connectionMessage {
+                        Text(message)
+                            .font(.caption)
+                            .foregroundStyle(self.connectionSuccess == true ? Color.fluidGreen : .red)
+                    }
+
                     Spacer()
 
                     Button {
@@ -177,22 +357,13 @@ struct NativeAIEnhancementSettingsView: View {
                             } else {
                                 Image(systemName: "bolt.horizontal.fill")
                             }
-                            Text(self.isTestingConnection ? "Testing...".loc : "Test Connection".loc)
+                            Text(self.isTestingConnection ? "正在连接...".loc : "测试连接".loc)
                         }
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.small)
                     .disabled(self.isTestingConnection)
                 }
-
-                if let message = self.connectionMessage {
-                    HStack {
-                        Spacer()
-                        Text(message)
-                            .font(.caption)
-                            .foregroundStyle(self.connectionSuccess == true ? Color.fluidGreen : .red)
-                    }
-                }
             }
             .padding(14)
             .background(
@@ -206,145 +377,54 @@ struct NativeAIEnhancementSettingsView: View {
         }
     }
 
-    // MARK: - 4. Prompt Presets Section
-    private var promptPresetsSection: some View {
+    // MARK: - 5. Interactive Playground Section
+    private var playgroundSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Refinement Rules & Prompt".loc)
+            Text("Interactive Playground".loc)
                 .font(.headline)
                 .foregroundStyle(.primary)
 
             VStack(alignment: .leading, spacing: 12) {
-                // Quick Presets
-                Text("Select Built-in Preset:".loc)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-
-                HStack(spacing: 8) {
-                    self.presetButton(
-                        title: "🧹 去除语气词与杂音".loc,
-                        prompt: "你是一个专业的语音文本整理助手。请准确保留用户的全部原意，自动去除语音中的'嗯'、'啊'、'那个'、'就是'、'然后'等口语语气词和重复词，修正错别字并输出规范流畅的中文。"
-                    )
-                    self.presetButton(
-                        title: "✍️ 口语转标准书面语".loc,
-                        prompt: "请将用户的口语表述整理为优雅、连贯的标准书面语，修复病句与逻辑停顿，适当补充规范标点符号，保持说话者的核心原意不变。"
-                    )
-                }
-
-                HStack(spacing: 8) {
-                    self.presetButton(
-                        title: "🔤 中英文混排与标点".loc,
-                        prompt: "请规范用户的文本排版：在中文字符与英文单词、数字之间自动添加标准空格，纠正漏标点和误标点，输出排版规范的中文。"
-                    )
-                    self.presetButton(
-                        title: "💻 编程与代码模式".loc,
-                        prompt: "用户正在口述编程与技术内容。请精准保留所有的技术术语、库名、函数名与变量名（如 camelCase、snake_case），输出清晰简洁的开发笔记格式。"
-                    )
-                }
-
-                Divider().opacity(0.3)
-
-                // Editable Prompt Text Box
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Active System Prompt:".loc)
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-
-                    TextEditor(text: self.activeSystemPromptBinding)
-                        .font(.system(.subheadline, design: .monospaced))
-                        .frame(minHeight: 90)
-                        .padding(4)
-                        .background(RoundedRectangle(cornerRadius: 8).fill(Color(nsColor: .textBackgroundColor)))
-                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.secondary.opacity(0.2), lineWidth: 1))
-                }
-            }
-            .padding(14)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(nsColor: .controlBackgroundColor))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.secondary.opacity(0.18), lineWidth: 1)
-                    )
-            )
-        }
-    }
-
-    private func presetButton(title: String, prompt: String) -> some View {
-        Button {
-            withAnimation {
-                self.settings.dictationCustomPromptText = prompt
-                self.settings.setDictationPromptSelection(.default)
-            }
-        } label: {
-            HStack {
-                Text(title)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.primary)
-                Spacer()
-            }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 8)
-            .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color.secondary.opacity(0.08))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.secondary.opacity(0.15), lineWidth: 1)
-                    )
-            )
-        }
-        .buttonStyle(.plain)
-    }
-
-    // MARK: - 5. Interactive Testing Sandbox
-    private var sandboxSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Interactive Sandbox Test".loc)
-                .font(.headline)
-                .foregroundStyle(.primary)
-
-            VStack(alignment: .leading, spacing: 10) {
-                Text("Test your current AI model & prompt with sample text:".loc)
+                Text("输入一段口述草稿，点击“体验润色”即时预览 AI 优化效果：".loc)
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
                 HStack(alignment: .top, spacing: 10) {
-                    // Input Column
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Input Text".loc)
+                        Text("原始输入".loc)
                             .font(.caption)
                             .fontWeight(.medium)
-                        TextField("Enter sample raw transcript...", text: self.$sandboxInput)
+                            .foregroundStyle(.secondary)
+                        TextField("输入测试口语文本...", text: self.$playgroundInput)
                             .textFieldStyle(.roundedBorder)
                     }
 
-                    // Run Button
                     Button {
-                        self.runSandboxTest()
+                        self.runPlaygroundTest()
                     } label: {
                         HStack(spacing: 4) {
-                            if self.isTestingSandbox {
+                            if self.isTestingPlayground {
                                 ProgressView().controlSize(.small)
                             } else {
-                                Image(systemName: "play.fill")
+                                Image(systemName: "sparkles")
                             }
-                            Text(self.isTestingSandbox ? "Running...".loc : "Test AI".loc)
+                            Text(self.isTestingPlayground ? "润色中...".loc : "体验润色".loc)
                         }
                     }
                     .buttonStyle(.borderedProminent)
                     .controlSize(.regular)
-                    .disabled(self.isTestingSandbox || self.sandboxInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .disabled(self.isTestingPlayground || self.playgroundInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     .padding(.top, 18)
                 }
 
-                if !self.sandboxOutput.isEmpty {
+                if !self.playgroundOutput.isEmpty {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("AI Refined Result:".loc)
+                        Text("AI 润色结果：".loc)
                             .font(.caption)
                             .fontWeight(.medium)
                             .foregroundStyle(Color.fluidGreen)
 
-                        Text(self.sandboxOutput)
+                        Text(self.playgroundOutput)
                             .font(.system(.subheadline, design: .default))
                             .padding(10)
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -419,16 +499,26 @@ struct NativeAIEnhancementSettingsView: View {
         )
     }
 
-    private var activeSystemPromptBinding: Binding<String> {
+    private var customPromptBinding: Binding<String> {
         Binding(
-            get: {
-                let custom = self.settings.dictationCustomPromptText
-                return custom.isEmpty ? "你是一个专业的语音文本整理助手。请准确保留用户的全部原意，自动去除语音中的'嗯'、'啊'、'那个'、'就是'等口语语气词，修正错别字并输出规范流畅的中文。" : custom
-            },
-            set: { newValue in
-                self.settings.dictationCustomPromptText = newValue
-            }
+            get: { self.settings.dictationCustomPromptText },
+            set: { newValue in self.settings.dictationCustomPromptText = newValue }
         )
+    }
+
+    private func detectCurrentPreset() {
+        let current = self.settings.dictationCustomPromptText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if current.isEmpty || current == RefinementPreset.cleanFillers.defaultPrompt {
+            self.selectedPreset = .cleanFillers
+        } else if current == RefinementPreset.writtenText.defaultPrompt {
+            self.selectedPreset = .writtenText
+        } else if current == RefinementPreset.typography.defaultPrompt {
+            self.selectedPreset = .typography
+        } else if current == RefinementPreset.coding.defaultPrompt {
+            self.selectedPreset = .coding
+        } else {
+            self.selectedPreset = .custom
+        }
     }
 
     private func defaultBaseURL(for providerID: String) -> String {
@@ -458,7 +548,6 @@ struct NativeAIEnhancementSettingsView: View {
         self.connectionMessage = nil
         self.connectionSuccess = nil
 
-        let providerID = self.settings.selectedProviderID
         let baseURL = self.baseURLBinding.wrappedValue
         let apiKey = self.apiKeyBinding.wrappedValue
         let model = self.modelBinding.wrappedValue
@@ -479,24 +568,24 @@ struct NativeAIEnhancementSettingsView: View {
                 await MainActor.run {
                     self.isTestingConnection = false
                     self.connectionSuccess = true
-                    self.connectionMessage = "Connection verified".loc
+                    self.connectionMessage = "连接测试成功".loc
                 }
             } catch {
                 await MainActor.run {
                     self.isTestingConnection = false
                     self.connectionSuccess = false
-                    self.connectionMessage = "\("Connection failed".loc): \(error.localizedDescription)"
+                    self.connectionMessage = "\("连接失败".loc): \(error.localizedDescription)"
                 }
             }
         }
     }
 
-    private func runSandboxTest() {
-        self.isTestingSandbox = true
-        self.sandboxOutput = ""
+    private func runPlaygroundTest() {
+        self.isTestingPlayground = true
+        self.playgroundOutput = ""
 
-        let prompt = self.activeSystemPromptBinding.wrappedValue
-        let text = self.sandboxInput
+        let prompt = self.selectedPreset == .custom ? self.customPromptBinding.wrappedValue : self.selectedPreset.defaultPrompt
+        let text = self.playgroundInput
         let model = self.modelBinding.wrappedValue
         let baseURL = self.baseURLBinding.wrappedValue
         let apiKey = self.apiKeyBinding.wrappedValue
@@ -515,13 +604,13 @@ struct NativeAIEnhancementSettingsView: View {
             do {
                 let response = try await LLMClient.shared.call(config)
                 await MainActor.run {
-                    self.isTestingSandbox = false
-                    self.sandboxOutput = response.content
+                    self.isTestingPlayground = false
+                    self.playgroundOutput = response.content
                 }
             } catch {
                 await MainActor.run {
-                    self.isTestingSandbox = false
-                    self.sandboxOutput = "Error: \(error.localizedDescription)"
+                    self.isTestingPlayground = false
+                    self.playgroundOutput = "错误: \(error.localizedDescription)"
                 }
             }
         }

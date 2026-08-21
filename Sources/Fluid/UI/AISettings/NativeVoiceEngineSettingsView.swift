@@ -2,7 +2,7 @@
 //  NativeVoiceEngineSettingsView.swift
 //  FluidVoice
 //
-//  Modern, comprehensive native SwiftUI Voice Engine Settings View adhering to Apple HIG.
+//  Modern, card-grouped native SwiftUI Voice Engine Settings View adhering to Apple HIG.
 //
 
 import SwiftUI
@@ -10,21 +10,28 @@ import SwiftUI
 typealias SpeechModel = SettingsStore.SpeechModel
 
 enum ModelCategoryTab: String, CaseIterable, Identifiable {
-    case all = "全部"
     case apple = "Apple 内置"
     case local = "本地离线"
     case cloud = "云端与局域网"
+    case all = "全部"
 
     var id: String { self.rawValue }
 
     var icon: String {
         switch self {
-        case .all: return "square.grid.2x2"
         case .apple: return "apple.logo"
         case .local: return "cpu"
         case .cloud: return "network"
+        case .all: return "square.grid.2x2"
         }
     }
+}
+
+enum LocalModelSubgroup: String, CaseIterable, Identifiable {
+    case whisper = "Whisper 全系列"
+    case neural = "FluidAudio 神经网络"
+
+    var id: String { self.rawValue }
 }
 
 struct NativeVoiceEngineSettingsView: View {
@@ -32,7 +39,8 @@ struct NativeVoiceEngineSettingsView: View {
     @ObservedObject var settings: SettingsStore
     let theme: AppTheme
 
-    @State private var selectedTab: ModelCategoryTab = .all
+    @State private var selectedTab: ModelCategoryTab = .apple
+    @State private var localSubgroup: LocalModelSubgroup = .whisper
     @State private var isTestingConnection: Bool = false
     @State private var connectionTestMessage: String? = nil
     @State private var connectionTestSuccess: Bool? = nil
@@ -46,30 +54,35 @@ struct NativeVoiceEngineSettingsView: View {
             // 1. Header
             self.headerSection
 
-            // 2. Active Model Status Card
-            self.activeStatusCard
+            // 2. Active Model Hero Card
+            self.activeHeroCard
 
-            // 3. Category Filter Tabs
-            self.categoryTabPicker
+            // 3. Category Segmented Control
+            self.categoryPickerSection
 
-            // 4. Model List
-            self.modelListSection
+            // 4. Model Cards Group
+            self.modelGroupSection
 
-            // 5. Detailed Configuration for Selected Engine (Ollama / Cloud / Custom)
+            // 5. Intelligent Fallback Settings (Only for Cloud/Ollama models)
             if self.activeModel.isCloudModel {
-                self.cloudConfigurationSection
+                self.smartFallbackSection
             }
 
-            // 6. Intelligent Fallback & Timeout Settings
-            self.smartFallbackSection
-
-            // 7. Tip Section
-            self.advancedOptionsSection
+            // 6. Helpful Tip
+            self.tipSection
         }
         .padding(.horizontal, 4)
         .padding(.vertical, 8)
         .onAppear {
             self.viewModel.onAppear()
+            // Auto sync tab with active model
+            if self.activeModel == .appleSpeech || self.activeModel == .appleSpeechAnalyzer {
+                self.selectedTab = .apple
+            } else if self.activeModel.isCloudModel {
+                self.selectedTab = .cloud
+            } else {
+                self.selectedTab = .local
+            }
         }
     }
 
@@ -90,50 +103,68 @@ struct NativeVoiceEngineSettingsView: View {
         }
     }
 
-    // MARK: - 2. Active Status Card
-    private var activeStatusCard: some View {
-        HStack(spacing: 14) {
-            ZStack {
-                Circle()
-                    .fill(Color.fluidGreen.opacity(0.15))
-                    .frame(width: 44, height: 44)
-                Image(systemName: self.iconForModel(self.activeModel))
-                    .font(.system(size: 20))
-                    .foregroundStyle(Color.fluidGreen)
-            }
-
-            VStack(alignment: .leading, spacing: 3) {
-                HStack(spacing: 6) {
-                    Text(self.displayNameForModel(self.activeModel))
-                        .font(.headline)
-                        .fontWeight(.semibold)
-
-                    Text("Active".loc)
-                        .font(.system(size: 11, weight: .bold))
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Capsule().fill(Color.fluidGreen.opacity(0.2)))
+    // MARK: - 2. Active Model Hero Card
+    private var activeHeroCard: some View {
+        VStack(spacing: 12) {
+            HStack(spacing: 14) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(Color.fluidGreen.opacity(0.15))
+                        .frame(width: 48, height: 48)
+                    Image(systemName: self.iconForModel(self.activeModel))
+                        .font(.system(size: 22))
                         .foregroundStyle(Color.fluidGreen)
                 }
 
-                Text(self.subtitleForModel(self.activeModel))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(spacing: 6) {
+                        Text(self.displayNameForModel(self.activeModel))
+                            .font(.headline)
+                            .fontWeight(.semibold)
 
-            Spacer()
+                        Text("Current Active".loc)
+                            .font(.system(size: 10, weight: .bold))
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Capsule().fill(Color.fluidGreen.opacity(0.2)))
+                            .foregroundStyle(Color.fluidGreen)
+                    }
 
-            if self.settings.cloudSTTAutoFallback && self.activeModel.isCloudModel {
-                HStack(spacing: 4) {
-                    Image(systemName: "shield.checkmark.fill")
-                        .foregroundStyle(self.theme.palette.accent)
-                    Text("Auto Fallback Enabled".loc)
+                    Text(self.subtitleForModel(self.activeModel))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(RoundedRectangle(cornerRadius: 6).fill(Color.secondary.opacity(0.1)))
+
+                Spacer()
+            }
+
+            Divider().opacity(0.3)
+
+            // Status Bar Indicator
+            HStack(spacing: 6) {
+                if self.activeModel.isCloudModel {
+                    Image(systemName: self.settings.cloudSTTAutoFallback ? "shield.checkmark.fill" : "network")
+                        .foregroundStyle(self.theme.palette.accent)
+                        .font(.caption)
+                    Text(self.settings.cloudSTTAutoFallback ? "智能容灾已就绪：网络异常或超时将无缝切换至 Apple Speech 兜底识别".loc : "当前运行在远程/局域网 ASR 模式".loc)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else if self.activeModel == .appleSpeech || self.activeModel == .appleSpeechAnalyzer {
+                    Image(systemName: "apple.logo")
+                        .foregroundStyle(Color.fluidGreen)
+                        .font(.caption)
+                    Text("macOS 系统级内置引擎：零延迟、无需下载、完全离线安全".loc)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Image(systemName: "cpu.fill")
+                        .foregroundStyle(Color.fluidGreen)
+                        .font(.caption)
+                    Text("本地神经网络引擎：完全离线运行于 Apple Silicon，保护隐私".loc)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
             }
         }
         .padding(14)
@@ -142,32 +173,44 @@ struct NativeVoiceEngineSettingsView: View {
                 .fill(Color(nsColor: .controlBackgroundColor))
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
+                        .stroke(Color.secondary.opacity(0.18), lineWidth: 1)
                 )
         )
     }
 
-    // MARK: - 3. Category Tab Picker
-    private var categoryTabPicker: some View {
-        Picker("", selection: self.$selectedTab) {
-            ForEach(ModelCategoryTab.allCases) { tab in
-                Label(tab.rawValue.loc, systemImage: tab.icon).tag(tab)
+    // MARK: - 3. Category Picker Section
+    private var categoryPickerSection: some View {
+        VStack(spacing: 8) {
+            Picker("", selection: self.$selectedTab) {
+                ForEach(ModelCategoryTab.allCases) { tab in
+                    Label(tab.rawValue.loc, systemImage: tab.icon).tag(tab)
+                }
+            }
+            .pickerStyle(.segmented)
+
+            if self.selectedTab == .local {
+                Picker("", selection: self.$localSubgroup) {
+                    ForEach(LocalModelSubgroup.allCases) { subgroup in
+                        Text(subgroup.rawValue.loc).tag(subgroup)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .controlSize(.small)
+                .padding(.horizontal, 40)
             }
         }
-        .pickerStyle(.segmented)
-        .padding(.vertical, 2)
     }
 
-    // MARK: - 4. Model List Section
-    private var modelListSection: some View {
+    // MARK: - 4. Model Group Section
+    private var modelGroupSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(self.categorySectionTitle)
                 .font(.headline)
                 .foregroundStyle(.primary)
 
-            VStack(spacing: 8) {
+            VStack(spacing: 10) {
                 ForEach(self.displayedModels) { model in
-                    self.modelRow(for: model)
+                    self.modelCard(for: model)
                 }
             }
         }
@@ -175,42 +218,46 @@ struct NativeVoiceEngineSettingsView: View {
 
     private var categorySectionTitle: String {
         switch self.selectedTab {
-        case .all: return "All Available Models".loc
         case .apple: return "Apple Built-in Engines (Zero Download)".loc
-        case .local: return "On-Device Offline Models (Whisper & Neural)".loc
+        case .local:
+            return self.localSubgroup == .whisper ? "Whisper 本地离线全系列".loc : "FluidAudio 神经网络模型 (Apple Silicon)".loc
         case .cloud: return "Cloud & LAN Servers (Ollama / Cloud APIs)".loc
+        case .all: return "All Available Models".loc
         }
     }
 
     private var displayedModels: [SpeechModel] {
         switch self.selectedTab {
+        case .apple:
+            return [.appleSpeechAnalyzer, .appleSpeech]
+        case .local:
+            if self.localSubgroup == .whisper {
+                return [.whisperLargeTurbo, .whisperLarge, .whisperMedium, .whisperSmall, .whisperBase, .whisperTiny]
+            } else {
+                return [.parakeetTDT, .parakeetTDTv2, .parakeetRealtime, .qwen3Asr, .nemotronOffline, .cohereTranscribeSixBit]
+            }
+        case .cloud:
+            return [.cloudOllama, .cloudOpenAI, .cloudGroq, .cloudOpenRouter, .cloudCustom]
         case .all:
             return SpeechModel.availableModels
-        case .apple:
-            return [.appleSpeech, .appleSpeechAnalyzer]
-        case .local:
-            return SpeechModel.availableModels.filter { !$0.isCloudModel && $0 != .appleSpeech && $0 != .appleSpeechAnalyzer }
-        case .cloud:
-            return SpeechModel.availableModels.filter { $0.isCloudModel }
         }
     }
 
-    // MARK: - Model Card Row
-    private func modelRow(for model: SpeechModel) -> some View {
+    // MARK: - Model Card Component
+    private func modelCard(for model: SpeechModel) -> some View {
         let isSelected = self.activeModel == model
         let isInstalled = model.isInstalled
         let isDownloading = self.viewModel.downloadingModel == model
 
         return VStack(spacing: 0) {
+            // Main Row
             HStack(spacing: 12) {
-                // Icon
                 Image(systemName: self.iconForModel(model))
                     .font(.system(size: 18))
                     .foregroundStyle(isSelected ? self.theme.palette.accent : .secondary)
                     .frame(width: 28, height: 28)
 
-                // Info
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 6) {
                         Text(self.displayNameForModel(model))
                             .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
@@ -225,7 +272,7 @@ struct NativeVoiceEngineSettingsView: View {
                             self.miniBadge(text: model.downloadSize, color: .secondary)
                         }
 
-                        if model == .whisperLargeTurbo || model == .appleSpeech {
+                        if model == .whisperLargeTurbo || model == .appleSpeechAnalyzer {
                             self.miniBadge(text: "Recommended".loc, color: Color.fluidGreen)
                         }
                     }
@@ -242,13 +289,21 @@ struct NativeVoiceEngineSettingsView: View {
                 self.modelActionView(for: model, isSelected: isSelected, isInstalled: isInstalled, isDownloading: isDownloading)
             }
             .padding(12)
+
+            // Inline Configuration for Selected Cloud Engine
+            if isSelected && model.isCloudModel {
+                Divider().opacity(0.3).padding(.horizontal, 10)
+                self.inlineCloudConfigView(for: model)
+                    .padding(12)
+                    .background(Color.secondary.opacity(0.04))
+            }
         }
         .background(
             RoundedRectangle(cornerRadius: 10)
-                .fill(isSelected ? self.theme.palette.accent.opacity(0.08) : Color(nsColor: .controlBackgroundColor).opacity(0.6))
+                .fill(isSelected ? self.theme.palette.accent.opacity(0.06) : Color(nsColor: .controlBackgroundColor).opacity(0.6))
                 .overlay(
                     RoundedRectangle(cornerRadius: 10)
-                        .stroke(isSelected ? self.theme.palette.accent.opacity(0.5) : Color.secondary.opacity(0.15), lineWidth: 1)
+                        .stroke(isSelected ? self.theme.palette.accent.opacity(0.45) : Color.secondary.opacity(0.14), lineWidth: 1)
                 )
         )
         .contentShape(Rectangle())
@@ -320,152 +375,136 @@ struct NativeVoiceEngineSettingsView: View {
             .foregroundStyle(color)
     }
 
-    // MARK: - 5. Cloud Configuration Section
-    private var cloudConfigurationSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Engine Configuration".loc)
-                .font(.headline)
-                .foregroundStyle(.primary)
-
-            VStack(spacing: 12) {
-                // Base URL & Model for specific cloud engines
-                if self.activeModel == .cloudOllama {
-                    HStack(alignment: .center) {
-                        Text("Ollama Base URL".loc)
-                            .font(.subheadline)
-                            .frame(width: 140, alignment: .leading)
-                        TextField("http://192.168.7.136:11434", text: self.$settings.cloudSTTOllamaBaseURL)
-                            .textFieldStyle(.roundedBorder)
-                    }
-
-                    HStack(alignment: .center) {
-                        Text("Model Name".loc)
-                            .font(.subheadline)
-                            .frame(width: 140, alignment: .leading)
-                        TextField("e.g. qwen3-asr", text: self.$settings.cloudSTTOllamaModel)
-                            .textFieldStyle(.roundedBorder)
-                    }
-                } else if self.activeModel == .cloudOpenAI {
-                    HStack(alignment: .center) {
-                        Text("OpenAI API Key".loc)
-                            .font(.subheadline)
-                            .frame(width: 140, alignment: .leading)
-                        SecureField("sk-...", text: self.$settings.cloudSTTOpenAIAPIKey)
-                            .textFieldStyle(.roundedBorder)
-                    }
-                    HStack(alignment: .center) {
-                        Text("Model".loc)
-                            .font(.subheadline)
-                            .frame(width: 140, alignment: .leading)
-                        TextField("whisper-1", text: self.$settings.cloudSTTOpenAIModel)
-                            .textFieldStyle(.roundedBorder)
-                    }
-                } else if self.activeModel == .cloudGroq {
-                    HStack(alignment: .center) {
-                        Text("Groq API Key".loc)
-                            .font(.subheadline)
-                            .frame(width: 140, alignment: .leading)
-                        SecureField("gsk_...", text: self.$settings.cloudSTTGroqAPIKey)
-                            .textFieldStyle(.roundedBorder)
-                    }
-                    HStack(alignment: .center) {
-                        Text("Model".loc)
-                            .font(.subheadline)
-                            .frame(width: 140, alignment: .leading)
-                        TextField("whisper-large-v3-turbo", text: self.$settings.cloudSTTGroqModel)
-                            .textFieldStyle(.roundedBorder)
-                    }
-                } else if self.activeModel == .cloudOpenRouter {
-                    HStack(alignment: .center) {
-                        Text("OpenRouter API Key".loc)
-                            .font(.subheadline)
-                            .frame(width: 140, alignment: .leading)
-                        SecureField("sk-or-...", text: self.$settings.cloudSTTOpenRouterAPIKey)
-                            .textFieldStyle(.roundedBorder)
-                    }
-                } else if self.activeModel == .cloudCustom {
-                    HStack(alignment: .center) {
-                        Text("Endpoint URL".loc)
-                            .font(.subheadline)
-                            .frame(width: 140, alignment: .leading)
-                        TextField("https://api.example.com/v1/audio/transcriptions", text: self.$settings.cloudSTTCustomBaseURL)
-                            .textFieldStyle(.roundedBorder)
-                    }
-                    HStack(alignment: .center) {
-                        Text("API Key".loc)
-                            .font(.subheadline)
-                            .frame(width: 140, alignment: .leading)
-                        SecureField("Optional API Key...", text: self.$settings.cloudSTTCustomAPIKey)
-                            .textFieldStyle(.roundedBorder)
-                    }
-                }
-
-                // Target Language & Test Button
+    // MARK: - Inline Configuration View for Selected Cloud Engine
+    @ViewBuilder
+    private func inlineCloudConfigView(for model: SpeechModel) -> some View {
+        VStack(spacing: 10) {
+            if model == .cloudOllama {
                 HStack(alignment: .center) {
-                    Text("Target Language".loc)
+                    Text("Ollama Base URL".loc)
                         .font(.subheadline)
                         .frame(width: 140, alignment: .leading)
-                    Picker("", selection: self.$settings.cloudSTTLanguage) {
-                        Text("Auto Detect".loc).tag("auto")
-                        Text("Chinese (Simplified)".loc).tag("zh")
-                        Text("English".loc).tag("en")
-                        Text("Japanese".loc).tag("ja")
-                        Text("Korean".loc).tag("ko")
-                    }
-                    .labelsHidden()
-                    .frame(width: 160)
-
-                    Spacer()
-
-                    Button {
-                        self.testConnection()
-                    } label: {
-                        HStack(spacing: 4) {
-                            if self.isTestingConnection {
-                                ProgressView().controlSize(.small)
-                            } else {
-                                Image(systemName: "network")
-                            }
-                            Text(self.isTestingConnection ? "Testing...".loc : "Test Connection".loc)
-                        }
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                    .disabled(self.isTestingConnection)
-                }
-
-                if let message = self.connectionTestMessage {
-                    HStack {
-                        Spacer()
-                        Text(message)
-                            .font(.caption)
-                            .foregroundStyle(self.connectionTestSuccess == true ? Color.fluidGreen : .red)
-                    }
-                }
-
-                // Optional ASR Prompt
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("ASR Prompt (Optional / Filter Filler Words)".loc)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    TextField("e.g. Accurately transcribe audio, filter out verbal fillers like uh, um, etc.".loc, text: self.$settings.cloudSTTPrompt)
+                    TextField("http://192.168.7.136:11434", text: self.$settings.cloudSTTOllamaBaseURL)
                         .textFieldStyle(.roundedBorder)
+                }
+                HStack(alignment: .center) {
+                    Text("Model Name".loc)
                         .font(.subheadline)
+                        .frame(width: 140, alignment: .leading)
+                    TextField("e.g. qwen3-asr", text: self.$settings.cloudSTTOllamaModel)
+                        .textFieldStyle(.roundedBorder)
+                }
+            } else if model == .cloudOpenAI {
+                HStack(alignment: .center) {
+                    Text("OpenAI API Key".loc)
+                        .font(.subheadline)
+                        .frame(width: 140, alignment: .leading)
+                    SecureField("sk-...", text: self.$settings.cloudSTTOpenAIAPIKey)
+                        .textFieldStyle(.roundedBorder)
+                }
+                HStack(alignment: .center) {
+                    Text("Model".loc)
+                        .font(.subheadline)
+                        .frame(width: 140, alignment: .leading)
+                    TextField("whisper-1", text: self.$settings.cloudSTTOpenAIModel)
+                        .textFieldStyle(.roundedBorder)
+                }
+            } else if model == .cloudGroq {
+                HStack(alignment: .center) {
+                    Text("Groq API Key".loc)
+                        .font(.subheadline)
+                        .frame(width: 140, alignment: .leading)
+                    SecureField("gsk_...", text: self.$settings.cloudSTTGroqAPIKey)
+                        .textFieldStyle(.roundedBorder)
+                }
+                HStack(alignment: .center) {
+                    Text("Model".loc)
+                        .font(.subheadline)
+                        .frame(width: 140, alignment: .leading)
+                    TextField("whisper-large-v3-turbo", text: self.$settings.cloudSTTGroqModel)
+                        .textFieldStyle(.roundedBorder)
+                }
+            } else if model == .cloudOpenRouter {
+                HStack(alignment: .center) {
+                    Text("OpenRouter API Key".loc)
+                        .font(.subheadline)
+                        .frame(width: 140, alignment: .leading)
+                    SecureField("sk-or-...", text: self.$settings.cloudSTTOpenRouterAPIKey)
+                        .textFieldStyle(.roundedBorder)
+                }
+            } else if model == .cloudCustom {
+                HStack(alignment: .center) {
+                    Text("Endpoint URL".loc)
+                        .font(.subheadline)
+                        .frame(width: 140, alignment: .leading)
+                    TextField("https://api.example.com/v1/audio/transcriptions", text: self.$settings.cloudSTTCustomBaseURL)
+                        .textFieldStyle(.roundedBorder)
+                }
+                HStack(alignment: .center) {
+                    Text("API Key".loc)
+                        .font(.subheadline)
+                        .frame(width: 140, alignment: .leading)
+                    SecureField("Optional API Key...", text: self.$settings.cloudSTTCustomAPIKey)
+                        .textFieldStyle(.roundedBorder)
                 }
             }
-            .padding(14)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(nsColor: .controlBackgroundColor))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.secondary.opacity(0.18), lineWidth: 1)
-                    )
-            )
+
+            // Language & Test Button Row
+            HStack(alignment: .center) {
+                Text("Target Language".loc)
+                    .font(.subheadline)
+                    .frame(width: 140, alignment: .leading)
+                Picker("", selection: self.$settings.cloudSTTLanguage) {
+                    Text("Auto Detect".loc).tag("auto")
+                    Text("Chinese (Simplified)".loc).tag("zh")
+                    Text("English".loc).tag("en")
+                    Text("Japanese".loc).tag("ja")
+                    Text("Korean".loc).tag("ko")
+                }
+                .labelsHidden()
+                .frame(width: 150)
+
+                Spacer()
+
+                Button {
+                    self.testConnection()
+                } label: {
+                    HStack(spacing: 4) {
+                        if self.isTestingConnection {
+                            ProgressView().controlSize(.small)
+                        } else {
+                            Image(systemName: "network")
+                        }
+                        Text(self.isTestingConnection ? "Testing...".loc : "Test Connection".loc)
+                    }
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .disabled(self.isTestingConnection)
+            }
+
+            if let message = self.connectionTestMessage {
+                HStack {
+                    Spacer()
+                    Text(message)
+                        .font(.caption)
+                        .foregroundStyle(self.connectionTestSuccess == true ? Color.fluidGreen : .red)
+                }
+            }
+
+            // ASR Prompt Field
+            VStack(alignment: .leading, spacing: 3) {
+                Text("ASR Prompt (Optional / Vocabulary Biasing)".loc)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                TextField("e.g. Specialized terminology, proper nouns, or spelling cues".loc, text: self.$settings.cloudSTTPrompt)
+                    .textFieldStyle(.roundedBorder)
+                    .font(.subheadline)
+            }
         }
     }
 
-    // MARK: - 6. Smart Fallback Section
+    // MARK: - 5. Smart Fallback Section
     private var smartFallbackSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Reliability & Fallback".loc)
@@ -516,8 +555,8 @@ struct NativeVoiceEngineSettingsView: View {
         }
     }
 
-    // MARK: - 7. Advanced Options Section
-    private var advancedOptionsSection: some View {
+    // MARK: - 6. Tip Section
+    private var tipSection: some View {
         HStack {
             Image(systemName: "character.book.closed.fill")
                 .foregroundStyle(.secondary)
@@ -543,7 +582,7 @@ struct NativeVoiceEngineSettingsView: View {
     private func displayNameForModel(_ model: SpeechModel) -> String {
         switch model {
         case .appleSpeech: return "Apple Speech (经典内置引擎)".loc
-        case .appleSpeechAnalyzer: return "Apple Speech Analyzer (macOS 15+ 现代流式)".loc
+        case .appleSpeechAnalyzer: return "Apple Speech Analyzer (macOS 26+ 现代流式)".loc
         case .cloudOllama: return "Ollama ASR (局域网 / 本地服务器)".loc
         case .cloudOpenAI: return "OpenAI Cloud STT (Whisper API)".loc
         case .cloudGroq: return "Groq Cloud STT (极速 LPUs)".loc
@@ -570,7 +609,7 @@ struct NativeVoiceEngineSettingsView: View {
         case .appleSpeech:
             return "macOS 系统经典内置听写，零内存占用，完全离线，开箱即用。".loc
         case .appleSpeechAnalyzer:
-            return "macOS 15+ Sequoia 采用的新一代神经流式识别引擎，延迟更低、分词更精准。".loc
+            return "macOS 26+ 采用的新一代神经流式识别引擎，延迟更低、分词更精准。".loc
         case .cloudOllama:
             return "连接到本地或局域网 Ollama 服务（如 Qwen3-ASR、SenseVoice），免除本机显存负担。".loc
         case .cloudOpenAI:
@@ -613,7 +652,7 @@ struct NativeVoiceEngineSettingsView: View {
     private func subtitleForModel(_ model: SpeechModel) -> String {
         switch model {
         case .appleSpeech: return "macOS 经典内置听写引擎 (SFSpeechRecognizer)".loc
-        case .appleSpeechAnalyzer: return "macOS 15+ 现代神经流式引擎 (SpeechAnalyzer)".loc
+        case .appleSpeechAnalyzer: return "macOS 26+ 现代神经流式引擎 (SpeechAnalyzer)".loc
         case .cloudOllama: return "\(self.settings.cloudSTTOllamaBaseURL) (\(self.settings.cloudSTTOllamaModel))"
         case .cloudOpenAI: return "OpenAI Cloud STT (\(self.settings.cloudSTTOpenAIModel))"
         case .cloudGroq: return "Groq Cloud STT (\(self.settings.cloudSTTGroqModel))"
