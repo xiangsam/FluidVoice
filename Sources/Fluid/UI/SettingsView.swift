@@ -68,6 +68,7 @@ struct SettingsView: View {
     @State private var audioHistoryUsageBytes: Int64 = DictationAudioHistoryStore.shared.audioUsageBytes()
     @State private var draggedMicrophoneUID: String?
     @State private var hoveredMicrophoneUID: String?
+    @State private var isAdvancedSettingsExpanded: Bool = false
 
     let hotkeyManager: GlobalHotkeyManager?
     let menuBarManager: MenuBarManager
@@ -196,7 +197,7 @@ struct SettingsView: View {
                 .padding(.leading, 30)
             Spacer()
             Picker("", selection: self.dictationPromptSelectionBinding(for: slot)) {
-                Text("Off").tag("__OFF__")
+                Text("Off".loc).tag("__OFF__")
                 Text("Default".loc).tag("__DEFAULT__").disabled(privateAILocked)
                 if PrivateFeatures.privateAIProvider {
                     Text(PrivateAIProviderFeature.displayName)
@@ -472,7 +473,7 @@ struct SettingsView: View {
                 // Microphone Permission Card
                 ThemedCard(style: .standard) {
                     VStack(alignment: .leading, spacing: 14) {
-                        Label("Microphone Permission", systemImage: "mic.fill")
+                        Label("Microphone Permission".loc, systemImage: "mic.fill")
                             .font(.headline)
                             .foregroundStyle(.primary)
 
@@ -492,7 +493,7 @@ struct SettingsView: View {
                                     .foregroundStyle(self.asr.micStatus == .authorized ? .primary : self.theme.palette.warning)
 
                                     if self.asr.micStatus != .authorized {
-                                        Text("Microphone access is required for voice recording")
+                                        Text("Microphone access is required for voice recording".loc)
                                             .font(self.theme.typography.bodySmall)
                                             .foregroundStyle(self.settingsSecondaryText)
                                     }
@@ -503,7 +504,7 @@ struct SettingsView: View {
                                     Button {
                                         self.asr.requestMicAccess()
                                     } label: {
-                                        Label("Grant Access", systemImage: "mic.fill")
+                                        Label("Grant Access".loc, systemImage: "mic.fill")
                                     }
                                     .buttonStyle(.borderedProminent)
                                     .tint(self.theme.palette.accent)
@@ -512,7 +513,7 @@ struct SettingsView: View {
                                     Button {
                                         self.asr.openSystemSettingsForMic()
                                     } label: {
-                                        Label("Open Settings", systemImage: "gear")
+                                        Label("Open Settings".loc, systemImage: "gear")
                                     }
                                     .buttonStyle(.bordered)
                                     .controlSize(.regular)
@@ -521,7 +522,7 @@ struct SettingsView: View {
 
                             if self.asr.micStatus != .authorized {
                                 self.instructionsBox(
-                                    title: "How to enable microphone access:",
+                                    title: "How to enable microphone access:".loc,
                                     steps: self.asr.micStatus == .notDetermined
                                         ? ["Click **Grant Access** above", "Choose **Allow** in the system dialog"]
                                         : [
@@ -540,7 +541,7 @@ struct SettingsView: View {
                 ThemedCard(style: .standard) {
                     VStack(alignment: .leading, spacing: 14) {
                         HStack(spacing: 8) {
-                            Label("Global Hotkey", systemImage: "keyboard")
+                            Label("Global Hotkey".loc, systemImage: "keyboard")
                                 .font(.headline)
                                 .foregroundStyle(.primary)
 
@@ -548,7 +549,7 @@ struct SettingsView: View {
 
                             if self.accessibilityEnabled {
                                 if self.isRecordingAnyShortcut {
-                                    Text("Recording…")
+                                    Text("Recording…".loc)
                                         .font(.caption.weight(.semibold))
                                         .foregroundStyle(.orange)
                                 } else if self.hotkeyManagerInitialized {
@@ -561,7 +562,7 @@ struct SettingsView: View {
                                             .foregroundStyle(self.settingsSecondaryText)
                                     }
                                 } else {
-                                    Text("Initializing…")
+                                    Text("Initializing…".loc)
                                         .font(.caption.weight(.semibold))
                                         .foregroundStyle(self.settingsSecondaryText)
                                 }
@@ -574,7 +575,7 @@ struct SettingsView: View {
                                     HStack(spacing: 8) {
                                         Image(systemName: "hand.point.up.left.fill")
                                             .foregroundStyle(.orange)
-                                        Text("Press your new hotkey combination now…")
+                                        Text("Press your new hotkey combination now…".loc)
                                             .font(.caption)
                                             .foregroundStyle(.orange)
                                     }
@@ -596,7 +597,7 @@ struct SettingsView: View {
                                         .font(self.theme.typography.bodySmallStrong)
                                         .foregroundStyle(self.settingsTitleText)
 
-                                    Text("Primary dictation can use a keyboard shortcut or allowed mouse button. Changes usually apply immediately.")
+                                    Text("Primary dictation can use a keyboard shortcut or allowed mouse button. Changes usually apply immediately.".loc)
                                         .font(.caption)
                                         .foregroundStyle(self.settingsTertiaryText)
 
@@ -608,8 +609,8 @@ struct SettingsView: View {
                                         content: .init(
                                             icon: "terminal.fill",
                                             iconColor: .secondary,
-                                            title: "Command Mode",
-                                            description: "Execute voice commands"
+                                            title: "Command Mode".loc,
+                                            description: "Execute voice commands".loc
                                         ),
                                         shortcut: self.commandModeShortcut,
                                         isRecording: self.isRecording(.command),
@@ -638,7 +639,7 @@ struct SettingsView: View {
                                             icon: "pencil.and.outline",
                                             iconColor: .secondary,
                                             title: "Edit Mode",
-                                            description: "Select text and speak how to edit, or generate new content"
+                                            description: "Select text and speak how to edit, or generate new content".loc
                                         ),
                                         shortcut: self.rewriteShortcut,
                                         isRecording: self.isRecording(.edit),
@@ -657,8 +658,8 @@ struct SettingsView: View {
                                         content: .init(
                                             icon: "xmark.circle.fill",
                                             iconColor: .secondary,
-                                            title: "Cancel Recording",
-                                            description: "Cancel the current recording or dismiss the active recording overlay"
+                                            title: "Cancel Recording".loc,
+                                            description: "Cancel the current recording or dismiss the active recording overlay".loc
                                         ),
                                         shortcut: self.cancelRecordingShortcut,
                                         isRecording: self.isRecording(.cancel),
@@ -676,8 +677,8 @@ struct SettingsView: View {
                                         content: .init(
                                             icon: "arrow.down.doc",
                                             iconColor: .secondary,
-                                            title: "Paste Last Transcription",
-                                            description: "Re-insert your most recent transcription without using the clipboard"
+                                            title: "Paste Last Transcription".loc,
+                                            description: "Re-insert your most recent transcription without using the clipboard".loc
                                         ),
                                         shortcut: self.pasteLastTranscriptionShortcut,
                                         isRecording: self.isRecording(.pasteLast),
@@ -740,8 +741,8 @@ struct SettingsView: View {
                                     Divider().opacity(0.2)
 
                                     self.optionToggleRow(
-                                        title: "Copy to Clipboard",
-                                        description: "Automatically copy transcribed text to clipboard as a backup.",
+                                        title: "Copy to Clipboard".loc,
+                                        description: "Automatically copy transcribed text to clipboard as a backup.".loc,
                                         isOn: self.$copyToClipboard
                                     )
                                     .onChange(of: self.copyToClipboard) { _, newValue in
@@ -751,7 +752,7 @@ struct SettingsView: View {
 
                                     HStack(alignment: .center) {
                                         VStack(alignment: .leading, spacing: 2) {
-                                            Text("Text Insertion Mode")
+                                            Text("Text Insertion Mode".loc)
                                                 .font(self.theme.typography.bodyStrong)
                                                 .foregroundStyle(self.settingsTitleText)
                                             Text(SettingsStore.shared.textInsertionMode.description)
@@ -775,8 +776,8 @@ struct SettingsView: View {
                                     Divider().opacity(0.2)
 
                                     self.optionToggleRow(
-                                        title: "Save Transcription History",
-                                        description: "Save transcriptions for stats tracking. Disable for privacy.",
+                                        title: "Save Transcription History".loc,
+                                        description: "Save transcriptions for stats tracking. Disable for privacy.".loc,
                                         isOn: Binding(
                                             get: { SettingsStore.shared.saveTranscriptionHistory },
                                             set: {
@@ -788,8 +789,8 @@ struct SettingsView: View {
                                     Divider().opacity(0.2)
 
                                     self.optionToggleRow(
-                                        title: "Save Audio With History",
-                                        description: "Store actual microphone audio locally with dictation history. Disabled by default.",
+                                        title: "Save Audio With History".loc,
+                                        description: "Store actual microphone audio locally with dictation history. Disabled by default.".loc,
                                         isOn: Binding(
                                             get: { SettingsStore.shared.saveAudioWithTranscriptionHistory },
                                             set: {
@@ -811,8 +812,8 @@ struct SettingsView: View {
                                     }
 
                                     self.optionToggleRow(
-                                        title: "Weekends Don't Break Streak",
-                                        description: "Skip Saturday and Sunday when calculating usage streaks. Perfect for weekday-only users.",
+                                        title: "Weekends Don't Break Streak".loc,
+                                        description: "Skip Saturday and Sunday when calculating usage streaks. Perfect for weekday-only users.".loc,
                                         isOn: Binding(
                                             get: { SettingsStore.shared.weekendsDontBreakStreak },
                                             set: { SettingsStore.shared.weekendsDontBreakStreak = $0 }
@@ -821,8 +822,8 @@ struct SettingsView: View {
                                     Divider().opacity(0.2)
 
                                     self.optionToggleRow(
-                                        title: "Skip Silent Recordings",
-                                        description: "Avoid transcription when a recording up to four seconds contains only clear silence. Disabled by default to preserve quiet speech.",
+                                        title: "Skip Silent Recordings".loc,
+                                        description: "Avoid transcription when a recording up to four seconds contains only clear silence. Disabled by default to preserve quiet speech.".loc,
                                         isOn: Binding(
                                             get: { SettingsStore.shared.skipSilentRecordingsEnabled },
                                             set: { SettingsStore.shared.skipSilentRecordingsEnabled = $0 }
@@ -832,30 +833,13 @@ struct SettingsView: View {
                                     Divider().opacity(0.2)
 
                                     self.optionToggleRow(
-                                        title: "Pause Media During Transcription",
-                                        description: "Automatically pause currently playing audio/video when transcription starts. Resumes only if FluidVoice paused it.",
+                                        title: "Pause Media During Transcription".loc,
+                                        description: "Automatically pause currently playing audio/video when transcription starts. Resumes only if FluidVoice paused it.".loc,
                                         isOn: Binding(
                                             get: { SettingsStore.shared.pauseMediaDuringTranscription },
                                             set: { SettingsStore.shared.pauseMediaDuringTranscription = $0 }
                                         )
                                     )
-                                    Divider().opacity(0.2)
-
-                                    self.optionToggleRow(
-                                        title: "Share Anonymous Analytics",
-                                        description: "Send lean, anonymous daily usage, onboarding, retention, and model metrics. Never includes transcription text or prompts.",
-                                        isOn: self.analyticsToggleBinding
-                                    )
-
-                                    HStack {
-                                        Button("What we collect") {
-                                            self.showAnalyticsPrivacy = true
-                                        }
-                                        .buttonStyle(.link)
-
-                                        Spacer()
-                                    }
-                                    .padding(.top, 6)
                                 }
                                 .padding(12)
                             }
@@ -875,7 +859,7 @@ struct SettingsView: View {
                                                 .font(self.theme.typography.bodyStrong)
                                                 .foregroundStyle(self.theme.palette.warning)
                                         }
-                                        Text("Required for global hotkey functionality")
+                                        Text("Required for global hotkey functionality".loc)
                                             .font(self.theme.typography.bodySmall)
                                             .foregroundStyle(self.settingsSecondaryText)
                                     }
@@ -890,7 +874,7 @@ struct SettingsView: View {
                                 }
 
                                 self.instructionsBox(
-                                    title: "Follow these steps to enable Accessibility:",
+                                    title: "Follow these steps to enable Accessibility:".loc,
                                     steps: [
                                         "Click **Open Accessibility Settings** above",
                                         "In the Accessibility window, click the **+ button**",
@@ -921,14 +905,14 @@ struct SettingsView: View {
 
                 ThemedCard(style: .standard) {
                     VStack(alignment: .leading, spacing: 14) {
-                        Label("Text Formatting", systemImage: "textformat")
+                        Label("Text Formatting".loc, systemImage: "textformat")
                             .font(.headline)
                             .foregroundStyle(.primary)
 
                         VStack(spacing: 16) {
                             self.settingsToggleRow(
-                                title: "Lowercase First Letter",
-                                description: "Start each transcription with a lowercase letter.",
+                                title: "Lowercase First Letter".loc,
+                                description: "Start each transcription with a lowercase letter.".loc,
                                 isOn: Binding(
                                     get: { self.settings.gaavLowercaseFirstLetterEnabled },
                                     set: { self.settings.gaavLowercaseFirstLetterEnabled = $0 }
@@ -937,8 +921,8 @@ struct SettingsView: View {
                             Divider().opacity(0.2)
 
                             self.settingsToggleRow(
-                                title: "Remove Trailing Period",
-                                description: "Drop a final period from transcriptions.",
+                                title: "Remove Trailing Period".loc,
+                                description: "Drop a final period from transcriptions.".loc,
                                 isOn: Binding(
                                     get: { self.settings.gaavRemoveTrailingPeriodEnabled },
                                     set: { self.settings.gaavRemoveTrailingPeriodEnabled = $0 }
@@ -947,8 +931,8 @@ struct SettingsView: View {
                             Divider().opacity(0.2)
 
                             self.settingsToggleRow(
-                                title: "Slash Commands & @ Formatting",
-                                description: "Convert spoken slash commands and supported @ mentions into symbols.",
+                                title: "Slash Commands & @ Formatting".loc,
+                                description: "Convert spoken slash commands and supported @ mentions into symbols.".loc,
                                 isOn: Binding(
                                     get: { self.settings.literalDictationFormattingEnabled },
                                     set: { self.settings.literalDictationFormattingEnabled = $0 }
@@ -957,8 +941,8 @@ struct SettingsView: View {
                             Divider().opacity(0.2)
 
                             self.settingsToggleRow(
-                                title: "Space Between Dictations",
-                                description: "Add spacing when consecutive dictations are joined.",
+                                title: "Space Between Dictations".loc,
+                                description: "Add spacing when consecutive dictations are joined.".loc,
                                 isOn: Binding(
                                     get: { self.settings.continuousDictationSpacingEnabled },
                                     set: { self.settings.continuousDictationSpacingEnabled = $0 }
@@ -967,8 +951,8 @@ struct SettingsView: View {
                             Divider().opacity(0.2)
 
                             self.settingsToggleRow(
-                                title: "Smart Capitalization",
-                                description: "Use text before the cursor to choose uppercase or lowercase.",
+                                title: "Smart Capitalization".loc,
+                                description: "Use text before the cursor to choose uppercase or lowercase.".loc,
                                 isOn: Binding(
                                     get: { self.settings.contextAwareCapitalizationEnabled },
                                     set: { self.settings.contextAwareCapitalizationEnabled = $0 }
@@ -982,14 +966,14 @@ struct SettingsView: View {
                 // Notification Settings Card
                 ThemedCard(style: .standard) {
                     VStack(alignment: .leading, spacing: 14) {
-                        Label("Notifications", systemImage: "bell.fill")
+                        Label("Notifications".loc, systemImage: "bell.fill")
                             .font(.headline)
                             .foregroundStyle(.primary)
 
                         VStack(alignment: .leading, spacing: 12) {
                             self.optionToggleRow(
                                 title: "AI Enhancement Failures",
-                                description: "Notify when AI Enhancement fails and raw transcription is typed.",
+                                description: "Notify when AI Enhancement fails and raw transcription is typed.".loc,
                                 isOn: Binding(
                                     get: { SettingsStore.shared.notifyAIProcessingFailures },
                                     set: { SettingsStore.shared.notifyAIProcessingFailures = $0 }
@@ -999,8 +983,8 @@ struct SettingsView: View {
                             Divider().opacity(0.2)
 
                             self.optionToggleRow(
-                                title: "Microphone Changes",
-                                description: "Show an alert when FluidVoice changes or loses its microphone.",
+                                title: "Microphone Changes".loc,
+                                description: "Show an alert when FluidVoice changes or loses its microphone.".loc,
                                 isOn: Binding(
                                     get: { self.settings.showMicrophoneChangeAlerts },
                                     set: { enabled in
@@ -1020,7 +1004,7 @@ struct SettingsView: View {
                 ThemedCard(style: .standard) {
                     VStack(alignment: .leading, spacing: 14) {
                         HStack {
-                            Label("Audio Devices", systemImage: "speaker.wave.2.fill")
+                            Label("Audio Devices".loc, systemImage: "speaker.wave.2.fill")
                                 .font(.headline)
                                 .foregroundStyle(.primary)
 
@@ -1033,7 +1017,7 @@ struct SettingsView: View {
                                 self.cachedDefaultInputUID = defaultInput?.uid ?? ""
                                 self.cachedDefaultOutputName = AudioDevice.getDefaultOutputDevice()?.name ?? ""
                             } label: {
-                                Label("Refresh", systemImage: "arrow.clockwise")
+                                Label("Refresh".loc, systemImage: "arrow.clockwise")
                             }
                             .buttonStyle(.bordered)
                             .controlSize(.small)
@@ -1123,17 +1107,17 @@ struct SettingsView: View {
                 // Overlay Settings Card
                 ThemedCard(style: .standard) {
                     VStack(alignment: .leading, spacing: 14) {
-                        Label("Overlay", systemImage: "waveform")
+                        Label("Overlay".loc, systemImage: "waveform")
                             .font(.headline)
                             .foregroundStyle(.primary)
 
                         VStack(alignment: .leading, spacing: 12) {
                             HStack {
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text("Sensitivity")
+                                    Text("Sensitivity".loc)
                                         .font(self.theme.typography.bodyStrong)
                                         .foregroundStyle(self.settingsTitleText)
-                                    Text("Control how sensitive the audio visualizer is to sound input")
+                                    Text("Control how sensitive the audio visualizer is to sound input".loc)
                                         .font(self.theme.typography.bodySmall)
                                         .foregroundStyle(self.settingsSecondaryText)
                                 }
@@ -1149,7 +1133,7 @@ struct SettingsView: View {
                             }
 
                             HStack(spacing: 10) {
-                                Text("More")
+                                Text("More".loc)
                                     .font(.caption)
                                     .foregroundStyle(self.settingsSecondaryText)
                                     .frame(width: 36, alignment: .trailing)
@@ -1157,7 +1141,7 @@ struct SettingsView: View {
                                 Slider(value: self.$visualizerNoiseThreshold, in: 0.01...0.8, step: 0.01)
                                     .controlSize(.regular)
 
-                                Text("Less")
+                                Text("Less".loc)
                                     .font(.caption)
                                     .foregroundStyle(self.settingsSecondaryText)
                                     .frame(width: 36, alignment: .leading)
@@ -1173,10 +1157,10 @@ struct SettingsView: View {
                             // Overlay Position
                             HStack {
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text("Overlay Position")
+                                    Text("Overlay Position".loc)
                                         .font(self.theme.typography.bodyStrong)
                                         .foregroundStyle(self.settingsTitleText)
-                                    Text("Where the recording indicator appears on screen")
+                                    Text("Where the recording indicator appears on screen".loc)
                                         .font(self.theme.typography.bodySmall)
                                         .foregroundStyle(self.settingsSecondaryText)
                                 }
@@ -1197,10 +1181,10 @@ struct SettingsView: View {
                             VStack(alignment: .leading, spacing: 10) {
                                 HStack(alignment: .top) {
                                     VStack(alignment: .leading, spacing: 2) {
-                                        Text("Transcription Preview Length")
+                                        Text("Transcription Preview Length".loc)
                                             .font(self.theme.typography.bodyStrong)
                                             .foregroundStyle(self.settingsTitleText)
-                                        Text("How many recent characters appear in the notch/pill preview")
+                                        Text("How many recent characters appear in the notch/pill preview".loc)
                                             .font(self.theme.typography.bodySmall)
                                             .foregroundStyle(self.settingsSecondaryText)
                                     }
@@ -1213,7 +1197,7 @@ struct SettingsView: View {
                                 }
 
                                 HStack(spacing: 10) {
-                                    Text("Less")
+                                    Text("Less".loc)
                                         .font(.caption)
                                         .foregroundStyle(self.settingsSecondaryText)
                                         .frame(width: 36, alignment: .trailing)
@@ -1228,7 +1212,7 @@ struct SettingsView: View {
                                     )
                                     .controlSize(.regular)
 
-                                    Text("More")
+                                    Text("More".loc)
                                         .font(.caption)
                                         .foregroundStyle(self.settingsSecondaryText)
                                         .frame(width: 36, alignment: .leading)
@@ -1274,7 +1258,7 @@ struct SettingsView: View {
 
                             HStack {
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text("Live Preview")
+                                    Text("Live Preview".loc)
                                         .font(self.theme.typography.bodyStrong)
                                         .foregroundStyle(self.settingsTitleText)
                                     Text("Show transcription text in the overlay while you speak")
@@ -1298,10 +1282,10 @@ struct SettingsView: View {
                                 // Bottom Offset
                                 HStack {
                                     VStack(alignment: .leading, spacing: 2) {
-                                        Text("Bottom Offset")
+                                        Text("Bottom Offset".loc)
                                             .font(self.theme.typography.bodyStrong)
                                             .foregroundStyle(self.settingsTitleText)
-                                        Text("Distance from bottom of screen")
+                                        Text("Distance from bottom of screen".loc)
                                             .font(self.theme.typography.bodySmall)
                                             .foregroundStyle(self.settingsSecondaryText)
                                     }
@@ -1323,7 +1307,7 @@ struct SettingsView: View {
                             }
 
                             if self.asr.isRunning {
-                                Text("Settings are disabled during active recording")
+                                Text("Settings are disabled during active recording".loc)
                                     .font(.caption)
                                     .foregroundStyle(self.settingsSecondaryText)
                                     .italic()
@@ -1335,50 +1319,58 @@ struct SettingsView: View {
                     .padding(16)
                 }
 
-                // Backup & Restore Card
+                // Advanced & Developer Card (Collapsible)
                 ThemedCard(style: .standard) {
-                    self.backupUtilityRow()
-                        .padding(16)
-                }
-
-                // Debug Settings Card
-                ThemedCard(style: .standard) {
-                    VStack(alignment: .leading, spacing: 14) {
-                        Label("Debug Settings", systemImage: "ladybug.fill")
-                            .font(.headline)
-                            .foregroundStyle(.primary)
-
-                        VStack(alignment: .leading, spacing: 8) {
-                            self.settingsToggleRow(
-                                title: "Show Debug Logs in App",
-                                description: "File logs are always collected for diagnostics.",
-                                isOn: Binding(
-                                    get: { SettingsStore.shared.enableDebugLogs },
-                                    set: { SettingsStore.shared.enableDebugLogs = $0 }
-                                )
-                            )
-
-                            Divider().padding(.vertical, 8)
-
-                            Button {
-                                let url = FileLogger.shared.currentLogFileURL()
-                                if FileManager.default.fileExists(atPath: url.path) {
-                                    NSWorkspace.shared.activateFileViewerSelecting([url])
-                                } else {
-                                    DebugLogger.shared.info("Log file not found at \(url.path)", source: "SettingsView")
-                                }
-                            } label: {
-                                Label("Reveal Log File", systemImage: "doc.richtext")
+                    VStack(alignment: .leading, spacing: 12) {
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                self.isAdvancedSettingsExpanded.toggle()
                             }
-                            .buttonStyle(.bordered)
-                            .controlSize(.regular)
+                        } label: {
+                            HStack {
+                                Label("Advanced & Developer Options".loc, systemImage: "wrench.and.screwdriver.fill")
+                                    .font(.headline)
+                                    .foregroundStyle(.primary)
 
-                            Text("The debug log contains detailed information about app operations and can help with troubleshooting.")
-                                .font(self.theme.typography.bodySmall)
-                                .foregroundStyle(self.settingsSecondaryText)
-                            Text("Crash diagnostics are written to Library/Logs/Fluid/Fluid.log by default.")
-                                .font(self.theme.typography.bodySmall)
-                                .foregroundStyle(self.settingsSecondaryText)
+                                Spacer()
+
+                                Image(systemName: self.isAdvancedSettingsExpanded ? "chevron.up" : "chevron.down")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        .buttonStyle(.plain)
+
+                        if self.isAdvancedSettingsExpanded {
+                            VStack(alignment: .leading, spacing: 14) {
+                                Divider().opacity(0.2)
+
+                                self.backupUtilityRow()
+
+                                Divider().opacity(0.2)
+
+                                self.settingsToggleRow(
+                                    title: "Show Debug Logs in App".loc,
+                                    description: "File logs are always collected for diagnostics.".loc,
+                                    isOn: Binding(
+                                        get: { SettingsStore.shared.enableDebugLogs },
+                                        set: { SettingsStore.shared.enableDebugLogs = $0 }
+                                    )
+                                )
+
+                                Button {
+                                    let url = FileLogger.shared.currentLogFileURL()
+                                    if FileManager.default.fileExists(atPath: url.path) {
+                                        NSWorkspace.shared.activateFileViewerSelecting([url])
+                                    } else {
+                                        DebugLogger.shared.info("Log file not found at \(url.path)", source: "SettingsView")
+                                    }
+                                } label: {
+                                    Label("Reveal Log File".loc, systemImage: "doc.richtext")
+                                }
+                                .buttonStyle(.bordered)
+                                .controlSize(.small)
+                            }
                         }
                     }
                     .padding(16)
@@ -1489,12 +1481,12 @@ struct SettingsView: View {
             try data.write(to: url, options: .atomic)
 
             self.presentInfoAlert(
-                title: "Backup Exported",
+                title: "Backup Exported".loc,
                 message: "Saved your FluidVoice backup to:\n\(url.path)"
             )
         } catch {
             self.presentErrorAlert(
-                title: "Backup Export Failed",
+                title: "Backup Export Failed".loc,
                 message: error.localizedDescription
             )
         }
@@ -1539,12 +1531,12 @@ struct SettingsView: View {
             self.syncLocalSettingsAfterBackupRestore()
 
             self.presentInfoAlert(
-                title: "Backup Imported",
+                title: "Backup Imported".loc,
                 message: "Your settings, prompt profiles, and stats were restored successfully."
             )
         } catch {
             self.presentErrorAlert(
-                title: "Backup Import Failed",
+                title: "Backup Import Failed".loc,
                 message: error.localizedDescription
             )
         }
@@ -1593,7 +1585,7 @@ struct SettingsView: View {
         let pruned = TranscriptionHistoryStore.shared.pruneAudioToBudget()
         self.refreshAudioHistoryUsage()
         if pruned > 0 {
-            self.presentInfoAlert(title: "Audio Pruned", message: "Deleted oldest saved audio from \(pruned) history entries.")
+            self.presentInfoAlert(title: "Audio Pruned".loc, message: "Deleted oldest saved audio from \(pruned) history entries.")
         }
     }
 
@@ -1608,7 +1600,7 @@ struct SettingsView: View {
 
         let removed = TranscriptionHistoryStore.shared.deleteAllSavedAudio()
         self.refreshAudioHistoryUsage()
-        self.presentInfoAlert(title: "Audio Deleted", message: "Removed audio from \(removed) history entries.")
+        self.presentInfoAlert(title: "Audio Deleted".loc, message: "Removed audio from \(removed) history entries.")
     }
 
     private func exportAudioZip() {
@@ -1629,9 +1621,9 @@ struct SettingsView: View {
                 entries: TranscriptionHistoryStore.shared.entries,
                 to: url
             )
-            self.presentInfoAlert(title: "Audio Export Saved", message: "Saved your dictation audio export to:\n\(url.path)")
+            self.presentInfoAlert(title: "Audio Export Saved".loc, message: "Saved your dictation audio export to:\n\(url.path)")
         } catch {
-            self.presentErrorAlert(title: "Audio Export Failed", message: error.localizedDescription)
+            self.presentErrorAlert(title: "Audio Export Failed".loc, message: error.localizedDescription)
         }
     }
 
@@ -1760,7 +1752,7 @@ struct SettingsView: View {
                 .frame(width: 24, alignment: .center)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("Backup & Restore")
+                Text("Backup & Restore".loc)
                     .font(self.theme.typography.bodyStrong)
                     .foregroundStyle(self.settingsTitleText)
                 Text("Export or import settings, prompt profiles, history, and stats. API keys excluded.")
@@ -1772,14 +1764,14 @@ struct SettingsView: View {
 
             HStack(spacing: 8) {
                 Button(action: self.exportBackup) {
-                    Label("Export", systemImage: "square.and.arrow.up")
+                    Label("Export".loc, systemImage: "square.and.arrow.up")
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(self.theme.palette.accent)
                 .controlSize(.regular)
 
                 Button(action: self.importBackup) {
-                    Label("Import", systemImage: "square.and.arrow.down")
+                    Label("Import".loc, systemImage: "square.and.arrow.down")
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.regular)
@@ -1806,7 +1798,7 @@ struct SettingsView: View {
                 Spacer(minLength: 16)
 
                 HStack(spacing: 8) {
-                    Text("Budget")
+                    Text("Budget".loc)
                         .font(.caption)
                         .foregroundStyle(self.settingsSecondaryText)
 
@@ -1849,7 +1841,7 @@ struct SettingsView: View {
                 Button(role: .destructive) {
                     self.deleteSavedAudio()
                 } label: {
-                    Label("Delete Audio", systemImage: "trash")
+                    Label("Delete Audio".loc, systemImage: "trash")
                 }
                 .controlSize(.small)
                 .disabled(self.audioHistoryUsageBytes <= 0)
@@ -2299,7 +2291,7 @@ private extension SettingsView {
                     .fill(Color(nsColor: .systemGreen))
                     .frame(width: 7, height: 7)
                     .shadow(color: Color(nsColor: .systemGreen).opacity(0.45), radius: 3)
-                    .accessibilityLabel("Active microphone")
+                    .accessibilityLabel("Active microphone".loc)
             } else if isAvailable == false {
                 Text("Unavailable")
                     .font(self.theme.typography.bodySmall)
