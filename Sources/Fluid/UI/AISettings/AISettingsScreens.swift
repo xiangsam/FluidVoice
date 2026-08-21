@@ -22,7 +22,6 @@ struct VoiceEngineSettingsScreen: View {
                 settings: self.viewModel.settings,
                 theme: self.theme
             )
-            .padding(14)
             .frame(maxWidth: .infinity, alignment: .topLeading)
         }
     }
@@ -55,15 +54,13 @@ struct AIEnhancementSettingsScreen: View {
 
     var body: some View {
         ScrollView(.vertical, showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 14) {
-                NativeAIEnhancementSettingsView(
-                    viewModel: self.viewModel,
-                    settings: self.viewModel.settings,
-                    promptTest: self.viewModel.promptTest,
-                    theme: self.theme
-                )
-            }
-            .padding(14)
+            NativeAIEnhancementSettingsView(
+                viewModel: self.viewModel,
+                settings: self.viewModel.settings,
+                promptTest: self.viewModel.promptTest,
+                theme: self.theme
+            )
+            .frame(maxWidth: .infinity, alignment: .topLeading)
         }
     }
 }

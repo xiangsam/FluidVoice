@@ -1388,7 +1388,6 @@ struct SettingsView: View {
                     }
                     .padding(16)
                 }
-                .padding(16)
             }
             .onChange(of: self.microphoneSettingsScrollRequest) { _, newValue in
                 guard newValue > 0 else { return }

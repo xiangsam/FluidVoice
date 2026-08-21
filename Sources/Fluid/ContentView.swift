@@ -1236,6 +1236,9 @@ struct ContentView: View {
     private var detailView: some View {
         self.detailContent
             .navigationTitle("")
+            .padding(.top, 28)
+            .padding(.horizontal, 20)
+            .padding(.bottom, 24)
             .background(Color(nsColor: .windowBackgroundColor))
             .transaction { transaction in
                 transaction.animation = nil
