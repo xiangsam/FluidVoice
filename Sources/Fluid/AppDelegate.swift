@@ -44,18 +44,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         let shouldOfferMLXUpgrade = PrivateAIMLXUpgradeCoordinator.prepareOfferIfNeeded()
         LocalAPIServer.shared.start()
 
-        // Record first-open synchronously before async analytics bootstrap so
-        // onboarding initialization is deterministic on brand-new installs.
+        // Record first-open synchronously before onboarding initialization
         let isTrueFirstOpen = AnalyticsIdentityStore.shared.ensureFirstOpenRecorded()
         SettingsStore.shared.bootstrapOnboardingState(isTrueFirstOpen: isTrueFirstOpen)
 
-        AnalyticsService.shared.bootstrap()
-
-        // Check for updates automatically if enabled (initial check on launch)
-        self.checkForUpdatesAutomatically()
-
-        // Schedule periodic update checks every hour while app is running
-        self.schedulePeriodicUpdateChecks()
+        // Telemetry and auto-updater background timers disabled for clean and lightweight operation.
 
         // Login Items can launch hidden; reveal the real SwiftUI window so ContentView startup runs.
         self.openMainWindowOnLaunch()
