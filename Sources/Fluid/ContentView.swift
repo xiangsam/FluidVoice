@@ -1163,7 +1163,6 @@ struct ContentView: View {
         }
         .listStyle(.sidebar)
         .animation(nil, value: self.selectedSidebarItem)
-        .navigationTitle("FluidVoice")
         .tint(self.theme.palette.accent)
     }
 
@@ -1236,6 +1235,7 @@ struct ContentView: View {
 
     private var detailView: some View {
         self.detailContent
+            .navigationTitle("")
             .background(Color(nsColor: .windowBackgroundColor))
             .transaction { transaction in
                 transaction.animation = nil

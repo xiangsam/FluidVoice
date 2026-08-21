@@ -961,11 +961,13 @@ final class MenuBarManager: NSObject, ObservableObject, NSMenuDelegate {
         let hostingController = NSHostingController(rootView: rootView)
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 1000, height: 700),
-            styleMask: [.titled, .closable, .miniaturizable, .resizable],
+            styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )
         window.title = "FluidVoice"
+        window.titlebarAppearsTransparent = true
+        window.titleVisibility = .hidden
         window.animationBehavior = .none
         window.minSize = self.mainWindowMinimumSize
         window.isReleasedWhenClosed = false
@@ -982,6 +984,8 @@ final class MenuBarManager: NSObject, ObservableObject, NSMenuDelegate {
     }
 
     private func ensureUsableMainWindow(_ window: NSWindow) {
+        window.titlebarAppearsTransparent = true
+        window.titleVisibility = .hidden
         // If the window is too small (e.g., height collapsed), reset to the default frame.
         let minSize = self.mainWindowMinimumSize
         window.minSize = minSize

@@ -218,7 +218,23 @@ struct SettingsView: View {
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView(.vertical, showsIndicators: true) {
-                VStack(spacing: 16) {
+                VStack(alignment: .leading, spacing: 20) {
+                    // Header Section
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "gearshape.fill")
+                                .font(.system(size: 24))
+                                .foregroundStyle(self.theme.palette.accent)
+                            Text("Preferences".loc)
+                                .font(.title2)
+                                .fontWeight(.bold)
+                        }
+                        Text("Configure app behavior, hotkeys, audio devices, and general settings.".loc)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.bottom, 4)
+
                     // App Settings Card
                     ThemedCard(style: .standard) {
                         VStack(alignment: .leading, spacing: 14) {
