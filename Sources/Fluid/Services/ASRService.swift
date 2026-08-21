@@ -356,6 +356,8 @@ final class ASRService: ObservableObject {
             return self.getCloudProvider(type: .openAI)
         case .cloudGroq:
             return self.getCloudProvider(type: .groq)
+        case .cloudOllama:
+            return self.getCloudProvider(type: .ollama)
         case .cloudCustom:
             return self.getCloudProvider(type: .custom)
         case .appleSpeechAnalyzer:

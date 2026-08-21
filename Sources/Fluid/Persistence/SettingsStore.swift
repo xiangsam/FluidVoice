@@ -4476,6 +4476,7 @@ final class SettingsStore: ObservableObject {
         case cloudOpenRouter = "cloud-openrouter"
         case cloudOpenAI = "cloud-openai"
         case cloudGroq = "cloud-groq"
+        case cloudOllama = "cloud-ollama"
         case cloudCustom = "cloud-custom"
 
         // MARK: - FluidAudio Models (Apple Silicon Only)
@@ -4509,7 +4510,7 @@ final class SettingsStore: ObservableObject {
 
         var isCloudModel: Bool {
             switch self {
-            case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudCustom:
+            case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudOllama, .cloudCustom:
                 return true
             default:
                 return false
@@ -4523,6 +4524,7 @@ final class SettingsStore: ObservableObject {
             case .cloudOpenRouter: return "OpenRouter Cloud STT"
             case .cloudOpenAI: return "OpenAI Cloud STT"
             case .cloudGroq: return "Groq Cloud STT (Ultra Fast)"
+            case .cloudOllama: return "Ollama ASR (Local / LAN)"
             case .cloudCustom: return "Custom Cloud STT"
             case .parakeetTDT: return "Parakeet TDT v3 (Multilingual)"
             case .parakeetTDTv2: return "Parakeet TDT v2 (English Only)"
@@ -4545,7 +4547,7 @@ final class SettingsStore: ObservableObject {
 
         var languageSupport: String {
             switch self {
-            case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudCustom:
+            case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudOllama, .cloudCustom:
                 return "99+ Languages"
             case .parakeetTDT:
                 return "25 Languages"
@@ -4563,7 +4565,7 @@ final class SettingsStore: ObservableObject {
 
         var downloadSize: String {
             switch self {
-            case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudCustom:
+            case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudOllama, .cloudCustom:
                 return "Cloud API"
             case .parakeetTDT: return "~460.9 MiB"
             case .parakeetTDTv2: return "~442.9 MiB"
@@ -4586,7 +4588,7 @@ final class SettingsStore: ObservableObject {
 
         var expectedDownloadBytes: Int64 {
             switch self {
-            case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudCustom:
+            case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudOllama, .cloudCustom:
                 return 0
             case .parakeetTDT: return 483_288_717
             case .parakeetTDTv2: return 464_421_712
@@ -4596,11 +4598,11 @@ final class SettingsStore: ObservableObject {
             case .nemotronOffline: return 556_552_620
             case .nemotronStreaming, .nemotronStreaming320: return 700_685_415
             case .whisperTiny: return 45_981_088
-            case .whisperBase: return 84_962_880
-            case .whisperSmall: return 269_751_136
-            case .whisperMedium: return 831_538_144
-            case .whisperLargeTurbo: return 886_381_760
-            case .whisperLarge: return 1_668_741_440
+            case .whisperBase: return 84_934_656
+            case .whisperSmall: return 269_811_712
+            case .whisperMedium: return 831_520_768
+            case .whisperLargeTurbo: return 886_407_168
+            case .whisperLarge: return 1_625_292_800
             case .appleSpeech, .appleSpeechAnalyzer: return 0
             }
         }
@@ -4732,6 +4734,7 @@ final class SettingsStore: ObservableObject {
             case .cloudOpenRouter: return "OpenRouter Cloud STT"
             case .cloudOpenAI: return "OpenAI Whisper API"
             case .cloudGroq: return "Groq Ultra-Fast Cloud"
+            case .cloudOllama: return "Ollama (Local / LAN ASR)"
             case .cloudCustom: return "Custom OpenAI-Compatible"
             case .parakeetTDT: return "Blazing Fast - Multilingual"
             case .parakeetTDTv2: return "Blazing Fast - English"
@@ -4761,6 +4764,8 @@ final class SettingsStore: ObservableObject {
                 return "Official OpenAI Whisper API. Fast and accurate cloud transcription."
             case .cloudGroq:
                 return "Ultra-fast cloud Whisper transcription powered by Groq LPU inference."
+            case .cloudOllama:
+                return "Connect to your local or LAN Ollama instance running Qwen3-ASR, Whisper, or other ASR models."
             case .cloudCustom:
                 return "Connect to any OpenAI-compatible audio transcription endpoint (e.g. self-hosted Whisper, SiliconFlow)."
             case .parakeetTDT:
@@ -4804,7 +4809,7 @@ final class SettingsStore: ObservableObject {
         /// Minimum recommended RAM in GB for this model to run safely
         var requiredMemoryGB: Double {
             switch self {
-            case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudCustom:
+            case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudOllama, .cloudCustom:
                 return 1.0
             case .parakeetTDT, .parakeetTDTv2, .parakeetRealtime:
                 return 4.0
@@ -4850,7 +4855,7 @@ final class SettingsStore: ObservableObject {
         /// Speed rating (1-5, higher is faster)
         var speedRating: Int {
             switch self {
-            case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudCustom:
+            case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudOllama, .cloudCustom:
                 return 5
             case .parakeetTDT: return 5
             case .parakeetTDTv2: return 5
@@ -4873,7 +4878,7 @@ final class SettingsStore: ObservableObject {
         /// Accuracy rating (1-5, higher is more accurate)
         var accuracyRating: Int {
             switch self {
-            case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudCustom:
+            case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudOllama, .cloudCustom:
                 return 5
             case .parakeetTDT: return 5
             case .parakeetTDTv2: return 5
@@ -4896,7 +4901,7 @@ final class SettingsStore: ObservableObject {
         /// Exact speed percentage (0.0 - 1.0) for the liquid bars
         var speedPercent: Double {
             switch self {
-            case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudCustom:
+            case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudOllama, .cloudCustom:
                 return 0.95
             case .parakeetTDT: return 1.0
             case .parakeetTDTv2: return 1.0
@@ -4919,7 +4924,7 @@ final class SettingsStore: ObservableObject {
         /// Exact accuracy percentage (0.0 - 1.0) for the liquid bars
         var accuracyPercent: Double {
             switch self {
-            case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudCustom:
+            case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudOllama, .cloudCustom:
                 return 0.98
             case .parakeetTDT: return 0.92
             case .parakeetTDTv2: return 0.96
@@ -4942,8 +4947,8 @@ final class SettingsStore: ObservableObject {
         /// Optional badge text for the card (e.g., "FluidVoice Pick")
         var badgeText: String? {
             switch self {
-            case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudCustom:
-                return "Cloud API"
+            case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudOllama, .cloudCustom:
+                return "Local / Cloud"
             case .parakeetTDT: return "FluidVoice Pick"
             case .parakeetTDTv2: return "FluidVoice Pick"
             case .parakeetRealtime: return "Beta"
@@ -4958,7 +4963,7 @@ final class SettingsStore: ObservableObject {
         /// Optimization level for Apple Silicon (for display)
         var appleSiliconOptimized: Bool {
             switch self {
-            case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudCustom:
+            case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudOllama, .cloudCustom:
                 return false
             case .parakeetTDT, .parakeetTDTv2, .parakeetRealtime, .qwen3Asr, .cohereTranscribeSixBit, .nemotronOffline, .nemotronStreaming, .nemotronStreaming320, .appleSpeechAnalyzer:
                 return true
@@ -4971,7 +4976,7 @@ final class SettingsStore: ObservableObject {
         /// Large Whisper models are too slow for streaming, so they only do final transcription on stop.
         var supportsStreaming: Bool {
             switch self {
-            case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudCustom:
+            case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudOllama, .cloudCustom:
                 return false // Cloud models transcribe on stop
             case .qwen3Asr, .whisperMedium, .whisperLargeTurbo, .whisperLarge:
                 return false // Too slow for real-time chunk processing
@@ -5036,7 +5041,7 @@ final class SettingsStore: ObservableObject {
         /// Which provider this model belongs to
         var provider: Provider {
             switch self {
-            case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudCustom:
+            case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudOllama, .cloudCustom:
                 return .cloud
             case .parakeetTDT, .parakeetTDTv2, .parakeetRealtime, .nemotronOffline, .nemotronStreaming, .nemotronStreaming320:
                 return .nvidia
@@ -5175,6 +5180,8 @@ final class SettingsStore: ObservableObject {
                 return "OpenAI"
             case .cloudGroq:
                 return "Groq"
+            case .cloudOllama:
+                return "Ollama"
             case .cloudCustom:
                 return "Custom"
             case .parakeetTDT, .parakeetTDTv2, .parakeetRealtime, .nemotronOffline, .nemotronStreaming, .nemotronStreaming320:
@@ -5207,6 +5214,8 @@ final class SettingsStore: ObservableObject {
                 return "#10A37F"
             case .cloudGroq:
                 return "#F55036"
+            case .cloudOllama:
+                return "#334155"
             case .cloudCustom:
                 return "#3B82F6"
             case .parakeetTDT, .parakeetTDTv2, .parakeetRealtime, .nemotronOffline, .nemotronStreaming, .nemotronStreaming320:
@@ -5441,6 +5450,9 @@ private extension SettingsStore {
         static let cloudSTTGroqAPIKey = "CloudSTTGroqAPIKey"
         static let cloudSTTGroqBaseURL = "CloudSTTGroqBaseURL"
         static let cloudSTTGroqModel = "CloudSTTGroqModel"
+        static let cloudSTTOllamaBaseURL = "CloudSTTOllamaBaseURL"
+        static let cloudSTTOllamaAPIKey = "CloudSTTOllamaAPIKey"
+        static let cloudSTTOllamaModel = "CloudSTTOllamaModel"
         static let cloudSTTCustomBaseURL = "CloudSTTCustomBaseURL"
         static let cloudSTTCustomAPIKey = "CloudSTTCustomAPIKey"
         static let cloudSTTCustomModel = "CloudSTTCustomModel"
@@ -5876,6 +5888,30 @@ extension SettingsStore {
         set {
             objectWillChange.send()
             self.defaults.set(newValue, forKey: Keys.cloudSTTGroqModel)
+        }
+    }
+
+    var cloudSTTOllamaBaseURL: String {
+        get { self.defaults.string(forKey: Keys.cloudSTTOllamaBaseURL) ?? "http://localhost:11434" }
+        set {
+            objectWillChange.send()
+            self.defaults.set(newValue, forKey: Keys.cloudSTTOllamaBaseURL)
+        }
+    }
+
+    var cloudSTTOllamaAPIKey: String {
+        get { self.defaults.string(forKey: Keys.cloudSTTOllamaAPIKey) ?? "" }
+        set {
+            objectWillChange.send()
+            self.defaults.set(newValue, forKey: Keys.cloudSTTOllamaAPIKey)
+        }
+    }
+
+    var cloudSTTOllamaModel: String {
+        get { self.defaults.string(forKey: Keys.cloudSTTOllamaModel) ?? "qwen3-asr" }
+        set {
+            objectWillChange.send()
+            self.defaults.set(newValue, forKey: Keys.cloudSTTOllamaModel)
         }
     }
 

@@ -744,6 +744,11 @@ extension VoiceEngineSettingsView {
             return "Nemotron Speech 3.5 - Streaming Capable"
         case .cloudOpenRouter:
             return self.selectedOpenRouterModelSubtitle
+        case .cloudOllama:
+            let modelName = self.settings.cloudSTTOllamaModel.isEmpty ? "qwen3-asr" : self.settings.cloudSTTOllamaModel
+            let base = self.settings.cloudSTTOllamaBaseURL
+            let host = URL(string: base)?.host ?? "localhost"
+            return "\(modelName) · \(host)"
         default:
             return model.displayName
         }
@@ -954,6 +959,9 @@ extension VoiceEngineSettingsView {
         }
         if model == .cloudGroq {
             return "Provider_Groq"
+        }
+        if model == .cloudOllama {
+            return "Provider_Ollama"
         }
         if model == .cloudCustom {
             return nil

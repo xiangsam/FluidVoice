@@ -18,12 +18,15 @@ struct CloudSTTConfigView: View {
     @State private var searchText = ""
     @State private var showCustomModelInput = false
     @State private var copiedModelID: String?
+    @State private var fetchedOllamaModels: [String] = []
+    @State private var isFetchingOllamaModels = false
 
     private var cloudSTTType: CloudSTTType {
         switch self.model {
         case .cloudOpenRouter: return .openRouter
         case .cloudOpenAI: return .openAI
         case .cloudGroq: return .groq
+        case .cloudOllama: return .ollama
         case .cloudCustom: return .custom
         default: return .openRouter
         }
@@ -36,6 +39,7 @@ struct CloudSTTConfigView: View {
                 case .openRouter: return self.settings.cloudSTTOpenRouterAPIKey
                 case .openAI: return self.settings.cloudSTTOpenAIAPIKey
                 case .groq: return self.settings.cloudSTTGroqAPIKey
+                case .ollama: return self.settings.cloudSTTOllamaAPIKey
                 case .custom: return self.settings.cloudSTTCustomAPIKey
                 }
             },
@@ -44,6 +48,7 @@ struct CloudSTTConfigView: View {
                 case .openRouter: self.settings.cloudSTTOpenRouterAPIKey = newValue
                 case .openAI: self.settings.cloudSTTOpenAIAPIKey = newValue
                 case .groq: self.settings.cloudSTTGroqAPIKey = newValue
+                case .ollama: self.settings.cloudSTTOllamaAPIKey = newValue
                 case .custom: self.settings.cloudSTTCustomAPIKey = newValue
                 }
             }
@@ -57,6 +62,7 @@ struct CloudSTTConfigView: View {
                 case .openRouter: return self.settings.cloudSTTOpenRouterBaseURL
                 case .openAI: return self.settings.cloudSTTOpenAIBaseURL
                 case .groq: return self.settings.cloudSTTGroqBaseURL
+                case .ollama: return self.settings.cloudSTTOllamaBaseURL
                 case .custom: return self.settings.cloudSTTCustomBaseURL
                 }
             },
@@ -65,6 +71,7 @@ struct CloudSTTConfigView: View {
                 case .openRouter: self.settings.cloudSTTOpenRouterBaseURL = newValue
                 case .openAI: self.settings.cloudSTTOpenAIBaseURL = newValue
                 case .groq: self.settings.cloudSTTGroqBaseURL = newValue
+                case .ollama: self.settings.cloudSTTOllamaBaseURL = newValue
                 case .custom: self.settings.cloudSTTCustomBaseURL = newValue
                 }
             }
@@ -78,6 +85,7 @@ struct CloudSTTConfigView: View {
                 case .openRouter: return self.settings.cloudSTTOpenRouterModel
                 case .openAI: return self.settings.cloudSTTOpenAIModel
                 case .groq: return self.settings.cloudSTTGroqModel
+                case .ollama: return self.settings.cloudSTTOllamaModel
                 case .custom: return self.settings.cloudSTTCustomModel
                 }
             },
@@ -86,6 +94,7 @@ struct CloudSTTConfigView: View {
                 case .openRouter: self.settings.cloudSTTOpenRouterModel = newValue
                 case .openAI: self.settings.cloudSTTOpenAIModel = newValue
                 case .groq: self.settings.cloudSTTGroqModel = newValue
+                case .ollama: self.settings.cloudSTTOllamaModel = newValue
                 case .custom: self.settings.cloudSTTCustomModel = newValue
                 }
             }
@@ -93,7 +102,21 @@ struct CloudSTTConfigView: View {
     }
 
     private var filteredModels: [CloudSTTModelItem] {
-        let presets = self.cloudSTTType.modelPresets
+        var presets = self.cloudSTTType.modelPresets
+        if self.cloudSTTType == .ollama && !self.fetchedOllamaModels.isEmpty {
+            let dynamicItems = self.fetchedOllamaModels.map { name in
+                CloudSTTModelItem(
+                    id: name,
+                    name: name,
+                    vendor: "Ollama Node",
+                    tag: name.contains("qwen") ? "🎯 ASR" : "Node Model",
+                    priceHint: "Local / Free",
+                    isPopular: true
+                )
+            }
+            presets = dynamicItems
+        }
+
         if self.searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             return presets
         }
@@ -116,6 +139,24 @@ struct CloudSTTConfigView: View {
                     .font(self.theme.typography.bodyStrong)
                     .foregroundStyle(.primary)
                 Spacer()
+
+                if self.cloudSTTType == .ollama {
+                    Button {
+                        self.fetchOllamaModels()
+                    } label: {
+                        HStack(spacing: 4) {
+                            if self.isFetchingOllamaModels {
+                                ProgressView().controlSize(.small)
+                            } else {
+                                Image(systemName: "arrow.clockwise")
+                            }
+                            Text("Scan Models".loc)
+                        }
+                        .font(self.theme.typography.bodySmall)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                }
 
                 if let website = ModelRepository.shared.providerWebsiteURL(for: self.cloudSTTType.rawValue) {
                     Button {
@@ -407,6 +448,11 @@ struct CloudSTTConfigView: View {
                         .stroke(self.theme.palette.cardBorder.opacity(0.3), lineWidth: 1)
                 )
         )
+        .onAppear {
+            if self.cloudSTTType == .ollama {
+                self.fetchOllamaModels()
+            }
+        }
     }
 
     // MARK: - Model Card Row Component
@@ -567,6 +613,33 @@ struct CloudSTTConfigView: View {
                     self.testResultSuccess = false
                     self.testResultMessage = "✕ " + error.localizedDescription
                 }
+            }
+        }
+    }
+
+    private func fetchOllamaModels() {
+        let rawBase = self.baseURLBinding.wrappedValue.trimmingCharacters(in: .whitespacesAndNewlines).trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        let base = rawBase.isEmpty ? "http://localhost:11434" : rawBase
+        guard let url = URL(string: "\(base)/api/tags") else { return }
+
+        self.isFetchingOllamaModels = true
+        Task {
+            defer {
+                Task { @MainActor in
+                    self.isFetchingOllamaModels = false
+                }
+            }
+            do {
+                let (data, _) = try await URLSession.shared.data(from: url)
+                if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                   let modelsArray = json["models"] as? [[String: Any]] {
+                    let names = modelsArray.compactMap { $0["name"] as? String }
+                    await MainActor.run {
+                        self.fetchedOllamaModels = names
+                    }
+                }
+            } catch {
+                DebugLogger.shared.error("Failed to fetch Ollama models: \(error)", source: "CloudSTTConfigView")
             }
         }
     }

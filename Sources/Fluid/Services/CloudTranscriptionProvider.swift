@@ -9,6 +9,7 @@ public enum CloudSTTType: String, CaseIterable, Identifiable {
     case openRouter = "openrouter"
     case openAI = "openai"
     case groq = "groq"
+    case ollama = "ollama"
     case custom = "custom"
 
     public var id: String { self.rawValue }
@@ -18,6 +19,7 @@ public enum CloudSTTType: String, CaseIterable, Identifiable {
         case .openRouter: return "OpenRouter"
         case .openAI: return "OpenAI"
         case .groq: return "Groq"
+        case .ollama: return "Ollama (Local / LAN)"
         case .custom: return "Custom (OpenAI-Compatible)"
         }
     }
@@ -27,6 +29,7 @@ public enum CloudSTTType: String, CaseIterable, Identifiable {
         case .openRouter: return "https://openrouter.ai/api/v1"
         case .openAI: return "https://api.openai.com/v1"
         case .groq: return "https://api.groq.com/openai/v1"
+        case .ollama: return "http://localhost:11434"
         case .custom: return ""
         }
     }
@@ -36,6 +39,7 @@ public enum CloudSTTType: String, CaseIterable, Identifiable {
         case .openRouter: return "openai/gpt-4o-mini-transcribe"
         case .openAI: return "whisper-1"
         case .groq: return "whisper-large-v3"
+        case .ollama: return "qwen3-asr"
         case .custom: return "whisper-1"
         }
     }
@@ -190,6 +194,11 @@ public enum CloudSTTType: String, CaseIterable, Identifiable {
                 CloudSTTModelItem(id: "whisper-large-v3-turbo", name: "Whisper Large V3 Turbo", vendor: "Groq", tag: "超低延迟"),
                 CloudSTTModelItem(id: "distil-whisper-large-v3-en", name: "Distil-Whisper Large V3 (English)", vendor: "Groq", tag: "英文专精"),
             ]
+        case .ollama:
+            return [
+                CloudSTTModelItem(id: "qwen3-asr", name: "Qwen3 ASR (Standard / Custom Tag)", vendor: "Qwen", tag: "🎯 推荐", priceHint: "Local / Free", isPopular: true),
+                CloudSTTModelItem(id: "whisper", name: "Whisper (Ollama)", vendor: "OpenAI", tag: "通用", priceHint: "Local / Free"),
+            ]
         case .custom:
             return [
                 CloudSTTModelItem(id: "whisper-1", name: "Whisper 1", vendor: "Custom"),
@@ -271,6 +280,7 @@ final class CloudTranscriptionProvider: TranscriptionProvider {
         case .openRouter: return "OpenRouter Cloud STT"
         case .openAI: return "OpenAI Cloud STT"
         case .groq: return "Groq Cloud STT"
+        case .ollama: return "Ollama ASR (Local / LAN)"
         case .custom: return "Custom Cloud STT"
         }
     }
@@ -280,6 +290,9 @@ final class CloudTranscriptionProvider: TranscriptionProvider {
     }
 
     var isReady: Bool {
+        if self.type == .ollama {
+            return !self.resolvedBaseURL().isEmpty
+        }
         let key = self.resolvedAPIKey()
         return !key.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
@@ -321,6 +334,8 @@ final class CloudTranscriptionProvider: TranscriptionProvider {
             let key = self.settings.cloudSTTGroqAPIKey
             if !key.isEmpty { return key }
             return self.settings.getAPIKey(for: "groq") ?? ""
+        case .ollama:
+            return self.settings.cloudSTTOllamaAPIKey
         case .custom:
             return self.settings.cloudSTTCustomAPIKey
         }
@@ -335,6 +350,8 @@ final class CloudTranscriptionProvider: TranscriptionProvider {
             rawURL = self.settings.cloudSTTOpenAIBaseURL.isEmpty ? self.type.defaultBaseURL : self.settings.cloudSTTOpenAIBaseURL
         case .groq:
             rawURL = self.settings.cloudSTTGroqBaseURL.isEmpty ? self.type.defaultBaseURL : self.settings.cloudSTTGroqBaseURL
+        case .ollama:
+            rawURL = self.settings.cloudSTTOllamaBaseURL.isEmpty ? self.type.defaultBaseURL : self.settings.cloudSTTOllamaBaseURL
         case .custom:
             rawURL = self.settings.cloudSTTCustomBaseURL
         }
@@ -350,6 +367,8 @@ final class CloudTranscriptionProvider: TranscriptionProvider {
             model = self.settings.cloudSTTOpenAIModel
         case .groq:
             model = self.settings.cloudSTTGroqModel
+        case .ollama:
+            model = self.settings.cloudSTTOllamaModel
         case .custom:
             model = self.settings.cloudSTTCustomModel
         }
@@ -364,6 +383,11 @@ final class CloudTranscriptionProvider: TranscriptionProvider {
         let endpointString: String
         if base.hasSuffix("/audio/transcriptions") {
             endpointString = base
+        } else if base.hasSuffix("/v1") {
+            endpointString = "\(base)/audio/transcriptions"
+        } else if self.type == .ollama || base.contains(":11434") {
+            // Ollama base URL usually without /v1, map to /v1/audio/transcriptions
+            endpointString = "\(base)/v1/audio/transcriptions"
         } else {
             endpointString = "\(base)/audio/transcriptions"
         }
@@ -470,9 +494,51 @@ final class CloudTranscriptionProvider: TranscriptionProvider {
         guard let jsonObject = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let text = jsonObject["text"] as? String else {
             if let plain = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines), !plain.isEmpty {
-                return plain
+                return self.sanitizeTranscriptionText(plain)
             }
             throw CloudTranscriptionError.invalidResponseData
+        }
+
+        return self.sanitizeTranscriptionText(text)
+    }
+
+    /// Cleans special LLM / ASR tokens (e.g. Qwen3-ASR `language Chinese<asr_text>`, Whisper tokens, etc.)
+    private func sanitizeTranscriptionText(_ rawText: String) -> String {
+        var text = rawText.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // 1. Handle Qwen3-ASR language [Lang]<asr_text> prefix
+        if let range = text.range(of: "<asr_text>") {
+            text = String(text[range.upperBound...])
+        }
+
+        // 2. Strip standard special tokens
+        let specialTokens = [
+            "<|endoftext|>",
+            "<|im_end|>",
+            "<|startoftranscript|>",
+            "<|transcribe|>",
+            "<|notimestamps|>",
+            "<|zh|>",
+            "<|en|>",
+            "</s>",
+            "<s>",
+            "<asr_text>",
+            "</asr_text>"
+        ]
+        for token in specialTokens {
+            text = text.replacingOccurrences(of: token, with: "")
+        }
+
+        // 3. Strip standalone language prefixes (e.g. "language Chinese\n" or "language Chinese ")
+        if text.hasPrefix("language ") {
+            let lines = text.components(separatedBy: "\n")
+            if lines.count > 1 {
+                text = lines.dropFirst().joined(separator: "\n")
+            } else {
+                if let regex = try? NSRegularExpression(pattern: "^language\\s+[A-Za-z]+\\s*", options: []) {
+                    text = regex.stringByReplacingMatches(in: text, options: [], range: NSRange(location: 0, length: text.utf16.count), withTemplate: "")
+                }
+            }
         }
 
         return text.trimmingCharacters(in: .whitespacesAndNewlines)
