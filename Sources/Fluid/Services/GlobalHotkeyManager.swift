@@ -1888,7 +1888,16 @@ final class GlobalHotkeyManager: NSObject {
         self.setHotkeyMode(enable ? .hold : .toggle)
     }
 
+    public func resetProcessingStop() {
+        self.isProcessingStop = false
+    }
+
     private func canTriggerRecordingAction(_ label: String) -> Bool {
+        if self.isProcessingStop && !self.asrService.isRunning {
+            DebugLogger.shared.info("GlobalHotkeyManager: preempting in-flight post-processing for \(label)", source: "GlobalHotkeyManager")
+            self.isProcessingStop = false
+            return true
+        }
         guard !self.isProcessingStop else {
             DebugLogger.shared.debug("Ignoring \(label) - stop already processing", source: "GlobalHotkeyManager")
             return false

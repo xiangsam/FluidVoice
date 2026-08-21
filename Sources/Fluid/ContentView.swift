@@ -311,6 +311,7 @@ struct ContentView: View {
     @State private var selectedProviderID: String = SettingsStore.shared.selectedProviderID
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
     @State private var microphoneSettingsScrollRequest = 0
+    @State private var activeTranscriptionTask: Task<Void, Never>? = nil
 
     var body: some View {
         let layout = AnyView(
@@ -2056,14 +2057,17 @@ struct ContentView: View {
         let shouldUseAIOnStop = activeDictationSlot.map {
             DictationAIPostProcessingGate.isConfigured(for: $0, appBundleID: self.recordingAppInfo?.bundleId)
         } ?? DictationAIPostProcessingGate.isConfigured(for: .primary, appBundleID: self.recordingAppInfo?.bundleId)
+        let selectedSpeechModel = SettingsStore.shared.selectedSpeechModel
+        let isCloudSTT = selectedSpeechModel.provider == .cloud || selectedSpeechModel == .cloudOllama
         let shouldHideOverlayOnStop = route == .normal &&
             !wasRewriteMode &&
             !wasCommandMode &&
             !promptTest.isActive &&
-            !shouldUseAIOnStop
+            !shouldUseAIOnStop &&
+            !isCloudSTT
         var didRequestOverlayHideOnStop = false
         DebugLogger.shared.info(
-            "Routing decision snapshot | activeMode=\(modeAtStop.rawValue) | rewrite=\(wasRewriteMode) | command=\(wasCommandMode) | overlay=\(NotchContentState.shared.mode.rawValue)",
+            "Routing decision snapshot | activeMode=\(modeAtStop.rawValue) | rewrite=\(wasRewriteMode) | command=\(wasCommandMode) | isCloud=\(isCloudSTT) | overlay=\(NotchContentState.shared.mode.rawValue)",
             source: "ContentView"
         )
 
@@ -2074,12 +2078,12 @@ struct ContentView: View {
             DebugLogger.shared.debug("Hiding dictation overlay at stop path", source: "ContentView")
             self.hideOverlayAsync(reason: "stop_path")
         } else {
-            // Show "Transcribing" state before calling stop() when the overlay needs
-            // to remain available for prompt, command, rewrite, or AI feedback.
+            // Show "Transcribing..." state before calling stop() when the overlay needs
+            // to remain available for prompt, command, rewrite, AI feedback, or cloud STT.
             DebugLogger.shared.debug("Showing transcription processing state", source: "ContentView")
             self.appBench("processing_ui_request status=Transcribing")
             self.menuBarManager.setProcessing(true)
-            NotchOverlayManager.shared.updateTranscriptionText("Transcribing")
+            NotchOverlayManager.shared.updateTranscriptionText("Transcribing...".loc)
             self.appBench("processing_ui_requested status=Transcribing")
 
             // Give SwiftUI a chance to render the processing state before heavier work.
@@ -3017,6 +3021,7 @@ struct ContentView: View {
 
     /// Capture app context at start to avoid mismatches if the user switches apps mid-session
     private func startRecording() {
+        self.hotkeyManager?.resetProcessingStop()
         let model = SettingsStore.shared.selectedSpeechModel
         DebugLogger.shared.info(
             "ContentView: startRecording() for model=\(model.displayName), supportsStreaming=\(model.supportsStreaming)",
