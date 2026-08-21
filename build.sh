@@ -40,11 +40,12 @@ resolve_development_team() {
 
 run_public_build() {
     local signing_mode="$1"
+    local config="${2:-Debug}"
     local development_team
     local -a build_args=(
         -project Fluid.xcodeproj
         -scheme Fluid
-        -configuration Debug
+        -configuration "${config}"
         -destination 'platform=macOS'
         -derivedDataPath "${DERIVED_DATA_PATH}"
         build
@@ -53,8 +54,7 @@ run_public_build() {
     cd "${PROJECT_DIR}"
 
     if [ "${signing_mode}" = "unsigned" ]; then
-        echo "Running unsigned public FluidVoice build..."
-        echo "Accessibility permission may need to be granted again after rebuilding."
+        echo "Running unsigned public FluidVoice build (${config})..."
         exec xcodebuild "${build_args[@]}" CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
     fi
 
@@ -63,40 +63,25 @@ run_public_build() {
         if [ -n "${FLUIDVOICE_DEVELOPMENT_TEAM:-}" ]; then
             printf >&2 'FLUIDVOICE_DEVELOPMENT_TEAM is set to %s, but no Apple Development signing identity was found.\n\n' \
                 "${FLUIDVOICE_DEVELOPMENT_TEAM}"
-            printf >&2 '%s\n\n' \
-                "The team override selects an installed signing identity; it does not replace a certificate."
         else
             printf >&2 'No Apple Development signing identity was found.\n\n'
         fi
-
-        cat >&2 <<'EOF'
-For stable Accessibility permission across rebuilds, add any Apple Account in:
-  Xcode > Settings > Accounts
-
-Then open Manage Certificates and create an Apple Development certificate.
-
-A free Personal Team is sufficient for local development. If you have multiple
-teams, set FLUIDVOICE_DEVELOPMENT_TEAM to the desired 10-character Team ID.
-
-To build without signing instead, run:
-  ./build.sh unsigned
-
-Unsigned builds may require Accessibility permission again after rebuilding.
-EOF
         exit 1
     fi
 
-    echo "Running signed public FluidVoice build..."
-    echo "Build product: ${DERIVED_DATA_PATH}/Build/Products/Debug/FluidVoice Debug.app"
+    echo "Running signed public FluidVoice build (${config})..."
     exec xcodebuild "${build_args[@]}" DEVELOPMENT_TEAM="${development_team}"
 }
 
 case "${PROFILE}" in
     public|oss|incremental|fast)
-        run_public_build signed
+        run_public_build signed Debug
+        ;;
+    release|prod)
+        run_public_build unsigned Release
         ;;
     unsigned|ci)
-        run_public_build unsigned
+        run_public_build unsigned Debug
         ;;
     fi|private|dev|full)
         if [ ! -x "${PRIVATE_FI_BUILD_SCRIPT}" ]; then
