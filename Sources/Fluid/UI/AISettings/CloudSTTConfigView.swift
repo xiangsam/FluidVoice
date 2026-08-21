@@ -379,11 +379,11 @@ struct CloudSTTConfigView: View {
                         Text("Auto Detect".loc).tag("auto")
                         Text("Chinese (Simplified)".loc).tag("zh")
                         Text("English".loc).tag("en")
-                        Text("Japanese").tag("ja")
-                        Text("Korean").tag("ko")
-                        Text("French").tag("fr")
-                        Text("German").tag("de")
-                        Text("Spanish").tag("es")
+                        Text("Japanese".loc).tag("ja")
+                        Text("Korean".loc).tag("ko")
+                        Text("French".loc).tag("fr")
+                        Text("German".loc).tag("de")
+                        Text("Spanish".loc).tag("es")
                     }
                     .labelsHidden()
                     .frame(width: 160)
@@ -416,6 +416,16 @@ struct CloudSTTConfigView: View {
                             .lineLimit(2)
                     }
                 }
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("ASR Prompt (Optional / Filter Filler Words)".loc)
+                    .font(self.theme.typography.bodySmallStrong)
+                    .foregroundStyle(.secondary)
+
+                TextField("e.g. Accurately transcribe audio, filter out verbal fillers like uh, um, etc.".loc, text: self.$settings.cloudSTTPrompt)
+                    .textFieldStyle(.roundedBorder)
+                    .font(.subheadline)
             }
 
             // Bottom Actions: Done / Return

@@ -5457,6 +5457,7 @@ private extension SettingsStore {
         static let cloudSTTCustomAPIKey = "CloudSTTCustomAPIKey"
         static let cloudSTTCustomModel = "CloudSTTCustomModel"
         static let cloudSTTLanguage = "CloudSTTLanguage"
+        static let cloudSTTPrompt = "CloudSTTPrompt"
 
         // Overlay Position
         static let overlayPosition = "OverlayPosition"
@@ -5944,6 +5945,14 @@ extension SettingsStore {
         set {
             objectWillChange.send()
             self.defaults.set(newValue, forKey: Keys.cloudSTTLanguage)
+        }
+    }
+
+    var cloudSTTPrompt: String {
+        get { self.defaults.string(forKey: Keys.cloudSTTPrompt) ?? "" }
+        set {
+            objectWillChange.send()
+            self.defaults.set(newValue, forKey: Keys.cloudSTTPrompt)
         }
     }
 }

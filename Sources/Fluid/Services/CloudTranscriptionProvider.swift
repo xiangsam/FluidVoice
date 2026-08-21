@@ -468,6 +468,11 @@ final class CloudTranscriptionProvider: TranscriptionProvider {
             body.appendMultipartField(name: "language", value: language, boundary: boundary)
         }
 
+        let prompt = self.settings.cloudSTTPrompt.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !prompt.isEmpty {
+            body.appendMultipartField(name: "prompt", value: prompt, boundary: boundary)
+        }
+
         body.appendMultipartField(name: "response_format", value: "json", boundary: boundary)
         body.appendMultipartFile(name: "file", fileName: fileName, mimeType: mimeType, fileData: audioData, boundary: boundary)
         body.append("--\(boundary)--\r\n".data(using: .utf8)!)
