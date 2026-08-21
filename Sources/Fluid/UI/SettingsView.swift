@@ -414,7 +414,7 @@ struct SettingsView: View {
                                         Text("Automatic Updates".loc)
                                             .font(self.theme.typography.bodyStrong)
                                             .foregroundStyle(self.settingsTitleText)
-                                        Text("Check for updates automatically once per hour".loc)
+                                        Text("Disabled for custom fork build to prevent overwriting custom features.".loc)
                                             .font(self.theme.typography.bodySmall)
                                             .foregroundStyle(self.settingsSecondaryText)
                                     }
@@ -430,76 +430,20 @@ struct SettingsView: View {
                                     .labelsHidden()
                                 }
 
-                                HStack(alignment: .center) {
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text("Beta Releases".loc)
-                                            .font(self.theme.typography.bodyStrong)
-                                            .foregroundStyle(self.settingsTitleText)
-                                        Text("Opt in to preview builds that may be unstable".loc)
-                                            .font(self.theme.typography.bodySmall)
-                                            .foregroundStyle(self.settingsSecondaryText)
-                                    }
-
-                                    Spacer()
-
-                                    Toggle("", isOn: Binding(
-                                        get: { SettingsStore.shared.betaReleasesEnabled },
-                                        set: { SettingsStore.shared.betaReleasesEnabled = $0 }
-                                    ))
-                                    .toggleStyle(.switch)
-                                    .tint(self.theme.palette.accent)
-                                    .labelsHidden()
-                                }
-
-                                if SettingsStore.shared.betaReleasesEnabled {
-                                    Text("Beta opt-in enabled. Update checks include both stable and beta builds.".loc)
-                                        .font(.caption)
-                                        .foregroundStyle(self.theme.palette.warning)
-                                }
-
-                                if let lastCheck = SettingsStore.shared.lastUpdateCheckDate {
-                                    Text("\("Last checked:".loc) \(lastCheck.formatted(date: .abbreviated, time: .shortened))")
-                                        .font(self.theme.typography.bodySmall)
-                                        .foregroundStyle(self.settingsSecondaryText)
-                                }
-
-                                Text("Current version: \(self.currentAppVersion)")
+                                Text("Current version: \(self.currentAppVersion) (Custom Fork)")
                                     .font(self.theme.typography.bodySmall)
                                     .foregroundStyle(self.settingsSecondaryText)
                             }
 
                             // Update Buttons
                             HStack(spacing: 10) {
-                                Button("Check for Updates") {
-                                    Task { @MainActor in
-                                        do {
-                                            let includePrerelease = SettingsStore.shared.betaReleasesEnabled
-                                            try await SimpleUpdater.shared.checkAndUpdate(
-                                                owner: "altic-dev",
-                                                repo: "Fluid-oss",
-                                                includePrerelease: includePrerelease
-                                            )
-                                        } catch SimpleUpdateError.updateAlreadyInProgress {
-                                            DebugLogger.shared.info(
-                                                "Update installation already in progress",
-                                                source: "SettingsView"
-                                            )
-                                        } catch {
-                                            let msg = NSAlert()
-                                            if let pmkError = error as? PMKError, pmkError.isCancelled {
-                                                let isBeta = SettingsStore.shared.betaReleasesEnabled
-                                                msg.messageText = isBeta ? "You're Up To Date (Beta)" : "You're Up To Date"
-                                                msg.informativeText = isBeta
-                                                    ? "You're already running the latest build available in the beta channel."
-                                                    : "You're already running the latest version of FluidVoice."
-                                            } else {
-                                                msg.messageText = "Update Check Failed"
-                                                msg.informativeText = "Unable to check for updates. Please try again later.\n\nError: \(error.localizedDescription)"
-                                            }
-                                            msg.alertStyle = .informational
-                                            msg.runModal()
-                                        }
-                                    }
+                                Button("Check for Updates".loc) {
+                                    let msg = NSAlert()
+                                    msg.messageText = "Custom Fork Build".loc
+                                    msg.informativeText = "Automatic binary updates are disabled to protect your custom features (Chinese localization & Cloud STT). Please sync updates via Git repository.".loc
+                                    msg.alertStyle = .informational
+                                    msg.addButton(withTitle: "OK".loc)
+                                    msg.runModal()
                                 }
                                 .buttonStyle(.borderedProminent)
                                 .tint(self.theme.palette.accent)

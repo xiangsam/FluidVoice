@@ -2407,7 +2407,7 @@ final class SettingsStore: ObservableObject {
     var autoUpdateCheckEnabled: Bool {
         get {
             let value = self.defaults.object(forKey: Keys.autoUpdateCheckEnabled)
-            return value as? Bool ?? true // Default to enabled
+            return value as? Bool ?? false // Default to disabled for custom fork
         }
         set {
             self.defaults.set(newValue, forKey: Keys.autoUpdateCheckEnabled)
