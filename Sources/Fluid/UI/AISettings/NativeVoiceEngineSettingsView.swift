@@ -2,18 +2,37 @@
 //  NativeVoiceEngineSettingsView.swift
 //  FluidVoice
 //
-//  Modern, native SwiftUI Voice Engine Settings View adhering to Apple HIG.
+//  Modern, comprehensive native SwiftUI Voice Engine Settings View adhering to Apple HIG.
 //
 
 import SwiftUI
 
 typealias SpeechModel = SettingsStore.SpeechModel
 
+enum ModelCategoryTab: String, CaseIterable, Identifiable {
+    case all = "全部"
+    case apple = "Apple 内置"
+    case local = "本地离线"
+    case cloud = "云端与局域网"
+
+    var id: String { self.rawValue }
+
+    var icon: String {
+        switch self {
+        case .all: return "square.grid.2x2"
+        case .apple: return "apple.logo"
+        case .local: return "cpu"
+        case .cloud: return "network"
+        }
+    }
+}
+
 struct NativeVoiceEngineSettingsView: View {
     @ObservedObject var viewModel: VoiceEngineSettingsViewModel
     @ObservedObject var settings: SettingsStore
     let theme: AppTheme
 
+    @State private var selectedTab: ModelCategoryTab = .all
     @State private var isTestingConnection: Bool = false
     @State private var connectionTestMessage: String? = nil
     @State private var connectionTestSuccess: Bool? = nil
@@ -30,22 +49,28 @@ struct NativeVoiceEngineSettingsView: View {
             // 2. Active Model Status Card
             self.activeStatusCard
 
-            // 3. Engine Category / Selection
-            self.engineSelectionSection
+            // 3. Category Filter Tabs
+            self.categoryTabPicker
 
-            // 4. Detailed Configuration for Selected Engine (Ollama / Cloud / Local)
-            if self.activeModel.isCloudModel || self.activeModel == .cloudOllama {
+            // 4. Model List
+            self.modelListSection
+
+            // 5. Detailed Configuration for Selected Engine (Ollama / Cloud / Custom)
+            if self.activeModel.isCloudModel {
                 self.cloudConfigurationSection
             }
 
-            // 5. Intelligent Fallback & Timeout Settings
+            // 6. Intelligent Fallback & Timeout Settings
             self.smartFallbackSection
 
-            // 6. Filler Words & Formatting Rules Quick Link
+            // 7. Tip Section
             self.advancedOptionsSection
         }
         .padding(.horizontal, 4)
         .padding(.vertical, 8)
+        .onAppear {
+            self.viewModel.onAppear()
+        }
     }
 
     // MARK: - 1. Header
@@ -79,7 +104,7 @@ struct NativeVoiceEngineSettingsView: View {
 
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 6) {
-                    Text(self.activeModel.displayName)
+                    Text(self.displayNameForModel(self.activeModel))
                         .font(.headline)
                         .fontWeight(.semibold)
 
@@ -98,7 +123,7 @@ struct NativeVoiceEngineSettingsView: View {
 
             Spacer()
 
-            if self.settings.cloudSTTAutoFallback && (self.activeModel.isCloudModel || self.activeModel == .cloudOllama) {
+            if self.settings.cloudSTTAutoFallback && self.activeModel.isCloudModel {
                 HStack(spacing: 4) {
                     Image(systemName: "shield.checkmark.fill")
                         .foregroundStyle(self.theme.palette.accent)
@@ -122,121 +147,180 @@ struct NativeVoiceEngineSettingsView: View {
         )
     }
 
-    // MARK: - 3. Engine Selection Section
-    private var engineSelectionSection: some View {
+    // MARK: - 3. Category Tab Picker
+    private var categoryTabPicker: some View {
+        Picker("", selection: self.$selectedTab) {
+            ForEach(ModelCategoryTab.allCases) { tab in
+                Label(tab.rawValue.loc, systemImage: tab.icon).tag(tab)
+            }
+        }
+        .pickerStyle(.segmented)
+        .padding(.vertical, 2)
+    }
+
+    // MARK: - 4. Model List Section
+    private var modelListSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Choose Engine".loc)
+            Text(self.categorySectionTitle)
                 .font(.headline)
                 .foregroundStyle(.primary)
 
             VStack(spacing: 8) {
-                // Option A: macOS Native Apple Speech
-                self.engineOptionRow(
-                    model: .appleSpeech,
-                    icon: "apple.logo",
-                    title: "Apple Speech (macOS Native)".loc,
-                    subtitle: "Zero latency, fully offline, privacy-first, built into macOS.".loc,
-                    badge: "Recommended".loc
-                )
-
-                // Option B: Ollama ASR (Local / LAN)
-                self.engineOptionRow(
-                    model: .cloudOllama,
-                    icon: "network",
-                    title: "Ollama ASR (Local / LAN Server)".loc,
-                    subtitle: "Connects to your local or remote Ollama server (e.g. Qwen3-ASR, SenseVoice).".loc,
-                    badge: "Custom".loc
-                )
-
-                // Option C: OpenAI Cloud ASR
-                self.engineOptionRow(
-                    model: .cloudOpenAI,
-                    icon: "cloud.fill",
-                    title: "OpenAI Cloud STT (Whisper API)".loc,
-                    subtitle: "Official high-accuracy cloud transcription via OpenAI API.".loc
-                )
-
-                // Option D: Groq Cloud ASR
-                self.engineOptionRow(
-                    model: .cloudGroq,
-                    icon: "bolt.fill",
-                    title: "Groq Cloud STT (Ultra Fast)".loc,
-                    subtitle: "Near-instant cloud transcription powered by Groq LPUs.".loc
-                )
-
-                // Option E: Local Whisper
-                self.engineOptionRow(
-                    model: .whisperLargeTurbo,
-                    icon: "cpu.fill",
-                    title: "Whisper Large Turbo (Local Offline)".loc,
-                    subtitle: "High precision offline model running locally on your Mac.".loc
-                )
+                ForEach(self.displayedModels) { model in
+                    self.modelRow(for: model)
+                }
             }
         }
     }
 
-    private func engineOptionRow(model: SpeechModel, icon: String, title: String, subtitle: String, badge: String? = nil) -> some View {
-        let isSelected = self.activeModel == model
+    private var categorySectionTitle: String {
+        switch self.selectedTab {
+        case .all: return "All Available Models".loc
+        case .apple: return "Apple Built-in Engines (Zero Download)".loc
+        case .local: return "On-Device Offline Models (Whisper & Neural)".loc
+        case .cloud: return "Cloud & LAN Servers (Ollama / Cloud APIs)".loc
+        }
+    }
 
-        return Button {
-            withAnimation(.easeInOut(duration: 0.15)) {
-                self.settings.selectedSpeechModel = model
-            }
-        } label: {
+    private var displayedModels: [SpeechModel] {
+        switch self.selectedTab {
+        case .all:
+            return SpeechModel.availableModels
+        case .apple:
+            return [.appleSpeech, .appleSpeechAnalyzer]
+        case .local:
+            return SpeechModel.availableModels.filter { !$0.isCloudModel && $0 != .appleSpeech && $0 != .appleSpeechAnalyzer }
+        case .cloud:
+            return SpeechModel.availableModels.filter { $0.isCloudModel }
+        }
+    }
+
+    // MARK: - Model Card Row
+    private func modelRow(for model: SpeechModel) -> some View {
+        let isSelected = self.activeModel == model
+        let isInstalled = model.isInstalled
+        let isDownloading = self.viewModel.downloadingModel == model
+
+        return VStack(spacing: 0) {
             HStack(spacing: 12) {
-                Image(systemName: icon)
+                // Icon
+                Image(systemName: self.iconForModel(model))
                     .font(.system(size: 18))
                     .foregroundStyle(isSelected ? self.theme.palette.accent : .secondary)
                     .frame(width: 28, height: 28)
 
+                // Info
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 6) {
-                        Text(title)
+                        Text(self.displayNameForModel(model))
                             .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
                             .foregroundStyle(.primary)
 
-                        if let badge {
-                            Text(badge)
-                                .font(.system(size: 10, weight: .bold))
-                                .padding(.horizontal, 5)
-                                .padding(.vertical, 1)
-                                .background(Capsule().fill(self.theme.palette.accent.opacity(0.15)))
-                                .foregroundStyle(self.theme.palette.accent)
+                        // Badges
+                        if model == .appleSpeech || model == .appleSpeechAnalyzer {
+                            self.miniBadge(text: "Built-in".loc, color: .blue)
+                        } else if model.isCloudModel {
+                            self.miniBadge(text: "Cloud / LAN".loc, color: .purple)
+                        } else {
+                            self.miniBadge(text: model.downloadSize, color: .secondary)
+                        }
+
+                        if model == .whisperLargeTurbo || model == .appleSpeech {
+                            self.miniBadge(text: "Recommended".loc, color: Color.fluidGreen)
                         }
                     }
 
-                    Text(subtitle)
+                    Text(self.descriptionForModel(model))
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                        .lineLimit(1)
+                        .lineLimit(2)
                 }
 
                 Spacer()
 
+                // Actions: Select / Download / Progress
+                self.modelActionView(for: model, isSelected: isSelected, isInstalled: isInstalled, isDownloading: isDownloading)
+            }
+            .padding(12)
+        }
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(isSelected ? self.theme.palette.accent.opacity(0.08) : Color(nsColor: .controlBackgroundColor).opacity(0.6))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(isSelected ? self.theme.palette.accent.opacity(0.5) : Color.secondary.opacity(0.15), lineWidth: 1)
+                )
+        )
+        .contentShape(Rectangle())
+        .onTapGesture {
+            if isInstalled && !isSelected {
+                withAnimation(.easeInOut(duration: 0.15)) {
+                    self.settings.selectedSpeechModel = model
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func modelActionView(for model: SpeechModel, isSelected: Bool, isInstalled: Bool, isDownloading: Bool) -> some View {
+        if isDownloading {
+            VStack(alignment: .trailing, spacing: 4) {
+                HStack(spacing: 6) {
+                    ProgressView(value: self.viewModel.downloadProgress)
+                        .frame(width: 80)
+                    Text("\(Int(self.viewModel.downloadProgress * 100))%")
+                        .font(.caption2)
+                        .monospacedDigit()
+                }
+                Button("Cancel".loc) {
+                    self.viewModel.cancelSpeechModelDownload()
+                }
+                .buttonStyle(.plain)
+                .font(.caption2)
+                .foregroundStyle(.red)
+            }
+        } else if !isInstalled {
+            Button {
+                self.viewModel.downloadSpeechModel(model)
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: "arrow.down.circle")
+                    Text("Download".loc)
+                }
+                .font(.system(size: 12, weight: .medium))
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+        } else {
+            Button {
+                withAnimation(.easeInOut(duration: 0.15)) {
+                    self.settings.selectedSpeechModel = model
+                }
+            } label: {
                 if isSelected {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundStyle(self.theme.palette.accent)
-                        .font(.system(size: 16))
+                        .font(.system(size: 18))
                 } else {
                     Circle()
-                        .strokeBorder(Color.secondary.opacity(0.3), lineWidth: 1)
-                        .frame(width: 16, height: 16)
+                        .strokeBorder(Color.secondary.opacity(0.35), lineWidth: 1.5)
+                        .frame(width: 18, height: 18)
                 }
             }
-            .padding(12)
-            .background(
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(isSelected ? self.theme.palette.accent.opacity(0.08) : Color(nsColor: .controlBackgroundColor).opacity(0.6))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 10)
-                            .stroke(isSelected ? self.theme.palette.accent.opacity(0.5) : Color.secondary.opacity(0.15), lineWidth: 1)
-                    )
-            )
+            .buttonStyle(.plain)
         }
-        .buttonStyle(.plain)
     }
 
-    // MARK: - 4. Cloud Configuration Section
+    private func miniBadge(text: String, color: Color) -> some View {
+        Text(text)
+            .font(.system(size: 9, weight: .bold))
+            .padding(.horizontal, 5)
+            .padding(.vertical, 1.5)
+            .background(Capsule().fill(color.opacity(0.15)))
+            .foregroundStyle(color)
+    }
+
+    // MARK: - 5. Cloud Configuration Section
     private var cloudConfigurationSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Engine Configuration".loc)
@@ -244,7 +328,7 @@ struct NativeVoiceEngineSettingsView: View {
                 .foregroundStyle(.primary)
 
             VStack(spacing: 12) {
-                // Base URL
+                // Base URL & Model for specific cloud engines
                 if self.activeModel == .cloudOllama {
                     HStack(alignment: .center) {
                         Text("Ollama Base URL".loc)
@@ -289,6 +373,29 @@ struct NativeVoiceEngineSettingsView: View {
                             .font(.subheadline)
                             .frame(width: 140, alignment: .leading)
                         TextField("whisper-large-v3-turbo", text: self.$settings.cloudSTTGroqModel)
+                            .textFieldStyle(.roundedBorder)
+                    }
+                } else if self.activeModel == .cloudOpenRouter {
+                    HStack(alignment: .center) {
+                        Text("OpenRouter API Key".loc)
+                            .font(.subheadline)
+                            .frame(width: 140, alignment: .leading)
+                        SecureField("sk-or-...", text: self.$settings.cloudSTTOpenRouterAPIKey)
+                            .textFieldStyle(.roundedBorder)
+                    }
+                } else if self.activeModel == .cloudCustom {
+                    HStack(alignment: .center) {
+                        Text("Endpoint URL".loc)
+                            .font(.subheadline)
+                            .frame(width: 140, alignment: .leading)
+                        TextField("https://api.example.com/v1/audio/transcriptions", text: self.$settings.cloudSTTCustomBaseURL)
+                            .textFieldStyle(.roundedBorder)
+                    }
+                    HStack(alignment: .center) {
+                        Text("API Key".loc)
+                            .font(.subheadline)
+                            .frame(width: 140, alignment: .leading)
+                        SecureField("Optional API Key...", text: self.$settings.cloudSTTCustomAPIKey)
                             .textFieldStyle(.roundedBorder)
                     }
                 }
@@ -358,7 +465,7 @@ struct NativeVoiceEngineSettingsView: View {
         }
     }
 
-    // MARK: - 5. Smart Fallback Section
+    // MARK: - 6. Smart Fallback Section
     private var smartFallbackSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Reliability & Fallback".loc)
@@ -409,7 +516,7 @@ struct NativeVoiceEngineSettingsView: View {
         }
     }
 
-    // MARK: - 6. Advanced Options Section
+    // MARK: - 7. Advanced Options Section
     private var advancedOptionsSection: some View {
         HStack {
             Image(systemName: "character.book.closed.fill")
@@ -422,23 +529,95 @@ struct NativeVoiceEngineSettingsView: View {
         .padding(.vertical, 4)
     }
 
-    // MARK: - Helpers
+    // MARK: - Helpers & Display Names
     private func iconForModel(_ model: SpeechModel) -> String {
         switch model {
         case .appleSpeech, .appleSpeechAnalyzer: return "apple.logo"
         case .cloudOllama: return "network"
         case .cloudOpenAI, .cloudGroq, .cloudOpenRouter, .cloudCustom: return "cloud.fill"
+        case .parakeetTDT, .parakeetTDTv2, .parakeetRealtime: return "bird.fill"
         default: return "cpu.fill"
+        }
+    }
+
+    private func displayNameForModel(_ model: SpeechModel) -> String {
+        switch model {
+        case .appleSpeech: return "Apple Speech (经典内置引擎)".loc
+        case .appleSpeechAnalyzer: return "Apple Speech Analyzer (macOS 15+ 现代流式)".loc
+        case .cloudOllama: return "Ollama ASR (局域网 / 本地服务器)".loc
+        case .cloudOpenAI: return "OpenAI Cloud STT (Whisper API)".loc
+        case .cloudGroq: return "Groq Cloud STT (极速 LPUs)".loc
+        case .cloudOpenRouter: return "OpenRouter Cloud STT".loc
+        case .cloudCustom: return "Custom Cloud STT (自定义接口)".loc
+        case .parakeetTDT: return "Parakeet TDT v3 (中英多语言极速)".loc
+        case .parakeetTDTv2: return "Parakeet TDT v2 (纯英文高精度)".loc
+        case .parakeetRealtime: return "Parakeet Flash (实时流式)".loc
+        case .qwen3Asr: return "Qwen3 ASR (千问本地离线)".loc
+        case .cohereTranscribeSixBit: return "Cohere Transcribe (6-bit)".loc
+        case .nemotronOffline: return "Nemotron 3.5 (NVIDIA 离线)".loc
+        case .nemotronStreaming, .nemotronStreaming320: return "Nemotron Speech (低延迟流式)".loc
+        case .whisperTiny: return "Whisper Tiny (超轻量)".loc
+        case .whisperBase: return "Whisper Base (基础模型)".loc
+        case .whisperSmall: return "Whisper Small (平衡推荐)".loc
+        case .whisperMedium: return "Whisper Medium (高精度)".loc
+        case .whisperLargeTurbo: return "Whisper Large Turbo (推荐离线)".loc
+        case .whisperLarge: return "Whisper Large V3 (终极精度)".loc
+        }
+    }
+
+    private func descriptionForModel(_ model: SpeechModel) -> String {
+        switch model {
+        case .appleSpeech:
+            return "macOS 系统经典内置听写，零内存占用，完全离线，开箱即用。".loc
+        case .appleSpeechAnalyzer:
+            return "macOS 15+ Sequoia 采用的新一代神经流式识别引擎，延迟更低、分词更精准。".loc
+        case .cloudOllama:
+            return "连接到本地或局域网 Ollama 服务（如 Qwen3-ASR、SenseVoice），免除本机显存负担。".loc
+        case .cloudOpenAI:
+            return "官方 OpenAI Whisper 云端 API，支持 99+ 种语言极高精度转录。".loc
+        case .cloudGroq:
+            return "由 Groq LPU 硬件加速驱动，几乎零延迟的超高速云端 Whisper 识别。".loc
+        case .cloudOpenRouter:
+            return "通过 OpenRouter 聚合网关调用云端语音大模型。".loc
+        case .cloudCustom:
+            return "自定义兼容 OpenAI 标准格式的语音识别服务地址。".loc
+        case .parakeetTDT:
+            return "FluidAudio 驱动的端到端超快多语言模型（支持 25 种语言），推理极速。".loc
+        case .parakeetTDTv2:
+            return "针对纯英文深度优化的端到端极速模型，极高准确率。".loc
+        case .parakeetRealtime:
+            return "支持边说边出字的原生流式离线模型。".loc
+        case .qwen3Asr:
+            return "阿里通义千问 Qwen3-ASR 本地离线神经网络模型，对中文理解极深。".loc
+        case .cohereTranscribeSixBit:
+            return "Cohere 6-bit 量化高精度离线模型。".loc
+        case .nemotronOffline:
+            return "NVIDIA Nemotron 3.5 离线多语言高精度语音模型。".loc
+        case .nemotronStreaming, .nemotronStreaming320:
+            return "NVIDIA Nemotron 超低延迟流式语音模型。".loc
+        case .whisperTiny:
+            return "体积仅 ~44MB，极低资源占用，适合省电或老款机型。".loc
+        case .whisperBase:
+            return "体积 ~81MB，速度与精度的良好平衡。".loc
+        case .whisperSmall:
+            return "体积 ~257MB，日常中文与英文听写的高性价比选择。".loc
+        case .whisperMedium:
+            return "体积 ~793MB，高精度语音转录，适合复杂词汇与专业术语。".loc
+        case .whisperLargeTurbo:
+            return "体积 ~845MB，Whisper 官方优化版大模型，兼具顶尖精度与极快速度。".loc
+        case .whisperLarge:
+            return "体积 ~1.55GB，最高精度的全尺寸 Whisper 离线模型。".loc
         }
     }
 
     private func subtitleForModel(_ model: SpeechModel) -> String {
         switch model {
-        case .appleSpeech: return "macOS Built-in Speech Recognition Engine".loc
+        case .appleSpeech: return "macOS 经典内置听写引擎 (SFSpeechRecognizer)".loc
+        case .appleSpeechAnalyzer: return "macOS 15+ 现代神经流式引擎 (SpeechAnalyzer)".loc
         case .cloudOllama: return "\(self.settings.cloudSTTOllamaBaseURL) (\(self.settings.cloudSTTOllamaModel))"
         case .cloudOpenAI: return "OpenAI Cloud STT (\(self.settings.cloudSTTOpenAIModel))"
         case .cloudGroq: return "Groq Cloud STT (\(self.settings.cloudSTTGroqModel))"
-        default: return "Local Neural Engine Model".loc
+        default: return "本地离线神经网络引擎 (\(model.downloadSize))".loc
         }
     }
 
@@ -452,6 +631,7 @@ struct NativeVoiceEngineSettingsView: View {
         case .cloudOllama: type = .ollama
         case .cloudOpenAI: type = .openAI
         case .cloudGroq: type = .groq
+        case .cloudOpenRouter: type = .openRouter
         default: type = .custom
         }
 
