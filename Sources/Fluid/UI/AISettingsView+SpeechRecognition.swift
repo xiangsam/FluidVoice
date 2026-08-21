@@ -906,6 +906,10 @@ extension VoiceEngineSettingsView {
                 Image(systemName: "apple.logo")
                     .font(.system(size: 14, weight: .medium))
                     .foregroundStyle(.primary)
+            } else if model == .cloudCustom {
+                Image(systemName: "slider.horizontal.3")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(Color(hex: "#3B82F6") ?? .blue)
             } else if let imageName {
                 Image(imageName)
                     .resizable()
@@ -923,6 +927,9 @@ extension VoiceEngineSettingsView {
     }
 
     private func speechModelBackgroundColor(for model: SettingsStore.SpeechModel) -> Color {
+        if model == .cloudCustom {
+            return (Color(hex: "#3B82F6") ?? .blue).opacity(0.18)
+        }
         if model.isCloudModel {
             return Color(hex: model.brandColorHex)?.opacity(0.18) ?? self.theme.palette.cardBackground
         }
@@ -946,10 +953,10 @@ extension VoiceEngineSettingsView {
             return "Provider_OpenAI"
         }
         if model == .cloudGroq {
-            return "Provider_Cerebras" // Or standard cloud icon
+            return "Provider_Groq"
         }
         if model == .cloudCustom {
-            return "Provider_Compatible"
+            return nil
         }
 
         let brand = model.brandName.lowercased()
