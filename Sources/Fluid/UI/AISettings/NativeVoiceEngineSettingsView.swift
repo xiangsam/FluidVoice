@@ -13,7 +13,6 @@ enum ModelCategoryTab: String, CaseIterable, Identifiable {
     case apple = "Apple 内置"
     case local = "本地离线"
     case cloud = "云端与局域网"
-    case all = "全部"
 
     var id: String { self.rawValue }
 
@@ -22,7 +21,6 @@ enum ModelCategoryTab: String, CaseIterable, Identifiable {
         case .apple: return "apple.logo"
         case .local: return "cpu"
         case .cloud: return "network"
-        case .all: return "square.grid.2x2"
         }
     }
 }
@@ -222,7 +220,6 @@ struct NativeVoiceEngineSettingsView: View {
         case .local:
             return self.localSubgroup == .whisper ? "Whisper 本地离线全系列".loc : "FluidAudio 神经网络模型 (Apple Silicon)".loc
         case .cloud: return "Cloud & LAN Servers (Ollama / Cloud APIs)".loc
-        case .all: return "All Available Models".loc
         }
     }
 
@@ -238,8 +235,6 @@ struct NativeVoiceEngineSettingsView: View {
             }
         case .cloud:
             return [.cloudOllama, .cloudOpenAI, .cloudGroq, .cloudOpenRouter, .cloudCustom]
-        case .all:
-            return SpeechModel.availableModels
         }
     }
 
