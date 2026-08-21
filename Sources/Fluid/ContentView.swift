@@ -1170,25 +1170,11 @@ struct ContentView: View {
             }
 
             Section {
-                self.sidebarNavigationLink(.commandMode, title: "Command Mode".loc, systemImage: "terminal.fill")
-                self.sidebarNavigationLink(.meetingTools, title: "File Transcription".loc, systemImage: "doc.text.fill")
-            } header: {
-                self.sidebarSectionHeader("Use".loc)
-            }
-
-            Section {
                 self.sidebarNavigationLink(.history, title: "History".loc, systemImage: "clock.arrow.circlepath")
                 self.sidebarNavigationLink(.stats, title: "Stats".loc, systemImage: "chart.bar.fill")
+                self.sidebarNavigationLink(.welcome, title: "Getting Started".loc, systemImage: "house.fill")
             } header: {
                 self.sidebarSectionHeader("Activity".loc)
-            }
-
-            Section {
-                self.sidebarNavigationLink(.welcome, title: "Getting Started".loc, systemImage: "house.fill")
-                self.sidebarNavigationLink(.changelog, title: "Change logs".loc, systemImage: "doc.text.magnifyingglass")
-                self.sidebarNavigationLink(.feedback, title: "Feedback".loc, systemImage: "envelope.fill")
-            } header: {
-                self.sidebarSectionHeader("Help".loc)
             }
         }
         .listStyle(.sidebar)

@@ -4429,7 +4429,7 @@ final class SettingsStore: ObservableObject {
     }
 
     var automaticDictionaryLearningEnabled: Bool {
-        get { self.defaults.object(forKey: Keys.automaticDictionaryLearningEnabled) as? Bool ?? true }
+        get { self.defaults.object(forKey: Keys.automaticDictionaryLearningEnabled) as? Bool ?? false }
         set {
             objectWillChange.send()
             self.defaults.set(newValue, forKey: Keys.automaticDictionaryLearningEnabled)

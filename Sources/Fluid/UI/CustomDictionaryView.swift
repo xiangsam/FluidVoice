@@ -50,7 +50,7 @@ struct CustomDictionaryView: View {
     @State private var isTrainedReplacementButtonHovered = false
     @State private var isTrainedReplacementGlowExpanded = false
     @State private var replacementConfirmation: ReplacementConfirmation?
-    @State private var composerMode: DictionaryComposerMode = .train
+    @State private var composerMode: DictionaryComposerMode = .manual
     @State private var manualTriggerDraft = ""
     @State private var manualReplacement = ""
     @State private var isYourDictionaryPresented = false
