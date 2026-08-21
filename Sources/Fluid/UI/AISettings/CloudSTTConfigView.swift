@@ -428,6 +428,40 @@ struct CloudSTTConfigView: View {
                     .font(.subheadline)
             }
 
+            Divider().opacity(0.4)
+
+            // Intelligent Fallback & Timeout Controls
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("macOS 本地语音智能兜底 (Apple Speech)".loc)
+                            .font(self.theme.typography.bodyStrong)
+                        Text("当云端或 Ollama 响应超时或发生异常时，自动无缝切换到系统内置本地引擎转录，保障录音 100% 不丢失。".loc)
+                            .font(self.theme.typography.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Toggle("", isOn: self.$settings.cloudSTTAutoFallback)
+                        .labelsHidden()
+                        .toggleStyle(.switch)
+                }
+
+                HStack {
+                    Text("响应超时时间".loc)
+                        .font(self.theme.typography.bodySmallStrong)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Picker("", selection: self.$settings.cloudSTTTimeoutSeconds) {
+                        Text("4 秒 (极速判定)".loc).tag(4.0)
+                        Text("6 秒 (推荐)".loc).tag(6.0)
+                        Text("8 秒 (标准)".loc).tag(8.0)
+                        Text("12 秒 (宽松)".loc).tag(12.0)
+                    }
+                    .labelsHidden()
+                    .frame(width: 140)
+                }
+            }
+
             // Bottom Actions: Done / Return
             if let onClose = self.onClose {
                 Divider().opacity(0.3)

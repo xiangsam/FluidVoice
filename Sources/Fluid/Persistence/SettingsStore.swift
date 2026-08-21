@@ -1344,11 +1344,11 @@ final class SettingsStore: ObservableObject {
     }
 
     struct SavedProvider: Codable, Identifiable, Hashable {
-        let id: String
-        let name: String
-        let baseURL: String
-        let apiKey: String
-        let models: [String]
+        var id: String
+        var name: String
+        var baseURL: String
+        var apiKey: String
+        var models: [String]
 
         init(id: String = UUID().uuidString, name: String, baseURL: String, apiKey: String = "", models: [String] = []) {
             self.id = id
@@ -5458,6 +5458,8 @@ private extension SettingsStore {
         static let cloudSTTCustomModel = "CloudSTTCustomModel"
         static let cloudSTTLanguage = "CloudSTTLanguage"
         static let cloudSTTPrompt = "CloudSTTPrompt"
+        static let cloudSTTAutoFallback = "CloudSTTAutoFallback"
+        static let cloudSTTTimeoutSeconds = "CloudSTTTimeoutSeconds"
 
         // Overlay Position
         static let overlayPosition = "OverlayPosition"
@@ -5953,6 +5955,38 @@ extension SettingsStore {
         set {
             objectWillChange.send()
             self.defaults.set(newValue, forKey: Keys.cloudSTTPrompt)
+        }
+    }
+
+    var cloudSTTAutoFallback: Bool {
+        get {
+            if self.defaults.object(forKey: Keys.cloudSTTAutoFallback) == nil {
+                return true // Enabled by default for reliability
+            }
+            return self.defaults.bool(forKey: Keys.cloudSTTAutoFallback)
+        }
+        set {
+            objectWillChange.send()
+            self.defaults.set(newValue, forKey: Keys.cloudSTTAutoFallback)
+        }
+    }
+
+    var cloudSTTTimeoutSeconds: Double {
+        get {
+            let val = self.defaults.double(forKey: Keys.cloudSTTTimeoutSeconds)
+            return val > 0 ? val : 8.0 // 8.0s default for responsive failure & fallback
+        }
+        set {
+            objectWillChange.send()
+            self.defaults.set(newValue, forKey: Keys.cloudSTTTimeoutSeconds)
+        }
+    }
+
+    var dictationCustomPromptText: String {
+        get { self.defaults.string(forKey: "DictationCustomPromptText") ?? "" }
+        set {
+            objectWillChange.send()
+            self.defaults.set(newValue, forKey: "DictationCustomPromptText")
         }
     }
 }

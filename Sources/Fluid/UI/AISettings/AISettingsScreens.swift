@@ -17,7 +17,7 @@ struct VoiceEngineSettingsScreen: View {
 
     var body: some View {
         ScrollView(.vertical, showsIndicators: false) {
-            VoiceEngineSettingsView(
+            NativeVoiceEngineSettingsView(
                 viewModel: self.viewModel,
                 settings: self.viewModel.settings,
                 theme: self.theme
@@ -56,13 +56,11 @@ struct AIEnhancementSettingsScreen: View {
     var body: some View {
         ScrollView(.vertical, showsIndicators: false) {
             VStack(alignment: .leading, spacing: 14) {
-                AIEnhancementSettingsView(
+                NativeAIEnhancementSettingsView(
                     viewModel: self.viewModel,
                     settings: self.viewModel.settings,
                     promptTest: self.viewModel.promptTest,
-                    theme: self.theme,
-                    activeShortcutRecordingTarget: self.$activeShortcutRecordingTarget,
-                    shortcutRecordingMessage: self.$shortcutRecordingMessage
+                    theme: self.theme
                 )
             }
             .padding(14)

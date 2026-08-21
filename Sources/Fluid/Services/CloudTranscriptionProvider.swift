@@ -401,13 +401,37 @@ final class CloudTranscriptionProvider: TranscriptionProvider {
             return ASRTranscriptionResult(text: "")
         }
 
-        let wavData = try self.encodeTo16BitWAV(samples: samples, sampleRate: 16000)
-        let text = try await self.sendAudioData(wavData, fileName: "audio.wav", mimeType: "audio/wav")
+        do {
+            let wavData = try self.encodeTo16BitWAV(samples: samples, sampleRate: 16000)
+            let text = try await self.sendAudioData(wavData, fileName: "audio.wav", mimeType: "audio/wav")
+            let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmed.isEmpty {
+                return ASRTranscriptionResult(
+                    text: trimmed,
+                    confidence: 1.0
+                )
+            }
+        } catch {
+            DebugLogger.shared.warning(
+                "Cloud transcription failed with error: \(error.localizedDescription). AutoFallback enabled: \(self.settings.cloudSTTAutoFallback)",
+                source: "CloudTranscriptionProvider"
+            )
+            if !self.settings.cloudSTTAutoFallback {
+                throw error
+            }
+        }
 
-        return ASRTranscriptionResult(
-            text: text,
-            confidence: 1.0
-        )
+        // Seamless fallback to macOS built-in Apple Speech engine
+        if self.settings.cloudSTTAutoFallback {
+            DebugLogger.shared.info(
+                "Cloud ASR timed out or failed; seamlessly falling back to macOS local Apple Speech engine",
+                source: "CloudTranscriptionProvider"
+            )
+            let fallbackProvider = AppleSpeechProvider()
+            return try await fallbackProvider.transcribe(samples)
+        }
+
+        return ASRTranscriptionResult(text: "")
     }
 
     func transcribeFinal(_ samples: [Float]) async throws -> ASRTranscriptionResult {
@@ -478,7 +502,7 @@ final class CloudTranscriptionProvider: TranscriptionProvider {
         body.append("--\(boundary)--\r\n".data(using: .utf8)!)
 
         request.httpBody = body
-        request.timeoutInterval = 60.0
+        request.timeoutInterval = max(3.0, self.settings.cloudSTTTimeoutSeconds)
 
         let (data, response): (Data, URLResponse)
         do {
