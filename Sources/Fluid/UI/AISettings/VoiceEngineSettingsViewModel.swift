@@ -27,7 +27,7 @@ final class VoiceEngineSettingsViewModel: ObservableObject {
 
     @Published var selectedSpeechProvider: SettingsStore.SpeechModel.Provider
     @Published var previewSpeechModel: SettingsStore.SpeechModel
-    @Published var isConfigPanelExpanded: Bool = true
+    @Published var isConfigPanelExpanded: Bool = false
     @Published var showAdvancedSpeechInfo: Bool = false
     @Published var suppressSpeechProviderSync: Bool = false
     @Published var skipNextSpeechModelSync: Bool = false
@@ -66,6 +66,7 @@ final class VoiceEngineSettingsViewModel: ObservableObject {
         self.previewSpeechModel = self.settings.selectedSpeechModel
         self.selectedSpeechProvider = self.settings.selectedSpeechModel.provider
         self.removeFillerWordsEnabled = self.settings.removeFillerWordsEnabled
+        self.isConfigPanelExpanded = false
 
         Task {
             await self.asr.checkIfModelsExistAsync()

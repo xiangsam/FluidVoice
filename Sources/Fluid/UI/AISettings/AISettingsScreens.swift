@@ -16,13 +16,15 @@ struct VoiceEngineSettingsScreen: View {
     }
 
     var body: some View {
-        VoiceEngineSettingsView(
-            viewModel: self.viewModel,
-            settings: self.viewModel.settings,
-            theme: self.theme
-        )
-        .padding(14)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        ScrollView(.vertical, showsIndicators: false) {
+            VoiceEngineSettingsView(
+                viewModel: self.viewModel,
+                settings: self.viewModel.settings,
+                theme: self.theme
+            )
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .topLeading)
+        }
     }
 }
 
