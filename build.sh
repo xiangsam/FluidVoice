@@ -16,6 +16,11 @@ PROFILE="${1:-${BUILD_PROFILE:-public}}"
 PRIVATE_FI_BUILD_SCRIPT="${PROJECT_DIR}/build_with_FI_incremental.sh"
 DERIVED_DATA_PATH="${FLUIDVOICE_DERIVED_DATA_PATH:-${PROJECT_DIR}/DerivedData}"
 
+# Ensure framework symlinks are valid to prevent Xcode codesign errors
+if [ -x "${PROJECT_DIR}/scripts/fix-framework-symlinks.sh" ]; then
+    "${PROJECT_DIR}/scripts/fix-framework-symlinks.sh" >/dev/null 2>&1 || true
+fi
+
 resolve_development_team() {
     local identity
     identity="$(security find-identity -v -p codesigning 2>/dev/null \

@@ -5064,7 +5064,7 @@ final class SettingsStore: ObservableObject {
         /// Whether this model is built-in or already downloaded on disk
         var isInstalled: Bool {
             switch self {
-            case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudCustom:
+            case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudOllama, .cloudCustom:
                 return true
             case .appleSpeech, .appleSpeechAnalyzer:
                 return true
