@@ -216,17 +216,14 @@ struct SettingsView: View {
     }
 
     var body: some View {
-        SettingsPersistentScrollView(
-            theme: self.theme,
-            colorScheme: self.colorScheme,
-            microphoneSettingsScrollRequest: self.microphoneSettingsScrollRequest
-        ) {
-            VStack(spacing: 16) {
-                // App Settings Card
-                ThemedCard(style: .standard) {
-                    VStack(alignment: .leading, spacing: 14) {
-                        // Section header
-                        Label("App Settings".loc, systemImage: "power")
+        ScrollViewReader { proxy in
+            ScrollView(.vertical, showsIndicators: true) {
+                VStack(spacing: 16) {
+                    // App Settings Card
+                    ThemedCard(style: .standard) {
+                        VStack(alignment: .leading, spacing: 14) {
+                            // Section header
+                            Label("App Settings".loc, systemImage: "power")
                             .font(.headline)
                             .foregroundStyle(.primary)
 
@@ -1102,7 +1099,7 @@ struct SettingsView: View {
                     }
                     .padding(16)
                 }
-                .background(MicrophoneSettingsScrollAnchor())
+                .id("microphoneSettingsAnchor")
 
                 // Overlay Settings Card
                 ThemedCard(style: .standard) {
@@ -1375,29 +1372,14 @@ struct SettingsView: View {
                     }
                     .padding(16)
                 }
+                .padding(16)
             }
-            .padding(16)
-        }
-        .sheet(isPresented: self.$showAnalyticsPrivacy) {
-            AnalyticsPrivacyView()
-                .frame(minWidth: 520, minHeight: 520)
-                .appTheme(self.theme)
-        }
-        .sheet(isPresented: self.analyticsConfirmationBinding) {
-            AnalyticsConfirmationView(
-                onConfirm: {
-                    if let pending = pendingAnalyticsValue {
-                        self.shareAnonymousAnalytics = pending
-                        self.applyAnalyticsConsentChange(pending)
-                    }
-                    self.pendingAnalyticsValue = nil
-                    self.showAreYouSureToStopAnalytics = false
-                },
-                onCancel: {
-                    self.pendingAnalyticsValue = nil
-                    self.showAreYouSureToStopAnalytics = false
+            .onChange(of: self.microphoneSettingsScrollRequest) { _, newValue in
+                guard newValue > 0 else { return }
+                withAnimation {
+                    proxy.scrollTo("microphoneSettingsAnchor", anchor: .center)
                 }
-            )
+            }
         }
         .onAppear {
             Task { @MainActor in
@@ -1453,6 +1435,7 @@ struct SettingsView: View {
             SettingsStore.shared.visualizerNoiseThreshold = newValue
         }
     }
+}
 
     private func refreshRollbackState() {
         self.rollbackVersion = SimpleUpdater.shared.latestRollbackVersion() ?? ""
@@ -2459,135 +2442,6 @@ private struct MicrophonePriorityDropDelegate: DropDelegate {
         self.draggedUID = nil
         self.onDropCompleted()
         return true
-    }
-}
-
-private final class SettingsPersistentScroller: NSScroller {
-    override static var isCompatibleWithOverlayScrollers: Bool {
-        false
-    }
-}
-
-private final class SettingsPersistentScrollCoordinator {
-    var lastMicrophoneSettingsScrollRequest = 0
-}
-
-private struct SettingsPersistentScrollView<Content: View>: NSViewRepresentable {
-    private let theme: AppTheme
-    private let colorScheme: ColorScheme
-    private let microphoneSettingsScrollRequest: Int
-    private let content: Content
-
-    init(
-        theme: AppTheme,
-        colorScheme: ColorScheme,
-        microphoneSettingsScrollRequest: Int,
-        @ViewBuilder content: () -> Content
-    ) {
-        self.theme = theme
-        self.colorScheme = colorScheme
-        self.microphoneSettingsScrollRequest = microphoneSettingsScrollRequest
-        self.content = content()
-    }
-
-    func makeCoordinator() -> SettingsPersistentScrollCoordinator {
-        SettingsPersistentScrollCoordinator()
-    }
-
-    private var hostedContent: AnyView {
-        AnyView(
-            self.content
-                .appTheme(self.theme)
-                .environment(\.colorScheme, self.colorScheme)
-        )
-    }
-
-    func makeNSView(context _: Context) -> NSScrollView {
-        let scrollView = NSScrollView()
-        scrollView.drawsBackground = false
-        scrollView.hasVerticalScroller = true
-        scrollView.hasHorizontalScroller = false
-        scrollView.autohidesScrollers = false
-        scrollView.scrollerStyle = .legacy
-        scrollView.verticalScroller = SettingsPersistentScroller()
-        scrollView.verticalScroller?.isHidden = false
-        scrollView.verticalScroller?.alphaValue = 1
-        scrollView.verticalScrollElasticity = .allowed
-        scrollView.horizontalScrollElasticity = .none
-
-        let hostingView = NSHostingView(rootView: self.hostedContent)
-        hostingView.translatesAutoresizingMaskIntoConstraints = false
-        hostingView.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        hostingView.setContentHuggingPriority(.required, for: .vertical)
-
-        scrollView.documentView = hostingView
-        NSLayoutConstraint.activate([
-            hostingView.leadingAnchor.constraint(equalTo: scrollView.contentView.leadingAnchor),
-            hostingView.trailingAnchor.constraint(equalTo: scrollView.contentView.trailingAnchor),
-            hostingView.topAnchor.constraint(equalTo: scrollView.contentView.topAnchor),
-            hostingView.widthAnchor.constraint(equalTo: scrollView.contentView.widthAnchor),
-        ])
-
-        return scrollView
-    }
-
-    func updateNSView(_ scrollView: NSScrollView, context: Context) {
-        (scrollView.documentView as? NSHostingView<AnyView>)?.rootView = self.hostedContent
-        scrollView.hasVerticalScroller = true
-        scrollView.hasHorizontalScroller = false
-        scrollView.autohidesScrollers = false
-        scrollView.scrollerStyle = .legacy
-        if !(scrollView.verticalScroller is SettingsPersistentScroller) {
-            scrollView.verticalScroller = SettingsPersistentScroller()
-        }
-        scrollView.verticalScroller?.isHidden = false
-        scrollView.verticalScroller?.alphaValue = 1
-
-        guard self.microphoneSettingsScrollRequest > 0,
-              context.coordinator.lastMicrophoneSettingsScrollRequest != self.microphoneSettingsScrollRequest
-        else { return }
-        context.coordinator.lastMicrophoneSettingsScrollRequest = self.microphoneSettingsScrollRequest
-        DispatchQueue.main.async {
-            Self.scrollToMicrophoneSettings(in: scrollView)
-        }
-    }
-
-    private static func scrollToMicrophoneSettings(in scrollView: NSScrollView) {
-        guard let documentView = scrollView.documentView else { return }
-        documentView.layoutSubtreeIfNeeded()
-        guard let anchor = documentView.descendant(withIdentifier: MicrophoneSettingsScrollAnchor.identifier) else {
-            return
-        }
-
-        let targetRect = anchor.convert(anchor.bounds, to: documentView)
-        let maximumY = max(0, documentView.bounds.height - scrollView.contentView.bounds.height)
-        let targetY = min(maximumY, max(0, targetRect.minY - 12))
-        scrollView.contentView.scroll(to: NSPoint(x: 0, y: targetY))
-        scrollView.reflectScrolledClipView(scrollView.contentView)
-    }
-}
-
-private struct MicrophoneSettingsScrollAnchor: NSViewRepresentable {
-    static let identifier = NSUserInterfaceItemIdentifier("FluidVoice.MicrophoneSettingsScrollAnchor")
-
-    func makeNSView(context _: Context) -> NSView {
-        let view = NSView()
-        view.identifier = Self.identifier
-        return view
-    }
-
-    func updateNSView(_: NSView, context _: Context) {}
-}
-
-private extension NSView {
-    func descendant(withIdentifier identifier: NSUserInterfaceItemIdentifier) -> NSView? {
-        if self.identifier == identifier { return self }
-        for subview in self.subviews {
-            if let match = subview.descendant(withIdentifier: identifier) {
-                return match
-            }
-        }
-        return nil
     }
 }
 

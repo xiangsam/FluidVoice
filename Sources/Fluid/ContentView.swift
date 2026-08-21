@@ -1251,15 +1251,11 @@ struct ContentView: View {
     }
 
     private var detailView: some View {
-        ZStack {
-            Color(nsColor: .windowBackgroundColor)
-                .ignoresSafeArea()
-
-            self.detailContent
-                .transaction { transaction in
-                    transaction.animation = nil
-                }
-        }
+        self.detailContent
+            .background(Color(nsColor: .windowBackgroundColor))
+            .transaction { transaction in
+                transaction.animation = nil
+            }
     }
 
     private var detailContent: AnyView {
