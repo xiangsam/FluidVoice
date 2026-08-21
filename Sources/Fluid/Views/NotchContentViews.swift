@@ -692,7 +692,7 @@ struct NotchExpandedView: View {
         let activeDictationSlot = self.activeDictationShortcutSlot
         let privateAILocked = promptMode.normalized == .dictate && PrivateAIProviderPromptFormat.isAvailable(settings: self.settings)
         return VStack(alignment: .leading, spacing: 2) {
-            Text("AI Prompt")
+            Text("AI Prompt".loc)
                 .font(.system(size: 8, weight: .semibold))
                 .foregroundStyle(Color.white.opacity(0.42))
                 .padding(.horizontal, 6)

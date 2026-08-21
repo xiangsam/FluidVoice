@@ -190,7 +190,7 @@ struct WelcomeView: View {
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text("Test Playground")
                                             .font(self.theme.typography.sectionTitle)
-                                        Text("Click record, speak, and see your transcription")
+                                        Text("Click record, speak, and see your transcription".loc)
                                             .font(self.theme.typography.caption)
                                             .foregroundStyle(.secondary)
                                     }
@@ -318,13 +318,13 @@ struct WelcomeView: View {
                                                 NSPasteboard.general.clearContents()
                                                 NSPasteboard.general.setString(self.asr.finalText, forType: .string)
                                             } label: {
-                                                Label("Copy Text", systemImage: "doc.on.doc")
+                                                Label("Copy Text".loc, systemImage: "doc.on.doc")
                                             }
                                             .buttonStyle(.borderedProminent)
                                             .tint(self.theme.palette.accent)
                                             .controlSize(.small)
 
-                                            Button("Clear & Test Again") {
+                                            Button("Clear & Test Again".loc) {
                                                 self.asr.finalText = ""
                                             }
                                             .buttonStyle(.bordered)
@@ -344,7 +344,7 @@ struct WelcomeView: View {
                     ThemedCard(style: .subtle) {
                         VStack(alignment: .leading, spacing: 12) {
                             self.guideDisclosureRow(
-                                title: "How to Use",
+                                title: "How to Use".loc,
                                 systemImage: "play.fill",
                                 color: self.theme.palette.accent,
                                 isExpanded: self.$isHowToUseExpanded
@@ -352,16 +352,16 @@ struct WelcomeView: View {
                                 EmptyView()
                             } content: {
                                 VStack(alignment: .leading, spacing: 10) {
-                                    self.howToStep(number: 1, title: "Start Recording", description: "Press your hotkey (default: Right Option/Alt) or click the button")
+                                    self.howToStep(number: 1, title: "Start Recording".loc, description: "Press your hotkey (default: Right Option/Alt) or click the button")
                                     self.howToStep(number: 2, title: "Speak Clearly", description: "Speak naturally - works best in quiet environments")
-                                    self.howToStep(number: 3, title: "Auto-Type Result", description: "Transcription is automatically typed into your focused app")
+                                    self.howToStep(number: 3, title: "Auto-Type Result".loc, description: "Transcription is automatically typed into your focused app")
                                 }
                             }
 
                             Divider().opacity(0.2)
 
                             self.guideDisclosureRow(
-                                title: "Command Mode",
+                                title: "Command Mode".loc,
                                 systemImage: "terminal.fill",
                                 color: self.commandModeColor,
                                 isExpanded: self.$isCommandModeGuideExpanded
@@ -375,7 +375,7 @@ struct WelcomeView: View {
                             Divider().opacity(0.2)
 
                             self.guideDisclosureRow(
-                                title: "Edit Mode",
+                                title: "Edit Mode".loc,
                                 systemImage: "pencil.and.outline",
                                 color: self.editModeColor,
                                 isExpanded: self.$isEditModeGuideExpanded
@@ -479,7 +479,7 @@ struct WelcomeView: View {
             }
 
             VStack(alignment: .leading, spacing: 6) {
-                Text("Examples")
+                Text("Examples".loc)
                     .font(self.theme.typography.bodySmallStrong)
                     .foregroundStyle(self.commandModeColor)
                 self.commandModeExample(icon: "folder", text: "\"List files in my Downloads folder\"")
@@ -515,13 +515,13 @@ struct WelcomeView: View {
                 .controlSize(.small)
             }
 
-            Label("Configure an AI model provider in AI Settings before using Edit Mode.", systemImage: "info.circle")
+            Label("Configure an AI model provider in AI Settings before using Edit Mode.".loc, systemImage: "info.circle")
                 .font(self.theme.typography.caption)
                 .foregroundStyle(.secondary)
 
             VStack(alignment: .leading, spacing: 10) {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Create New Text")
+                    Text("Create New Text".loc)
                         .font(self.theme.typography.bodySmallStrong)
                         .foregroundStyle(self.editModeColor)
 
@@ -538,7 +538,7 @@ struct WelcomeView: View {
                 }
 
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Edit Selected Text")
+                    Text("Edit Selected Text".loc)
                         .font(self.theme.typography.bodySmallStrong)
                         .foregroundStyle(self.editModeColor)
 
@@ -1090,12 +1090,12 @@ struct OnboardingFlowView: View {
                 VStack(alignment: .center, spacing: self.theme.metrics.onboardingSurface.landing.sectionSpacing) {
                     FluidOnboardingLandingHero(
                         eyebrow: "",
-                        title: "Just speak.",
+                        title: "Just speak.".loc,
                         accentTitle: "We'll handle the rest.",
                         firstDetail: "Accurate. Fast. Private. Free.",
                         secondDetail: "Built for creators, thinkers, and builders."
                     ) {
-                        FluidOnboardingLandingPrimaryButton(title: "Next") {
+                        FluidOnboardingLandingPrimaryButton(title: "Next".loc) {
                             self.goNext()
                         }
                         .frame(
@@ -1483,7 +1483,7 @@ struct OnboardingFlowView: View {
 
         return HStack {
             self.cinematicFooterButton(
-                title: "Back",
+                title: "Back".loc,
                 kind: .back,
                 isEnabled: canNavigateBack
             ) {
@@ -1707,7 +1707,7 @@ struct OnboardingFlowView: View {
                             .frame(width: 608)
 
                             if self.isModelPreparationInProgress {
-                                Label("Initial preparation can take a while to get your Mac ready for near-instant transcription.", systemImage: "clock.arrow.circlepath")
+                                Label("Initial preparation can take a while to get your Mac ready for near-instant transcription.".loc, systemImage: "clock.arrow.circlepath")
                                     .font(self.theme.typography.captionStrong)
                                     .foregroundStyle(Color.white.opacity(0.58))
                                     .labelStyle(.titleAndIcon)
@@ -1949,7 +1949,7 @@ struct OnboardingFlowView: View {
                             FluidOnboardingCompactAppIconMark(size: 66)
                                 .padding(.bottom, 22)
 
-                            Text("FluidVoice is ready.")
+                            Text("FluidVoice is ready.".loc)
                                 .font(.system(size: 28, weight: .semibold))
                                 .foregroundStyle(.white)
                                 .multilineTextAlignment(.center)
@@ -2292,7 +2292,7 @@ struct OnboardingFlowView: View {
 
                     self.onboardingModelActionButton(
                         id: "\(route.id)-uninstall",
-                        title: "Delete",
+                        title: "Delete".loc,
                         systemImage: "trash",
                         tone: .destructive,
                         width: 124,

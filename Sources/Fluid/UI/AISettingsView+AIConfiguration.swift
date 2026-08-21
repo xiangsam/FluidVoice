@@ -94,7 +94,7 @@ extension AIEnhancementSettingsView {
             .frame(width: 34, height: 34)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("AI Enhancement")
+                Text("AI Enhancement".loc)
                     .font(.title3)
                     .fontWeight(.semibold)
                     .foregroundStyle(self.theme.palette.primaryText)
@@ -172,7 +172,7 @@ extension AIEnhancementSettingsView {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Providers")
                         .font(.system(size: 14, weight: .semibold))
-                    Text("Configure local models and API providers.")
+                    Text("Configure local models and API providers.".loc)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -183,7 +183,7 @@ extension AIEnhancementSettingsView {
                     HStack(spacing: 5) {
                         Image(systemName: self.viewModel.showHelp ? "questionmark.circle.fill" : "questionmark.circle")
                             .font(.system(size: 14))
-                        Text("Help")
+                        Text("Help".loc)
                             .font(.caption)
                             .fontWeight(.medium)
                     }
@@ -254,7 +254,7 @@ extension AIEnhancementSettingsView {
             Image(systemName: "exclamationmark.triangle.fill")
                 .foregroundStyle(.orange)
                 .font(.system(size: 16))
-            Text("API key required for AI enhancement to work")
+            Text("API key required for AI enhancement to work".loc)
                 .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(.orange)
             Spacer()
@@ -347,7 +347,7 @@ extension AIEnhancementSettingsView {
                 Image(systemName: "square.grid.2x2")
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(self.theme.palette.secondaryText)
-                Text("All providers")
+                Text("All providers".loc)
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(self.theme.palette.secondaryText)
                 Text("(\(count))")
@@ -652,7 +652,7 @@ extension AIEnhancementSettingsView {
 
         return VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
-                Text("Model")
+                Text("Model".loc)
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(.secondary)
                     .frame(width: 50, alignment: .leading)
@@ -752,7 +752,7 @@ extension AIEnhancementSettingsView {
 
     private func privateAIPrefixCacheRow(isBusy: Bool) -> some View {
         HStack(alignment: .center, spacing: 8) {
-            Text("Faster first result")
+            Text("Faster first result".loc)
                 .font(.caption)
                 .frame(width: 124, alignment: .leading)
 
@@ -762,7 +762,7 @@ extension AIEnhancementSettingsView {
                 .labelsHidden()
                 .disabled(isBusy)
                 .help("Keeps Fluid-1 ready so your first dictation finishes sooner.")
-                .accessibilityLabel("Faster first result")
+                .accessibilityLabel("Faster first result".loc)
 
             Spacer(minLength: 0)
         }
@@ -770,7 +770,7 @@ extension AIEnhancementSettingsView {
 
     private func privateAIBackendRow(isBusy: Bool) -> some View {
         HStack(alignment: .center, spacing: 8) {
-            Text("Backend")
+            Text("Backend".loc)
                 .font(.caption)
                 .frame(width: 124, alignment: .leading)
 
@@ -815,7 +815,7 @@ extension AIEnhancementSettingsView {
 
     private func privateAIBoostRow(isBusy: Bool) -> some View {
         HStack(alignment: .center, spacing: 8) {
-            Text("Faster results")
+            Text("Faster results".loc)
                 .font(.caption)
                 .frame(width: 124, alignment: .leading)
 
@@ -825,9 +825,9 @@ extension AIEnhancementSettingsView {
                 .labelsHidden()
                 .disabled(isBusy)
                 .help("Uses extra local acceleration so Fluid-1 finishes faster.")
-                .accessibilityLabel("Faster results")
+                .accessibilityLabel("Faster results".loc)
 
-            Text("Finishes dictation up to 15% faster. Uses about 100 MB more memory.")
+            Text("Finishes dictation up to 15% faster. Uses about 100 MB more memory.".loc)
                 .font(.caption2)
                 .foregroundStyle(.secondary)
                 .lineLimit(2)
@@ -1368,7 +1368,7 @@ extension AIEnhancementSettingsView {
                             Image(systemName: "link")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
-                            Text("Base URL")
+                            Text("Base URL".loc)
                                 .font(.system(size: 12, weight: .medium))
                                 .foregroundStyle(.secondary)
                         }
@@ -1379,7 +1379,7 @@ extension AIEnhancementSettingsView {
                 }
 
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("API Key")
+                    Text("API Key".loc)
                         .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(.secondary)
                     HStack(alignment: .center, spacing: 8) {
@@ -1414,7 +1414,7 @@ extension AIEnhancementSettingsView {
                 }
 
                 HStack(spacing: 8) {
-                    Text("Model")
+                    Text("Model".loc)
                         .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(.secondary)
                         .frame(width: 50, alignment: .leading)
@@ -1509,7 +1509,7 @@ extension AIEnhancementSettingsView {
                     } label: {
                         HStack(spacing: 6) {
                             Image(systemName: "trash")
-                            Text("Delete Provider")
+                            Text("Delete Provider".loc)
                         }
                         .font(.caption)
                     }
@@ -1562,7 +1562,7 @@ extension AIEnhancementSettingsView {
                 .frame(width: 40, height: 40)
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Add Custom Provider")
+                    Text("Add Custom Provider".loc)
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(self.theme.palette.primaryText)
                     Text("OpenAI-compatible endpoint")
@@ -1649,7 +1649,7 @@ extension AIEnhancementSettingsView {
                         .foregroundStyle(Color.fluidGreen)
 
                     if isSelected {
-                        Text("Active")
+                        Text("Active".loc)
                             .font(.caption2)
                             .fontWeight(.semibold)
                             .padding(.horizontal, 8)
@@ -1688,7 +1688,7 @@ extension AIEnhancementSettingsView {
                                 self.viewModel.startEditingProvider()
                             }
                         }) {
-                            Text("Edit")
+                            Text("Edit".loc)
                                 .font(.system(size: 12, weight: .semibold))
                                 .frame(width: actionColumnWidth, height: AISettingsLayout.providerRowControlHeight)
                         }
@@ -1728,7 +1728,7 @@ extension AIEnhancementSettingsView {
                                 self.viewModel.setEditingAPIKey(true, for: item.id)
                             }
                         }) {
-                            Text("Edit")
+                            Text("Edit".loc)
                                 .font(.system(size: 12, weight: .semibold))
                                 .frame(width: actionColumnWidth, height: AISettingsLayout.providerRowControlHeight)
                         }
@@ -1971,7 +1971,7 @@ extension AIEnhancementSettingsView {
                 Image(systemName: "text.bubble.fill")
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(self.theme.palette.accent)
-                Text("Advanced Prompts")
+                Text("Advanced Prompts".loc)
                     .font(.system(size: 14, weight: .semibold))
                     .lineLimit(1)
                     .truncationMode(.tail)
@@ -2015,14 +2015,14 @@ extension AIEnhancementSettingsView {
                 Image(systemName: "pencil.circle.fill")
                     .font(.system(size: 14))
                     .foregroundStyle(self.theme.palette.accent)
-                Text("Edit Provider")
+                Text("Edit Provider".loc)
                     .font(.system(size: 14, weight: .semibold))
                 Spacer()
             }
 
             VStack(alignment: .leading, spacing: 10) {
                 HStack(alignment: .center, spacing: 12) {
-                    self.privateAISettingLabel("Model", systemImage: "cube.box")
+                    self.privateAISettingLabel("Model".loc, systemImage: "cube.box")
 
                     SearchableModelPicker(
                         models: PrivateAIModelRegistry.modelIDs(),
@@ -2036,7 +2036,7 @@ extension AIEnhancementSettingsView {
                 }
 
                 HStack(alignment: .center, spacing: 12) {
-                    self.privateAISettingLabel("Backend", systemImage: "cpu")
+                    self.privateAISettingLabel("Backend".loc, systemImage: "cpu")
 
                     self.privateAIBackendPicker(isBusy: isBusy)
                         .frame(width: 210)
@@ -2050,7 +2050,7 @@ extension AIEnhancementSettingsView {
                 }
 
                 HStack(alignment: .center, spacing: 12) {
-                    self.privateAISettingLabel("Dictation window", systemImage: "memorychip")
+                    self.privateAISettingLabel("Dictation window".loc, systemImage: "memorychip")
 
                     self.privateAIContextControl(isBusy: isBusy)
 
@@ -2095,7 +2095,7 @@ extension AIEnhancementSettingsView {
                     } label: {
                         HStack(spacing: 6) {
                             Image(systemName: "trash")
-                            Text("Delete Model")
+                            Text("Delete Model".loc)
                         }
                         .font(.caption)
                     }
@@ -2110,7 +2110,7 @@ extension AIEnhancementSettingsView {
                 } label: {
                     HStack(spacing: 6) {
                         Image(systemName: "checkmark")
-                        Text("Done")
+                        Text("Done".loc)
                     }
                 }
                 .fluidButton(.glass, size: .compact)
@@ -2205,7 +2205,7 @@ extension AIEnhancementSettingsView {
                 Image(systemName: "pencil.circle.fill")
                     .font(.system(size: 14))
                     .foregroundStyle(self.theme.palette.accent)
-                Text("Edit Provider")
+                Text("Edit Provider".loc)
                     .font(.system(size: 14, weight: .semibold))
                 Spacer()
             }
@@ -2233,7 +2233,7 @@ extension AIEnhancementSettingsView {
                                 Image(systemName: "link")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
-                                Text("Base URL")
+                                Text("Base URL".loc)
                                     .font(.system(size: 12, weight: .medium))
                                     .foregroundStyle(.secondary)
                             }
@@ -2249,7 +2249,7 @@ extension AIEnhancementSettingsView {
                         Image(systemName: "key")
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                        Text("API Key")
+                        Text("API Key".loc)
                             .font(.system(size: 12, weight: .medium))
                             .foregroundStyle(.secondary)
                     }
@@ -2297,7 +2297,7 @@ extension AIEnhancementSettingsView {
                     HStack(spacing: 6) {
                         Image(systemName: "checkmark")
                             .font(.system(size: 12, weight: .semibold))
-                        Text("Save")
+                        Text("Save".loc)
                     }
                 }
                 .fluidButton(.glass, size: .compact)
@@ -2305,7 +2305,7 @@ extension AIEnhancementSettingsView {
                     (self.viewModel.editProviderName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
                         self.viewModel.editProviderBaseURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty))
 
-                Button("Cancel") {
+                Button("Cancel".loc) {
                     self.viewModel.clearEditProviderDraft()
                 }
                 .fluidButton(.compact, size: .compact)
@@ -2328,7 +2328,7 @@ extension AIEnhancementSettingsView {
                     } label: {
                         HStack(spacing: 6) {
                             Image(systemName: "trash")
-                            Text("Delete Provider")
+                            Text("Delete Provider".loc)
                         }
                         .font(.caption)
                     }
@@ -2397,14 +2397,14 @@ extension AIEnhancementSettingsView {
 
             if !ModelRepository.shared.isBuiltIn(self.viewModel.selectedProviderID) {
                 Button(action: { self.viewModel.deleteSelectedModel() }) {
-                    HStack(spacing: 4) { Image(systemName: "trash"); Text("Delete") }.font(.caption)
+                    HStack(spacing: 4) { Image(systemName: "trash"); Text("Delete".loc) }.font(.caption)
                 }
                 .fluidCompactButton(foreground: .red, borderColor: .red.opacity(0.6))
                 .frame(minWidth: AISettingsLayout.compactActionMinWidth, minHeight: AISettingsLayout.controlHeight)
             }
 
             if !self.viewModel.showingAddModel {
-                Button("+ Add Model") {
+                Button("+ Add Model".loc) {
                     self.viewModel.showingAddModel = true
                     self.viewModel.newModelName = ""
                 }
@@ -2444,7 +2444,7 @@ extension AIEnhancementSettingsView {
                 .fluidCompactButton(isReady: true)
                 .frame(minWidth: AISettingsLayout.compactActionMinWidth, minHeight: AISettingsLayout.controlHeight)
                 .disabled(self.viewModel.newModelName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-            Button("Cancel") {
+            Button("Cancel".loc) {
                 self.viewModel.showingAddModel = false
                 self.viewModel.newModelName = ""
             }
@@ -2583,13 +2583,13 @@ extension AIEnhancementSettingsView {
 
             HStack(spacing: 8) {
                 Button(action: { self.saveReasoningConfig() }) {
-                    Text("Save")
+                    Text("Save".loc)
                         .font(.system(size: 12, weight: .semibold))
                 }
                 .fluidButton(.accent, size: .small)
                 .frame(minWidth: 60, minHeight: 26)
 
-                Button("Cancel") { self.viewModel.showingReasoningConfig = false }
+                Button("Cancel".loc) { self.viewModel.showingReasoningConfig = false }
                     .fluidButton(.compact, size: .compact)
                     .font(.system(size: 12))
                     .frame(minWidth: 60, minHeight: 26)
@@ -2633,13 +2633,13 @@ extension AIEnhancementSettingsView {
             if self.viewModel.connectionStatus == .success {
                 HStack(spacing: 8) {
                     Image(systemName: "checkmark.circle.fill").foregroundStyle(Color.fluidGreen).font(.caption)
-                    Text("Connection verified").font(.caption).foregroundStyle(Color.fluidGreen)
+                    Text("Connection verified".loc).font(.caption).foregroundStyle(Color.fluidGreen)
                 }
             } else if self.viewModel.connectionStatus == .failed {
                 HStack(spacing: 8) {
                     Image(systemName: "exclamationmark.circle.fill").foregroundStyle(.red).font(.caption)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Connection failed").font(.caption).foregroundStyle(.red)
+                        Text("Connection failed".loc).font(.caption).foregroundStyle(.red)
                         if !self.viewModel.connectionErrorMessage.isEmpty {
                             Text(self.viewModel.connectionErrorMessage)
                                 .font(.caption2)
@@ -2666,7 +2666,7 @@ extension AIEnhancementSettingsView {
     var apiKeyManagementRow: some View {
         HStack(spacing: 8) {
             Button(action: { self.viewModel.handleAPIKeyButtonTapped() }) {
-                Label("Add or Modify API Key", systemImage: "key.fill")
+                Label("Add or Modify API Key".loc, systemImage: "key.fill")
                     .labelStyle(.titleAndIcon).font(.caption)
             }
             .fluidCompactButton(isReady: true)
@@ -2695,10 +2695,10 @@ extension AIEnhancementSettingsView {
                     self.viewModel.ensureKeychainAccessForAPIKeyEdit()
                 }
             HStack(spacing: 12) {
-                Button("Cancel") { self.viewModel.showAPIKeyEditor = false }
+                Button("Cancel".loc) { self.viewModel.showAPIKeyEditor = false }
                     .fluidButton(.compact, size: .compact)
                     .frame(minWidth: AISettingsLayout.actionMinWidth, minHeight: AISettingsLayout.controlHeight)
-                Button("OK") {
+                Button("OK".loc) {
                     let trimmedKey = self.viewModel.newProviderApiKey.trimmingCharacters(in: .whitespacesAndNewlines)
                     self.viewModel.updateProviderAPIKey(trimmedKey, for: self.viewModel.selectedProviderID)
                     guard self.viewModel.saveProviderAPIKeys() else { return }
@@ -2724,7 +2724,7 @@ extension AIEnhancementSettingsView {
                 Image(systemName: "plus.circle.fill")
                     .font(.system(size: 14))
                     .foregroundStyle(self.theme.palette.accent)
-                Text("Add Custom Provider")
+                Text("Add Custom Provider".loc)
                     .font(.system(size: 14, weight: .semibold))
             }
 
@@ -2748,7 +2748,7 @@ extension AIEnhancementSettingsView {
                         Image(systemName: "key")
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                        Text("API Key (optional for local endpoints)")
+                        Text("API Key (optional for local endpoints)".loc)
                             .font(.system(size: 12, weight: .medium))
                             .foregroundStyle(.secondary)
                     }
@@ -2772,7 +2772,7 @@ extension AIEnhancementSettingsView {
                 .fluidButton(.glass, size: .compact)
                 .disabled(self.viewModel.newProviderBaseURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
 
-                Button("Cancel") {
+                Button("Cancel".loc) {
                     self.viewModel.showingSaveProvider = false
                     self.viewModel.newProviderName = ""
                     self.viewModel.newProviderBaseURL = ""

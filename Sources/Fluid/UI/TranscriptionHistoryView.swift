@@ -208,13 +208,13 @@ struct TranscriptionHistoryView: View {
                 Button {
                     self.copyToClipboard(entry.rawText)
                 } label: {
-                    Label("Copy Raw Text", systemImage: "doc.on.doc.fill")
+                    Label("Copy Raw Text".loc, systemImage: "doc.on.doc.fill")
                 }
 
                 Button {
                     self.copyToClipboard(self.combinedText(for: entry))
                 } label: {
-                    Label("Copy Both", systemImage: "doc.on.doc")
+                    Label("Copy Both".loc, systemImage: "doc.on.doc")
                 }
             }
 
@@ -230,7 +230,7 @@ struct TranscriptionHistoryView: View {
                 Button {
                     self.revealAudio(entry)
                 } label: {
-                    Label("Reveal Audio", systemImage: "waveform")
+                    Label("Reveal Audio".loc, systemImage: "waveform")
                 }
             }
 
@@ -252,7 +252,7 @@ struct TranscriptionHistoryView: View {
                     }
                 }
             } label: {
-                Label("Delete", systemImage: "trash")
+                Label("Delete".loc, systemImage: "trash")
             }
         }
     }
@@ -345,7 +345,7 @@ struct TranscriptionHistoryView: View {
                             Button {
                                 self.exportPair(entry)
                             } label: {
-                                Label("Export Pair", systemImage: "square.and.arrow.up")
+                                Label("Export Pair".loc, systemImage: "square.and.arrow.up")
                                     .font(.system(size: 12, weight: .medium))
                             }
                             .buttonStyle(.bordered)
@@ -354,7 +354,7 @@ struct TranscriptionHistoryView: View {
                             Button {
                                 self.revealAudio(entry)
                             } label: {
-                                Label("Audio", systemImage: "waveform")
+                                Label("Audio".loc, systemImage: "waveform")
                                     .font(.system(size: 12, weight: .medium))
                             }
                             .buttonStyle(.bordered)
@@ -375,7 +375,7 @@ struct TranscriptionHistoryView: View {
                             Button {
                                 self.copyToClipboard(entry.rawText)
                             } label: {
-                                Label("Raw", systemImage: "doc.on.doc.fill")
+                                Label("Raw".loc, systemImage: "doc.on.doc.fill")
                                     .font(.system(size: 12, weight: .medium))
                             }
                             .buttonStyle(.bordered)
@@ -384,7 +384,7 @@ struct TranscriptionHistoryView: View {
                             Button {
                                 self.copyToClipboard(self.combinedText(for: entry))
                             } label: {
-                                Label("Both", systemImage: "doc.on.doc")
+                                Label("Both".loc, systemImage: "doc.on.doc")
                                     .font(.system(size: 12, weight: .medium))
                             }
                             .buttonStyle(.bordered)
@@ -435,7 +435,7 @@ struct TranscriptionHistoryView: View {
                 // Raw Text Section (only if different)
                 if entry.wasAIProcessed {
                     self.detailSection(
-                        title: "Original Transcription",
+                        title: "Original Transcription".loc,
                         content: entry.rawText,
                         badge: nil,
                         isSecondary: true
@@ -460,7 +460,7 @@ struct TranscriptionHistoryView: View {
                             self.selectedEntryID = nextEntry?.id
                         }
                     } label: {
-                        Label("Delete Entry", systemImage: "trash")
+                        Label("Delete Entry".loc, systemImage: "trash")
                             .font(.system(size: 12, weight: .medium))
                     }
                     .buttonStyle(.bordered)
@@ -515,7 +515,7 @@ struct TranscriptionHistoryView: View {
 
     private func metadataGrid(_ entry: TranscriptionHistoryEntry) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Details")
+            Text("Details".loc)
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(.secondary)
                 .textCase(.uppercase)
@@ -655,14 +655,14 @@ private struct TranscriptionFeedbackReportSheet: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Share anonymous datapoint")
                     .font(.system(size: 18, weight: .semibold))
-                Text("Help improve our model. Only the example shown below will be sent.")
+                Text("Help improve our model. Only the example shown below will be sent.".loc)
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
             }
 
             self.feedbackField(title: "Raw Text", text: self.$inputText, height: 88)
-            self.feedbackField(title: "Processed Text", text: self.$outputText, height: 88)
-            self.feedbackField(title: "Processing Model", text: self.$processingModel, height: 40)
+            self.feedbackField(title: "Processed Text".loc, text: self.$outputText, height: 88)
+            self.feedbackField(title: "Processing Model".loc, text: self.$processingModel, height: 40)
             self.feedbackField(title: "Comment optional", text: self.$comment, height: 72)
 
             if let errorMessage {

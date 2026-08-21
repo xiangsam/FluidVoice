@@ -117,10 +117,10 @@ struct AIEnhancementSettingsView: View {
                 self.viewModel.showKeychainPermissionAlert = false
             }
             .alert("Delete Prompt?", isPresented: self.$viewModel.showingDeletePromptConfirm) {
-                Button("Delete", role: .destructive) {
+                Button("Delete".loc, role: .destructive) {
                     self.viewModel.deletePendingPrompt()
                 }
-                Button("Cancel", role: .cancel) {
+                Button("Cancel".loc, role: .cancel) {
                     self.viewModel.clearPendingDeletePrompt()
                 }
             } message: {
@@ -141,7 +141,7 @@ struct AIEnhancementSettingsView: View {
                     }
                 )
             ) {
-                Button("OK", role: .cancel) {
+                Button("OK".loc, role: .cancel) {
                     self.viewModel.appPromptBindingErrorMessage = ""
                 }
             } message: {
@@ -157,10 +157,10 @@ struct AIEnhancementSettingsView: View {
                 .frame(width: 24, height: 24)
 
             VStack(alignment: .leading, spacing: 3) {
-                Text("Send Custom Prompt Only")
+                Text("Send Custom Prompt Only".loc)
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(self.theme.palette.primaryText)
-                Text("For custom Dictate prompts, send your prompt without prepending the built-in dictation prompt.")
+                Text("For custom Dictate prompts, send your prompt without prepending the built-in dictation prompt.".loc)
                     .font(.caption2)
                     .foregroundStyle(self.theme.palette.secondaryText)
                     .fixedSize(horizontal: false, vertical: true)

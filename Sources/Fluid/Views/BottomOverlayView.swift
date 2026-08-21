@@ -1490,7 +1490,7 @@ private struct BottomOverlayPromptMenuView: View {
             self.onDismissRequested()
         }) {
             HStack {
-                Text("Off")
+                Text("Off".loc)
                 Spacer()
                 if isSelected {
                     Image(systemName: "checkmark")
@@ -1526,7 +1526,7 @@ private struct BottomOverlayPromptMenuView: View {
             self.onDismissRequested()
         }) {
             HStack {
-                Text("Default")
+                Text("Default".loc)
                 Spacer()
                 if isSelected {
                     Image(systemName: "checkmark")
@@ -1785,7 +1785,7 @@ private struct BottomOverlayActionsMenuView: View {
             }
 
             self.actionRow(
-                title: "Paste Last Transcription",
+                title: "Paste Last Transcription".loc,
                 icon: "arrow.down.doc",
                 rowID: "paste_last",
                 enabled: self.canPasteLast
@@ -2605,7 +2605,7 @@ struct BottomOverlayView: View {
 
     private var promptSelectorTrigger: some View {
         HStack(spacing: 5) {
-            Text("AI Prompt:")
+            Text("AI Prompt:".loc)
                 .font(.system(size: self.promptSelectorFontSize, weight: .medium))
                 .foregroundStyle(.white.opacity(0.5))
                 .lineLimit(1)
@@ -2681,7 +2681,7 @@ struct BottomOverlayView: View {
     private var actionsSelectorTrigger: some View {
         let actionsDisabled = self.historyStore.entries.isEmpty || self.contentState.isProcessing
         return HStack(spacing: 5) {
-            Text("Actions")
+            Text("Actions".loc)
                 .font(.system(size: self.promptSelectorFontSize, weight: .medium))
                 .foregroundStyle(.white.opacity(0.75))
                 .lineLimit(1)
@@ -3031,7 +3031,7 @@ struct BottomOverlayView: View {
                                 (self.appServices.asr.isLoadingModel || self.appServices.asr.isDownloadingModel)
                                 && self.settings.overlaySize != .small
                             {
-                                Text("Loading model…")
+                                Text("Loading model…".loc)
                                     .font(.system(size: max(self.layout.modeFontSize - 2, 9), weight: .medium))
                                     .foregroundStyle(.orange.opacity(0.85))
                                     .lineLimit(1)

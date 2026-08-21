@@ -334,7 +334,7 @@ struct CustomDictionaryView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Custom Dictionary".loc)
                     .font(self.theme.typography.title)
-                Text("Correct recurring mistakes and teach the voice engine the words you use.")
+                Text("Correct recurring mistakes and teach the voice engine the words you use.".loc)
                     .font(self.theme.typography.bodySmall)
                     .foregroundStyle(self.theme.palette.secondaryText)
             }
@@ -345,12 +345,12 @@ struct CustomDictionaryView: View {
                 self.automaticLearningToggle
 
                 Button(action: self.importDictionary) {
-                    Label("Import", systemImage: "square.and.arrow.down")
+                    Label("Import".loc, systemImage: "square.and.arrow.down")
                 }
                 .fluidButton(.compact, size: .compact)
 
                 Button(action: self.exportDictionary) {
-                    Label("Export", systemImage: "square.and.arrow.up")
+                    Label("Export".loc, systemImage: "square.and.arrow.up")
                 }
                 .fluidButton(.compact, size: .compact)
             }
@@ -602,7 +602,7 @@ struct CustomDictionaryView: View {
             Button {
                 self.addManualReplacementIfValid()
             } label: {
-                Label("Add Replacement", systemImage: "plus")
+                Label("Add Replacement".loc, systemImage: "plus")
                     .frame(maxWidth: .infinity)
                     .frame(height: 38)
             }
@@ -629,7 +629,7 @@ struct CustomDictionaryView: View {
 
     private var manualReplacementField: some View {
         VStack(alignment: .leading, spacing: self.theme.metrics.spacing.sm) {
-            Text("Change it to")
+            Text("Change it to".loc)
                 .font(self.theme.typography.captionStrong)
             TextField("FluidVoice", text: self.$manualReplacement)
                 .dictionaryInputChrome()
@@ -907,7 +907,7 @@ struct CustomDictionaryView: View {
 
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 6) {
-                        Text("Spoken Formatting")
+                        Text("Spoken Formatting".loc)
                             .font(self.theme.typography.sectionTitle)
                         Text("\(SettingsStore.SpokenFormattingAction.allCases.count) actions · \(self.punctuationRules.count) punctuation")
                             .font(self.theme.typography.captionSmall)
@@ -1142,7 +1142,7 @@ struct CustomDictionaryView: View {
                     Button {
                         self.startAddingBoostTerm()
                     } label: {
-                        Label("Add Word", systemImage: "plus")
+                        Label("Add Word".loc, systemImage: "plus")
                     }
                     .fluidButton(.accent, size: .small)
 
@@ -1161,7 +1161,7 @@ struct CustomDictionaryView: View {
 
                 if self.boostTerms.isEmpty {
                     self.dictionaryEmptyState(
-                        title: "No custom words yet",
+                        title: "No custom words yet".loc,
                         detail: "Add a name or term that needs a little extra recognition help."
                     )
                 } else {
@@ -1270,7 +1270,7 @@ struct CustomDictionaryView: View {
             HStack(alignment: .top, spacing: self.theme.metrics.spacing.md) {
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 8) {
-                        Text("Spoken Formatting")
+                        Text("Spoken Formatting".loc)
                             .font(self.theme.typography.sectionTitle)
 
                         Button {
@@ -1284,7 +1284,7 @@ struct CustomDictionaryView: View {
                         }
                         .buttonStyle(SquareIconButtonStyle())
                         .help("About spoken formatting")
-                        .accessibilityLabel("About spoken formatting")
+                        .accessibilityLabel("About spoken formatting".loc)
                     }
 
                     Text("Use one start word for formatting actions, punctuation, and symbols.")
@@ -1400,7 +1400,7 @@ struct CustomDictionaryView: View {
                 .labelsHidden()
                 .toggleStyle(.switch)
                 .tint(self.theme.palette.accent)
-                .accessibilityLabel("Spoken Formatting")
+                .accessibilityLabel("Spoken Formatting".loc)
                 .onChange(of: self.punctuationAutoConvertEnabled) { _, newValue in
                     SettingsStore.shared.autoConvertPunctuationEnabled = newValue
                 }
@@ -1455,7 +1455,7 @@ struct CustomDictionaryView: View {
                     Button {
                         self.startAddingPunctuationRule()
                     } label: {
-                        Label("Add Rule", systemImage: "plus")
+                        Label("Add Rule".loc, systemImage: "plus")
                     }
                     .fluidButton(.accent, size: .small)
                 }
@@ -2380,11 +2380,11 @@ struct CustomDictionaryView: View {
             try data.write(to: url, options: .atomic)
 
             self.presentInfoAlert(
-                title: "Dictionary Exported",
+                title: "Dictionary Exported".loc,
                 message: "Saved \(document.replacements.count) replacement rules and \(document.customWords.count) custom words."
             )
         } catch {
-            self.presentErrorAlert(title: "Dictionary Export Failed", message: error.localizedDescription)
+            self.presentErrorAlert(title: "Dictionary Export Failed".loc, message: error.localizedDescription)
         }
     }
 
@@ -2407,11 +2407,11 @@ struct CustomDictionaryView: View {
             self.loadBoostTerms()
 
             self.presentInfoAlert(
-                title: "Dictionary Imported",
+                title: "Dictionary Imported".loc,
                 message: "Now using \(summary.replacementCount) replacement rules and \(summary.customWordCount) custom words."
             )
         } catch {
-            self.presentErrorAlert(title: "Dictionary Import Failed", message: error.localizedDescription)
+            self.presentErrorAlert(title: "Dictionary Import Failed".loc, message: error.localizedDescription)
         }
     }
 
@@ -2545,7 +2545,7 @@ private struct VoiceMatchingSettingsRow: View {
         VStack(alignment: .leading, spacing: self.theme.metrics.spacing.sm) {
             HStack(spacing: self.theme.metrics.spacing.sm) {
                 self.methodButton(title: "Basic", systemImage: "checkmark", enabledValue: false)
-                self.methodButton(title: "Advanced", systemImage: "waveform", enabledValue: true, isResearchPreview: true)
+                self.methodButton(title: "Advanced".loc, systemImage: "waveform", enabledValue: true, isResearchPreview: true)
             }
 
             if self.isEnabled {
@@ -3503,7 +3503,7 @@ struct AddDictionaryEntrySheet: View {
 
             // Replacement input
             VStack(alignment: .leading, spacing: 6) {
-                Text("Correct Spelling (replacement)")
+                Text("Correct Spelling (replacement)".loc)
                     .font(.subheadline.weight(.medium))
                 Text("This is what will appear in the final transcription.")
                     .font(.caption)
@@ -3655,7 +3655,7 @@ struct EditDictionaryEntrySheet: View {
 
             // Replacement input
             VStack(alignment: .leading, spacing: 6) {
-                Text("Correct Spelling (replacement)")
+                Text("Correct Spelling (replacement)".loc)
                     .font(.subheadline.weight(.medium))
                 Text("This is what will appear in the final transcription.")
                     .font(.caption)

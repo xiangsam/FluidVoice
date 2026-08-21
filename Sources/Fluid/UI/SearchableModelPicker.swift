@@ -102,10 +102,10 @@ struct SearchableModelPicker: View {
                                 Image(systemName: "tray")
                                     .font(.title2)
                                     .foregroundStyle(.secondary)
-                                Text("No models")
+                                Text("No models".loc)
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
-                                Text("Click refresh to fetch from API")
+                                Text("Click refresh to fetch from API".loc)
                                     .font(.caption2)
                                     .foregroundStyle(.tertiary)
                             }

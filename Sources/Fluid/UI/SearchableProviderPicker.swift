@@ -97,7 +97,7 @@ struct SearchableProviderPicker: View {
                         // Built-in section
                         let builtIns = self.filteredProviders.filter { $0.isBuiltIn }
                         if !builtIns.isEmpty {
-                            Text("BUILT-IN")
+                            Text("BUILT-IN".loc)
                                 .font(.caption2)
                                 .fontWeight(.semibold)
                                 .foregroundStyle(.secondary)
@@ -118,7 +118,7 @@ struct SearchableProviderPicker: View {
                                     .padding(.vertical, 4)
                             }
 
-                            Text("CUSTOM")
+                            Text("CUSTOM".loc)
                                 .font(.caption2)
                                 .fontWeight(.semibold)
                                 .foregroundStyle(.secondary)

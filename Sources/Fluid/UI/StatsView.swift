@@ -257,7 +257,7 @@ struct StatsView: View {
                         .font(.system(size: 11))
                         .foregroundStyle(self.theme.palette.success)
                 } else {
-                    Text("Start dictating")
+                    Text("Start dictating".loc)
                         .font(.system(size: 11))
                         .foregroundStyle(.secondary)
                 }
@@ -268,7 +268,7 @@ struct StatsView: View {
     // MARK: - Streak Card
 
     private var streakCard: some View {
-        StatCard(title: "CURRENT STREAK", icon: "flame.fill") {
+        StatCard(title: "CURRENT STREAK".loc, icon: "flame.fill") {
             VStack(alignment: .leading, spacing: 8) {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text("\(self.historyStore.currentStreak)")
@@ -309,7 +309,7 @@ struct StatsView: View {
         ThemedCard(style: .standard, padding: 16, hoverEffect: false) {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
-                    Label("ACTIVITY", systemImage: "chart.bar.fill")
+                    Label("ACTIVITY".loc, systemImage: "chart.bar.fill")
                         .font(.system(size: 11, weight: .semibold))
                         .foregroundStyle(.secondary)
 
@@ -334,7 +334,7 @@ struct StatsView: View {
                             Image(systemName: "chart.bar")
                                 .font(.system(size: 24))
                                 .foregroundStyle(.tertiary)
-                            Text("No activity yet")
+                            Text("No activity yet".loc)
                                 .font(.system(size: 12))
                                 .foregroundStyle(.secondary)
                         }
@@ -433,7 +433,7 @@ struct StatsView: View {
         ThemedCard(style: .standard, padding: 16, hoverEffect: false) {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
-                    Label("MILESTONES", systemImage: "flag.fill")
+                    Label("MILESTONES".loc, systemImage: "flag.fill")
                         .font(.system(size: 11, weight: .semibold))
                         .foregroundStyle(.secondary)
 
@@ -447,7 +447,7 @@ struct StatsView: View {
                 VStack(alignment: .leading, spacing: 10) {
                     // Word milestones
                     self.milestoneRow(
-                        title: "Words",
+                        title: "Words".loc,
                         milestones: self.historyStore.wordMilestones
                     )
 
@@ -459,7 +459,7 @@ struct StatsView: View {
 
                     // Streak milestones
                     self.milestoneRow(
-                        title: "Streak",
+                        title: "Streak".loc,
                         milestones: self.historyStore.streakMilestones
                     )
                 }
@@ -501,7 +501,7 @@ struct StatsView: View {
     private var insightsCard: some View {
         ThemedCard(style: .standard, padding: 16, hoverEffect: false) {
             VStack(alignment: .leading, spacing: 12) {
-                Label("INSIGHTS", systemImage: "lightbulb.fill")
+                Label("INSIGHTS".loc, systemImage: "lightbulb.fill")
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(.secondary)
 
@@ -528,7 +528,7 @@ struct StatsView: View {
                     // Peak Hours
                     self.insightItem(
                         icon: "clock.fill",
-                        title: "Peak Time",
+                        title: "Peak Time".loc,
                         value: self.historyStore.peakHourFormatted,
                         fallback: "N/A"
                     )
@@ -536,7 +536,7 @@ struct StatsView: View {
                     // Avg Length
                     self.insightItem(
                         icon: "ruler.fill",
-                        title: "Avg Length",
+                        title: "Avg Length".loc,
                         value: "\(self.historyStore.averageWordsPerTranscription) words",
                         fallback: "0 words"
                     )
@@ -575,23 +575,23 @@ struct StatsView: View {
     private var recordsCard: some View {
         ThemedCard(style: .standard, padding: 16, hoverEffect: false) {
             VStack(alignment: .leading, spacing: 12) {
-                Label("PERSONAL RECORDS", systemImage: "trophy.fill")
+                Label("PERSONAL RECORDS".loc, systemImage: "trophy.fill")
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(.secondary)
 
                 HStack(spacing: 12) {
                     self.recordItem(
-                        title: "Longest Transcription",
+                        title: "Longest Transcription".loc,
                         value: "\(self.historyStore.longestTranscriptionWords) words"
                     )
 
                     self.recordItem(
-                        title: "Most Words in a Day",
+                        title: "Most Words in a Day".loc,
                         value: "\(self.formatNumber(self.historyStore.mostWordsInDay)) words"
                     )
 
                     self.recordItem(
-                        title: "Most in a Day",
+                        title: "Most in a Day".loc,
                         value: "\(self.historyStore.mostTranscriptionsInDay) transcriptions"
                     )
                 }
@@ -630,7 +630,7 @@ struct StatsView: View {
             Button {
                 self.showResetConfirmation = true
             } label: {
-                Label("Reset All Stats", systemImage: "trash")
+                Label("Reset All Stats".loc, systemImage: "trash")
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(.secondary)
             }
