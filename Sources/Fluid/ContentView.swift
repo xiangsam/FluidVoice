@@ -355,24 +355,7 @@ struct ContentView: View {
             .onReceive(NotificationCenter.default.publisher(for: .settingsBackupDidRestore)) { _ in
                 self.reloadSettingsStateAfterBackupRestore()
             }
-            .toolbar {
-                if !self.settings.shouldShowOnboarding {
-                    ToolbarItemGroup(placement: .primaryAction) {
-                        self.todayStatsButton
-
-                        self.languagePreferenceButton
-
-                        self.themePreferenceButton
-
-                        Button(action: self.openIssueReportingPage) {
-                            Image(systemName: "ladybug.fill")
-                        }
-                        .help("Report an issue")
-                        .accessibilityLabel("Report an issue")
-                    }
-                }
-            }
-            .toolbar(removing: .sidebarToggle)
+            .toolbar(.hidden)
             .overlay(alignment: .center) {}
             .alert(
                 self.asr.errorTitle,
