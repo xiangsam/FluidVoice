@@ -241,9 +241,9 @@ struct AppTheme {
 
             static let standard = Window(
                 mainMinWidth: 800,
-                mainMinHeight: 500,
-                onboardingMinWidth: 940,
-                onboardingMinHeight: 700
+                mainMinHeight: 520,
+                onboardingMinWidth: 800,
+                onboardingMinHeight: 520
             )
         }
 

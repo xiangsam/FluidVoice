@@ -32,6 +32,19 @@ struct FluidApp: App {
                             window.title = "FluidVoice"
                             window.identifier = NSUserInterfaceItemIdentifier("FluidVoice.MainWindow")
                             window.isReleasedWhenClosed = false
+
+                            // Ensure launch window uses the comfortable 1000x700 size centered on screen
+                            if window.frame.width < 900 || window.frame.height < 600 {
+                                let defaultSize = NSSize(width: 1000, height: 700)
+                                let screenFrame = NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: defaultSize.width, height: defaultSize.height)
+                                let targetFrame = NSRect(
+                                    x: screenFrame.midX - defaultSize.width / 2,
+                                    y: screenFrame.midY - defaultSize.height / 2,
+                                    width: defaultSize.width,
+                                    height: defaultSize.height
+                                )
+                                window.setFrame(targetFrame, display: true, animate: false)
+                            }
                         }
                     )
             }

@@ -313,6 +313,17 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
             if mainWindow.alphaValue <= 0.01 {
                 mainWindow.alphaValue = 1
             }
+            if mainWindow.frame.width < 900 || mainWindow.frame.height < 600 {
+                let defaultSize = NSSize(width: 1000, height: 700)
+                let screenFrame = NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: defaultSize.width, height: defaultSize.height)
+                let targetFrame = NSRect(
+                    x: screenFrame.midX - defaultSize.width / 2,
+                    y: screenFrame.midY - defaultSize.height / 2,
+                    width: defaultSize.width,
+                    height: defaultSize.height
+                )
+                mainWindow.setFrame(targetFrame, display: true, animate: false)
+            }
             mainWindow.orderFrontRegardless()
             mainWindow.makeKeyAndOrderFront(nil)
             DebugLogger.shared.debug("Brought main window to front", source: "AppDelegate")
