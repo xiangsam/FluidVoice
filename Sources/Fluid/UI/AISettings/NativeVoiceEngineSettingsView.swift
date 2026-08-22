@@ -50,6 +50,11 @@ struct NativeVoiceEngineSettingsView: View {
             // 2. Active Model Hero Card
             self.activeHeroCard
 
+            // 2.5 Context Length & Memory Estimator Section
+            if !self.activeModel.isCloudModel && self.activeModel != .appleSpeech && self.activeModel != .appleSpeechAnalyzer {
+                self.contextMemoryEstimatorSection
+            }
+
             // 3. Category Segmented Control
             self.categoryPickerSection
 
@@ -810,6 +815,125 @@ struct NativeVoiceEngineSettingsView: View {
                 .fill(Color(nsColor: .controlBackgroundColor))
                 .overlay(
                     RoundedRectangle(cornerRadius: 10)
+                        .stroke(Color.secondary.opacity(0.15), lineWidth: 1)
+                )
+        )
+    }
+
+    // MARK: - Context & Memory Estimator
+    private var contextMemoryEstimatorSection: some View {
+        let estimate = self.settings.estimateMemoryBreakdown(model: self.activeModel)
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Label("上下文长度与内存预估 (Context & Memory)".loc, systemImage: "memorychip")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.primary)
+
+                Spacer()
+
+                // Pressure Badge
+                HStack(spacing: 4) {
+                    Circle()
+                        .fill(estimate.pressure == .safe ? Color.fluidGreen : (estimate.pressure == .moderate ? Color.orange : Color.red))
+                        .frame(width: 8, height: 8)
+                    Text("\("内存负载:".loc) \(estimate.pressure.rawValue)")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(estimate.pressure == .safe ? Color.fluidGreen : (estimate.pressure == .moderate ? Color.orange : Color.red))
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 3)
+                .background(
+                    Capsule().fill((estimate.pressure == .safe ? Color.fluidGreen : (estimate.pressure == .moderate ? Color.orange : Color.red)).opacity(0.12))
+                )
+            }
+
+            // Context Length Segmented Picker
+            HStack {
+                Text("单次识别上下文长度 (Tokens):".loc)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Spacer()
+
+                Picker("", selection: self.$settings.asrContextTokenLimit) {
+                    Text("128 (~15秒)").tag(128)
+                    Text("256 (~30秒 · 推荐)".loc).tag(256)
+                    Text("512 (~60秒)").tag(512)
+                    Text("1024 (~2分钟)").tag(1024)
+                }
+                .pickerStyle(.segmented)
+                .frame(maxWidth: 340)
+            }
+
+            // Detailed Memory Bar Breakdown
+            VStack(spacing: 6) {
+                HStack(spacing: 12) {
+                    HStack(spacing: 4) {
+                        Circle().fill(Color.blue).frame(width: 6, height: 6)
+                        Text("\("模型基础权重:".loc) \(String(format: "%.2f", estimate.modelWeightGB)) GB")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    HStack(spacing: 4) {
+                        Circle().fill(Color.purple).frame(width: 6, height: 6)
+                        Text("\("上下文 KV 缓存:".loc) \(String(format: "%.2f", estimate.contextKVCacheGB)) GB")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    HStack(spacing: 4) {
+                        Circle().fill(Color.gray.opacity(0.6)).frame(width: 6, height: 6)
+                        Text("\("运行时开销:".loc) \(String(format: "%.2f", estimate.runtimeOverheadGB)) GB")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Text("\("预计总计:".loc) \(String(format: "%.2f", estimate.totalGB)) GB / \(String(format: "%.0f", estimate.totalDeviceRAMGB)) GB RAM")
+                        .font(.caption2)
+                        .fontWeight(.bold)
+                        .foregroundStyle(estimate.pressure == .safe ? Color.fluidGreen : Color.primary)
+                }
+
+                // Visual Memory Usage Bar
+                GeometryReader { geo in
+                    let totalWidth = geo.size.width
+                    let totalDeviceRAM = max(estimate.totalDeviceRAMGB, 8.0)
+                    let weightRatio = CGFloat(estimate.modelWeightGB / totalDeviceRAM)
+                    let kvRatio = CGFloat(estimate.contextKVCacheGB / totalDeviceRAM)
+                    let overheadRatio = CGFloat(estimate.runtimeOverheadGB / totalDeviceRAM)
+
+                    ZStack(alignment: .leading) {
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(Color.secondary.opacity(0.12))
+                            .frame(height: 8)
+
+                        HStack(spacing: 1) {
+                            RoundedRectangle(cornerRadius: 3)
+                                .fill(Color.blue)
+                                .frame(width: max(2, totalWidth * weightRatio), height: 8)
+                            RoundedRectangle(cornerRadius: 3)
+                                .fill(Color.purple)
+                                .frame(width: max(2, totalWidth * kvRatio), height: 8)
+                            RoundedRectangle(cornerRadius: 3)
+                                .fill(Color.gray.opacity(0.6))
+                                .frame(width: max(2, totalWidth * overheadRatio), height: 8)
+                        }
+                    }
+                }
+                .frame(height: 8)
+            }
+            .padding(10)
+            .background(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(Color.secondary.opacity(0.06))
+            )
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color(nsColor: .controlBackgroundColor))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
                         .stroke(Color.secondary.opacity(0.15), lineWidth: 1)
                 )
         )

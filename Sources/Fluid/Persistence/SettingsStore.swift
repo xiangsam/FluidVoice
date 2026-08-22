@@ -2671,6 +2671,145 @@ final class SettingsStore: ObservableObject {
         DebugLogger.shared.info("Applied Hugging Face base URL: \(base)", source: "SettingsStore")
     }
 
+    // MARK: - Context Length & Memory Estimation
+
+    struct ModelMemoryBreakdown: Equatable {
+        let modelWeightGB: Double
+        let contextKVCacheGB: Double
+        let runtimeOverheadGB: Double
+        let totalDeviceRAMGB: Double
+        let availableRAMGB: Double
+
+        var totalGB: Double {
+            self.modelWeightGB + self.contextKVCacheGB + self.runtimeOverheadGB
+        }
+
+        enum Pressure: String {
+            case safe = "充裕"
+            case moderate = "适中"
+            case tight = "偏高"
+        }
+
+        var pressure: Pressure {
+            if self.totalGB <= self.totalDeviceRAMGB * 0.45 {
+                return .safe
+            } else if self.totalGB <= self.totalDeviceRAMGB * 0.75 {
+                return .moderate
+            } else {
+                return .tight
+            }
+        }
+    }
+
+    var asrContextTokenLimit: Int {
+        get {
+            let val = self.defaults.integer(forKey: Keys.asrContextTokenLimit)
+            return val > 0 ? val : 256
+        }
+        set {
+            objectWillChange.send()
+            self.defaults.set(newValue, forKey: Keys.asrContextTokenLimit)
+        }
+    }
+
+    func estimateMemoryBreakdown(model: SpeechModel, contextTokens: Int? = nil) -> ModelMemoryBreakdown {
+        let tokens = contextTokens ?? self.asrContextTokenLimit
+        let totalRAM = Double(ProcessInfo.processInfo.physicalMemory) / (1024 * 1024 * 1024)
+
+        var pageSize: vm_size_t = 0
+        host_page_size(mach_host_self(), &pageSize)
+        var vmStats = vm_statistics64()
+        var count = mach_msg_type_number_t(MemoryLayout<vm_statistics64>.size / MemoryLayout<integer_t>.size)
+        let res = withUnsafeMutablePointer(to: &vmStats) { pointer in
+            pointer.withMemoryRebound(to: integer_t.self, capacity: Int(count)) { intPointer in
+                host_statistics64(mach_host_self(), HOST_VM_INFO64, intPointer, &count)
+            }
+        }
+        let availableRAM: Double
+        if res == KERN_SUCCESS {
+            let freePages = UInt64(vmStats.free_count + vmStats.inactive_count + vmStats.purgeable_count)
+            availableRAM = Double(freePages * UInt64(pageSize)) / (1024 * 1024 * 1024)
+        } else {
+            availableRAM = totalRAM * 0.5
+        }
+
+        let weightGB: Double
+        let kvCacheGB: Double
+        let overheadGB: Double
+
+        switch model {
+        case .qwen3Asr:
+            weightGB = (self.qwen3AsrVariant == .int8) ? 0.90 : 1.75
+            kvCacheGB = Double(tokens) * 0.00065
+            overheadGB = 0.35
+        case .whisperLargeTurbo:
+            weightGB = 0.85
+            kvCacheGB = Double(tokens) * 0.0005
+            overheadGB = 0.30
+        case .whisperLarge:
+            weightGB = 1.55
+            kvCacheGB = Double(tokens) * 0.0006
+            overheadGB = 0.40
+        case .whisperMedium:
+            weightGB = 0.50
+            kvCacheGB = Double(tokens) * 0.0004
+            overheadGB = 0.25
+        case .whisperSmall:
+            weightGB = 0.25
+            kvCacheGB = Double(tokens) * 0.0003
+            overheadGB = 0.20
+        case .whisperBase:
+            weightGB = 0.08
+            kvCacheGB = Double(tokens) * 0.0002
+            overheadGB = 0.15
+        case .whisperTiny:
+            weightGB = 0.04
+            kvCacheGB = Double(tokens) * 0.0001
+            overheadGB = 0.10
+        case .parakeetTDT, .parakeetTDTv2, .parakeetRealtime:
+            weightGB = 0.60
+            kvCacheGB = 0.05
+            overheadGB = 0.25
+        case .cohereTranscribeSixBit, .nemotronOffline, .nemotronStreaming, .nemotronStreaming320:
+            weightGB = 0.70
+            kvCacheGB = 0.10
+            overheadGB = 0.30
+        case .appleSpeech, .appleSpeechAnalyzer:
+            weightGB = 0.05
+            kvCacheGB = 0.02
+            overheadGB = 0.10
+        case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudOllama, .cloudCustom:
+            weightGB = 0.01
+            kvCacheGB = 0.01
+            overheadGB = 0.05
+        }
+
+        return ModelMemoryBreakdown(
+            modelWeightGB: weightGB,
+            contextKVCacheGB: kvCacheGB,
+            runtimeOverheadGB: overheadGB,
+            totalDeviceRAMGB: totalRAM,
+            availableRAMGB: availableRAM
+        )
+    }
+
+    func estimatePrivateAIBreakdown(contextTokens: Int? = nil) -> ModelMemoryBreakdown {
+        let tokens = contextTokens ?? self.privateAIContextTokenLimit
+        let totalRAM = Double(ProcessInfo.processInfo.physicalMemory) / (1024 * 1024 * 1024)
+
+        let weightGB: Double = 4.2
+        let kvCacheGB: Double = (Double(tokens) / 2048.0) * 0.45
+        let overheadGB: Double = 0.35
+
+        return ModelMemoryBreakdown(
+            modelWeightGB: weightGB,
+            contextKVCacheGB: kvCacheGB,
+            runtimeOverheadGB: overheadGB,
+            totalDeviceRAMGB: totalRAM,
+            availableRAMGB: totalRAM * 0.5
+        )
+    }
+
     var shouldShowOnboarding: Bool {
         !self.onboardingCompleted
     }
@@ -5603,6 +5742,9 @@ private extension SettingsStore {
         /// Hugging Face Mirror Setting
         static let huggingFaceMirror = "HuggingFaceMirror"
         static let customHuggingFaceMirrorURL = "CustomHuggingFaceMirrorURL"
+
+        /// ASR Context Length
+        static let asrContextTokenLimit = "AsrContextTokenLimit"
     }
 }
 

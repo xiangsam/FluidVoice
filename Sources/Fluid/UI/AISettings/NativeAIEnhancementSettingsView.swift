@@ -338,6 +338,36 @@ struct NativeAIEnhancementSettingsView: View {
                     }
                 }
 
+                // Context Length & Memory Estimation
+                VStack(alignment: .leading, spacing: 6) {
+                    let aiEstimate = self.settings.estimatePrivateAIBreakdown()
+                    HStack {
+                        Text("润色上下文长度 (Context Limit):".loc)
+                            .font(.subheadline)
+                            .foregroundStyle(.primary)
+                        Spacer()
+                        Picker("", selection: self.$settings.privateAIContextTokenLimit) {
+                            Text("2,048 Tokens (~0.5G 缓存)").tag(2048)
+                            Text("4,096 Tokens (~1.0G 缓存 · 推荐)".loc).tag(4096)
+                            Text("8,192 Tokens (~2.0G 缓存)").tag(8192)
+                            Text("16,384 Tokens (~4.0G 缓存)").tag(16384)
+                        }
+                        .pickerStyle(.menu)
+                        .controlSize(.small)
+                        .frame(maxWidth: 250)
+                    }
+
+                    if self.settings.selectedProviderID == "ollama" {
+                        HStack(spacing: 6) {
+                            Circle().fill(aiEstimate.pressure == .safe ? Color.fluidGreen : Color.orange).frame(width: 6, height: 6)
+                            Text("本地大模型预计内存占用: ~\(String(format: "%.1f", aiEstimate.totalGB)) GB (模型权重 4.2G + 上下文缓存 \(String(format: "%.1f", aiEstimate.contextKVCacheGB))G + 运行开销)".loc)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                .padding(.top, 4)
+
                 // Test Connection Row
                 HStack {
                     if let message = self.connectionMessage {
