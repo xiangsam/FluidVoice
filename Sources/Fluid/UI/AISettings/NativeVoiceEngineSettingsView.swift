@@ -50,11 +50,6 @@ struct NativeVoiceEngineSettingsView: View {
             // 2. Active Model Hero Card
             self.activeHeroCard
 
-            // 2.5 Context Length & Memory Estimator Section
-            if !self.activeModel.isCloudModel && self.activeModel != .appleSpeech && self.activeModel != .appleSpeechAnalyzer {
-                self.contextMemoryEstimatorSection
-            }
-
             // 3. Category Segmented Control
             self.categoryPickerSection
 
@@ -204,6 +199,9 @@ struct NativeVoiceEngineSettingsView: View {
 
         case .local:
             VStack(alignment: .leading, spacing: 16) {
+                // Context Length & Dynamic Memory Estimator
+                self.contextMemoryEstimatorSection
+
                 // Download Mirror Acceleration Bar
                 self.downloadAccelerationSection
 
@@ -824,11 +822,16 @@ struct NativeVoiceEngineSettingsView: View {
     private var contextMemoryEstimatorSection: some View {
         let estimate = self.settings.estimateMemoryBreakdown(model: self.activeModel)
         return VStack(alignment: .leading, spacing: 10) {
+            // Header Row
             HStack {
-                Label("上下文长度与内存预估 (Context & Memory)".loc, systemImage: "memorychip")
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(.primary)
+                HStack(spacing: 6) {
+                    Image(systemName: "memorychip")
+                        .foregroundStyle(self.theme.palette.accent)
+                        .font(.system(size: 15))
+                    Text("本地模型上下文与内存预估 (Context & RAM)".loc)
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                }
 
                 Spacer()
 
@@ -836,9 +839,9 @@ struct NativeVoiceEngineSettingsView: View {
                 HStack(spacing: 4) {
                     Circle()
                         .fill(estimate.pressure == .safe ? Color.fluidGreen : (estimate.pressure == .moderate ? Color.orange : Color.red))
-                        .frame(width: 8, height: 8)
-                    Text("\("内存负载:".loc) \(estimate.pressure.rawValue)")
-                        .font(.system(size: 11, weight: .medium))
+                        .frame(width: 7, height: 7)
+                    Text("\("负载:".loc) \(estimate.pressure.rawValue)")
+                        .font(.system(size: 11, weight: .semibold))
                         .foregroundStyle(estimate.pressure == .safe ? Color.fluidGreen : (estimate.pressure == .moderate ? Color.orange : Color.red))
                 }
                 .padding(.horizontal, 8)
@@ -849,48 +852,55 @@ struct NativeVoiceEngineSettingsView: View {
             }
 
             // Context Length Segmented Picker
-            HStack {
-                Text("单次识别上下文长度 (Tokens):".loc)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                Spacer()
+            VStack(alignment: .leading, spacing: 5) {
+                HStack {
+                    Text("单次识别上下文上限:".loc)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Text("根据说话时长自动分配 KV Cache 显存".loc)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
 
                 Picker("", selection: self.$settings.asrContextTokenLimit) {
-                    Text("128 (~15秒)").tag(128)
-                    Text("256 (~30秒 · 推荐)".loc).tag(256)
-                    Text("512 (~60秒)").tag(512)
-                    Text("1024 (~2分钟)").tag(1024)
+                    Text("128 (15s)").tag(128)
+                    Text("256 (30s · 推荐)".loc).tag(256)
+                    Text("512 (60s)").tag(512)
+                    Text("1024 (120s)").tag(1024)
                 }
                 .pickerStyle(.segmented)
-                .frame(maxWidth: 340)
+                .controlSize(.small)
             }
 
             // Detailed Memory Bar Breakdown
             VStack(spacing: 6) {
-                HStack(spacing: 12) {
-                    HStack(spacing: 4) {
-                        Circle().fill(Color.blue).frame(width: 6, height: 6)
-                        Text("\("模型基础权重:".loc) \(String(format: "%.2f", estimate.modelWeightGB)) GB")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
+                HStack {
+                    HStack(spacing: 8) {
+                        HStack(spacing: 3) {
+                            Circle().fill(Color.blue).frame(width: 5, height: 5)
+                            Text("\("权重:".loc) \(String(format: "%.1f", estimate.modelWeightGB))G")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.secondary)
+                        }
+                        HStack(spacing: 3) {
+                            Circle().fill(Color.purple).frame(width: 5, height: 5)
+                            Text("\("KV缓存:".loc) \(String(format: "%.2f", estimate.contextKVCacheGB))G")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.secondary)
+                        }
+                        HStack(spacing: 3) {
+                            Circle().fill(Color.gray.opacity(0.7)).frame(width: 5, height: 5)
+                            Text("\("开销:".loc) \(String(format: "%.1f", estimate.runtimeOverheadGB))G")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.secondary)
+                        }
                     }
-                    HStack(spacing: 4) {
-                        Circle().fill(Color.purple).frame(width: 6, height: 6)
-                        Text("\("上下文 KV 缓存:".loc) \(String(format: "%.2f", estimate.contextKVCacheGB)) GB")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
-                    HStack(spacing: 4) {
-                        Circle().fill(Color.gray.opacity(0.6)).frame(width: 6, height: 6)
-                        Text("\("运行时开销:".loc) \(String(format: "%.2f", estimate.runtimeOverheadGB)) GB")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
+
                     Spacer()
-                    Text("\("预计总计:".loc) \(String(format: "%.2f", estimate.totalGB)) GB / \(String(format: "%.0f", estimate.totalDeviceRAMGB)) GB RAM")
-                        .font(.caption2)
-                        .fontWeight(.bold)
+
+                    Text("\("预计:".loc) \(String(format: "%.2f", estimate.totalGB))G / \(String(format: "%.0f", estimate.totalDeviceRAMGB))G RAM")
+                        .font(.system(size: 11, weight: .bold))
                         .foregroundStyle(estimate.pressure == .safe ? Color.fluidGreen : Color.primary)
                 }
 
@@ -903,37 +913,37 @@ struct NativeVoiceEngineSettingsView: View {
                     let overheadRatio = CGFloat(estimate.runtimeOverheadGB / totalDeviceRAM)
 
                     ZStack(alignment: .leading) {
-                        RoundedRectangle(cornerRadius: 4)
+                        RoundedRectangle(cornerRadius: 3)
                             .fill(Color.secondary.opacity(0.12))
-                            .frame(height: 8)
+                            .frame(height: 6)
 
                         HStack(spacing: 1) {
-                            RoundedRectangle(cornerRadius: 3)
+                            RoundedRectangle(cornerRadius: 2)
                                 .fill(Color.blue)
-                                .frame(width: max(2, totalWidth * weightRatio), height: 8)
-                            RoundedRectangle(cornerRadius: 3)
+                                .frame(width: max(2, totalWidth * weightRatio), height: 6)
+                            RoundedRectangle(cornerRadius: 2)
                                 .fill(Color.purple)
-                                .frame(width: max(2, totalWidth * kvRatio), height: 8)
-                            RoundedRectangle(cornerRadius: 3)
-                                .fill(Color.gray.opacity(0.6))
-                                .frame(width: max(2, totalWidth * overheadRatio), height: 8)
+                                .frame(width: max(2, totalWidth * kvRatio), height: 6)
+                            RoundedRectangle(cornerRadius: 2)
+                                .fill(Color.gray.opacity(0.7))
+                                .frame(width: max(2, totalWidth * overheadRatio), height: 6)
                         }
                     }
                 }
-                .frame(height: 8)
+                .frame(height: 6)
             }
-            .padding(10)
+            .padding(8)
             .background(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
                     .fill(Color.secondary.opacity(0.06))
             )
         }
         .padding(12)
         .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
+            RoundedRectangle(cornerRadius: 10)
                 .fill(Color(nsColor: .controlBackgroundColor))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    RoundedRectangle(cornerRadius: 10)
                         .stroke(Color.secondary.opacity(0.15), lineWidth: 1)
                 )
         )
