@@ -198,8 +198,11 @@ struct NativeVoiceEngineSettingsView: View {
             }
 
         case .local:
-            VStack(alignment: .leading, spacing: 20) {
-                // Whisper Group
+            VStack(alignment: .leading, spacing: 16) {
+                // Download Mirror Acceleration Bar
+                self.downloadAccelerationSection
+
+                // Whisper Family Group
                 VStack(alignment: .leading, spacing: 10) {
                     HStack(spacing: 6) {
                         Image(systemName: "waveform.badge.magnifyingglass")
@@ -760,5 +763,55 @@ struct NativeVoiceEngineSettingsView: View {
                 }
             }
         }
+    }
+
+    // MARK: - Download Acceleration Section
+    private var downloadAccelerationSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Image(systemName: "bolt.horizontal.circle.fill")
+                    .foregroundStyle(.yellow)
+                    .font(.system(size: 15))
+                Text("模型下载加速源".loc)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+
+                Spacer()
+
+                Picker("", selection: self.$settings.huggingFaceMirror) {
+                    ForEach(SettingsStore.HuggingFaceMirror.allCases) { mirror in
+                        Text(mirror.displayName.loc).tag(mirror)
+                    }
+                }
+                .pickerStyle(.menu)
+                .controlSize(.small)
+                .frame(maxWidth: 270)
+            }
+
+            if self.settings.huggingFaceMirror == .custom {
+                HStack(spacing: 8) {
+                    Text("自定义端点:".loc)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    TextField("https://your-mirror-host.com", text: self.$settings.customHuggingFaceMirrorURL)
+                        .textFieldStyle(.roundedBorder)
+                        .controlSize(.small)
+                }
+                .padding(.top, 2)
+            }
+
+            Text("国内网络推荐使用国内镜像加速站（如 hf-mirror.com），支持千问 Qwen3、Parakeet、Whisper 等全速稳定下载。".loc)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(Color(nsColor: .controlBackgroundColor))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(Color.secondary.opacity(0.15), lineWidth: 1)
+                )
+        )
     }
 }

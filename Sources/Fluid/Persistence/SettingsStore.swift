@@ -47,6 +47,7 @@ final class SettingsStore: ObservableObject {
         self.migrateOverlayBottomOffsetTo50IfNeeded()
         self.migratePrivateAIContextDefaultTo4KIfNeeded()
         self.refreshLaunchAtStartupStatus(clearError: true, logMismatch: false)
+        self.applyHuggingFaceMirror()
     }
 
     static func clampPrivateAIContextTokenLimit(_ value: Int) -> Int {
@@ -2598,6 +2599,76 @@ final class SettingsStore: ObservableObject {
             objectWillChange.send()
             self.defaults.set(newValue.rawValue, forKey: Keys.qwen3AsrVariant)
         }
+    }
+
+    enum HuggingFaceMirror: String, CaseIterable, Identifiable, Codable {
+        case hfMirror = "hfMirror"
+        case official = "official"
+        case custom = "custom"
+
+        var id: String { rawValue }
+
+        var displayName: String {
+            switch self {
+            case .hfMirror: return "国内镜像加速 (hf-mirror.com · 推荐)"
+            case .official: return "官方源 (huggingface.co)"
+            case .custom: return "自定义镜像源"
+            }
+        }
+
+        func baseURL(customURL: String) -> String {
+            switch self {
+            case .hfMirror:
+                return "https://hf-mirror.com"
+            case .official:
+                return "https://huggingface.co"
+            case .custom:
+                let trimmed = customURL.trimmingCharacters(in: .whitespacesAndNewlines)
+                if trimmed.isEmpty { return "https://hf-mirror.com" }
+                if !trimmed.hasPrefix("http://") && !trimmed.hasPrefix("https://") {
+                    return "https://\(trimmed)"
+                }
+                return trimmed.hasSuffix("/") ? String(trimmed.dropLast()) : trimmed
+            }
+        }
+    }
+
+    var huggingFaceMirror: HuggingFaceMirror {
+        get {
+            let raw = self.defaults.string(forKey: Keys.huggingFaceMirror) ?? HuggingFaceMirror.hfMirror.rawValue
+            return HuggingFaceMirror(rawValue: raw) ?? .hfMirror
+        }
+        set {
+            objectWillChange.send()
+            self.defaults.set(newValue.rawValue, forKey: Keys.huggingFaceMirror)
+            self.applyHuggingFaceMirror()
+        }
+    }
+
+    var customHuggingFaceMirrorURL: String {
+        get {
+            self.defaults.string(forKey: Keys.customHuggingFaceMirrorURL) ?? ""
+        }
+        set {
+            objectWillChange.send()
+            self.defaults.set(newValue, forKey: Keys.customHuggingFaceMirrorURL)
+            self.applyHuggingFaceMirror()
+        }
+    }
+
+    var huggingFaceBaseURL: String {
+        if let endpoint = ProcessInfo.processInfo.environment["HF_ENDPOINT"], !endpoint.isEmpty {
+            return endpoint.hasSuffix("/") ? String(endpoint.dropLast()) : endpoint
+        }
+        return self.huggingFaceMirror.baseURL(customURL: self.customHuggingFaceMirrorURL)
+    }
+
+    func applyHuggingFaceMirror() {
+        let base = self.huggingFaceBaseURL
+        #if canImport(FluidAudio)
+        ModelRegistry.baseURL = base
+        #endif
+        DebugLogger.shared.info("Applied Hugging Face base URL: \(base)", source: "SettingsStore")
     }
 
     var shouldShowOnboarding: Bool {
@@ -5528,6 +5599,10 @@ private extension SettingsStore {
 
         /// Qwen3 ASR Precision Variant ("int8" or "f32")
         static let qwen3AsrVariant = "Qwen3AsrVariant"
+
+        /// Hugging Face Mirror Setting
+        static let huggingFaceMirror = "HuggingFaceMirror"
+        static let customHuggingFaceMirrorURL = "CustomHuggingFaceMirrorURL"
     }
 }
 

@@ -40,7 +40,8 @@ final class HuggingFaceModelDownloader {
             ModelItem(path: "JointDecision.mlmodelc", isDirectory: true),
             ModelItem(path: "parakeet_v3_vocab.json", isDirectory: false),
         ]
-        guard var apiBase = URL(string: "https://huggingface.co/api/models/") else {
+        let base = SettingsStore.shared.huggingFaceBaseURL
+        guard var apiBase = URL(string: "\(base)/api/models/") else {
             preconditionFailure("Invalid base Hugging Face API URL")
         }
         apiBase.appendPathComponent(self.owner)
@@ -49,7 +50,7 @@ final class HuggingFaceModelDownloader {
         apiBase.appendPathComponent(self.revision)
         self.baseApiURL = apiBase
 
-        guard var resolveBase = URL(string: "https://huggingface.co/") else {
+        guard var resolveBase = URL(string: "\(base)/") else {
             preconditionFailure("Invalid base Hugging Face resolve URL")
         }
         resolveBase.appendPathComponent(self.owner)
@@ -76,7 +77,8 @@ final class HuggingFaceModelDownloader {
                 ModelItem(path: "parakeet_v3_vocab.json", isDirectory: false),
             ]
             : requiredItems
-        guard var apiBase = URL(string: "https://huggingface.co/api/models/") else {
+        let base = SettingsStore.shared.huggingFaceBaseURL
+        guard var apiBase = URL(string: "\(base)/api/models/") else {
             preconditionFailure("Invalid base Hugging Face API URL")
         }
         apiBase.appendPathComponent(owner)
@@ -85,7 +87,7 @@ final class HuggingFaceModelDownloader {
         apiBase.appendPathComponent(revision)
         self.baseApiURL = apiBase
 
-        guard var resolveBase = URL(string: "https://huggingface.co/") else {
+        guard var resolveBase = URL(string: "\(base)/") else {
             preconditionFailure("Invalid base Hugging Face resolve URL")
         }
         resolveBase.appendPathComponent(owner)

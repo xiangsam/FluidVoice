@@ -79,7 +79,8 @@ final class WhisperProvider: TranscriptionProvider {
         let suffix = "-Q8_0.gguf"
         guard modelName.hasSuffix(suffix) else { return nil }
         let repoName = String(modelName.dropLast(suffix.count))
-        return URL(string: "https://huggingface.co/handy-computer/\(repoName)-gguf/resolve/main/\(modelName)")
+        let base = SettingsStore.shared.huggingFaceBaseURL
+        return URL(string: "\(base)/handy-computer/\(repoName)-gguf/resolve/main/\(modelName)")
     }
 
     private var backend: Backend {
