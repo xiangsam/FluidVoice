@@ -21,7 +21,7 @@ final class Qwen3AsrProvider: TranscriptionProvider {
     }
 
     private var currentVariant: Qwen3AsrVariant {
-        SettingsStore.shared.qwen3AsrVariant
+        SettingsStore.shared.qwen3AsrVariant == .int8 ? .int8 : .f32
     }
 
     func prepare(progressHandler: ((ModelPreparationProgress) -> Void)? = nil) async throws {
@@ -122,10 +122,19 @@ final class Qwen3AsrProvider: TranscriptionProvider {
     let name = "Qwen3 ASR (Unavailable on Intel)"
     var isAvailable: Bool { false }
     var isReady: Bool { false }
+    var modelOverride: SettingsStore.SpeechModel?
+
+    init(modelOverride: SettingsStore.SpeechModel? = nil) {
+        self.modelOverride = modelOverride
+    }
+
     func prepare(progressHandler: ((ModelPreparationProgress) -> Void)?) async throws {
         throw NSError(domain: "Qwen3AsrProvider", code: -1, userInfo: [NSLocalizedDescriptionKey: "Qwen3 ASR requires Apple Silicon"])
     }
     func transcribe(_ samples: [Float]) async throws -> ASRTranscriptionResult {
+        throw NSError(domain: "Qwen3AsrProvider", code: -1, userInfo: [NSLocalizedDescriptionKey: "Qwen3 ASR requires Apple Silicon"])
+    }
+    func transcribeFinal(_ samples: [Float]) async throws -> ASRTranscriptionResult {
         throw NSError(domain: "Qwen3AsrProvider", code: -1, userInfo: [NSLocalizedDescriptionKey: "Qwen3 ASR requires Apple Silicon"])
     }
     func clearCache() async throws {}

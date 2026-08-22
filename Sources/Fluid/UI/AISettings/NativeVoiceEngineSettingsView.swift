@@ -418,7 +418,6 @@ struct NativeVoiceEngineSettingsView: View {
 
     @ViewBuilder
     private func qwen3VariantPicker() -> some View {
-        #if arch(arm64) && canImport(FluidAudio)
         HStack(spacing: 8) {
             Text("精度规格:".loc)
                 .font(.system(size: 11, weight: .medium))
@@ -426,24 +425,21 @@ struct NativeVoiceEngineSettingsView: View {
 
             Picker("", selection: Binding(
                 get: { self.settings.qwen3AsrVariant },
-                set: { (newVariant: Qwen3AsrVariant) in
+                set: { (newVariant: SettingsStore.Qwen3PrecisionVariant) in
                     self.settings.qwen3AsrVariant = newVariant
                     Task {
                         await self.viewModel.asr.checkIfModelsExistAsync()
                     }
                 }
             )) {
-                Text("Int8 量化版 (~900 MB)".loc).tag(Qwen3AsrVariant.int8)
-                Text("FP16 全精版 (~1.75 GB)".loc).tag(Qwen3AsrVariant.f32)
+                Text("Int8 量化版 (~900 MB)".loc).tag(SettingsStore.Qwen3PrecisionVariant.int8)
+                Text("FP16 全精版 (~1.75 GB)".loc).tag(SettingsStore.Qwen3PrecisionVariant.f32)
             }
             .pickerStyle(.segmented)
             .controlSize(.mini)
             .frame(maxWidth: 240)
         }
         .padding(.top, 2)
-        #else
-        EmptyView()
-        #endif
     }
 
     // MARK: - Inline Configuration View for Selected Cloud Engine

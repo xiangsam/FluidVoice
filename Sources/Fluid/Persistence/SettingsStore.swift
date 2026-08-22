@@ -2582,18 +2582,23 @@ final class SettingsStore: ObservableObject {
         Locale(identifier: self.selectedAppleSpeechLocaleIdentifier)
     }
 
-    #if arch(arm64) && canImport(FluidAudio)
-    var qwen3AsrVariant: Qwen3AsrVariant {
+    enum Qwen3PrecisionVariant: String, CaseIterable, Identifiable, Codable {
+        case int8 = "int8"
+        case f32 = "f32"
+
+        var id: String { rawValue }
+    }
+
+    var qwen3AsrVariant: Qwen3PrecisionVariant {
         get {
             let raw = self.defaults.string(forKey: Keys.qwen3AsrVariant) ?? "int8"
-            return Qwen3AsrVariant(rawValue: raw) ?? .int8
+            return Qwen3PrecisionVariant(rawValue: raw) ?? .int8
         }
         set {
             objectWillChange.send()
             self.defaults.set(newValue.rawValue, forKey: Keys.qwen3AsrVariant)
         }
     }
-    #endif
 
     var shouldShowOnboarding: Bool {
         !self.onboardingCompleted
@@ -5105,7 +5110,8 @@ final class SettingsStore: ObservableObject {
                 #if arch(arm64) && canImport(FluidAudio)
                 if #available(macOS 15.0, *) {
                     let variant = SettingsStore.shared.qwen3AsrVariant
-                    return Qwen3AsrModels.modelsExist(at: Qwen3AsrModels.defaultCacheDirectory(variant: variant))
+                    let faVariant: Qwen3AsrVariant = variant == .int8 ? .int8 : .f32
+                    return Qwen3AsrModels.modelsExist(at: Qwen3AsrModels.defaultCacheDirectory(variant: faVariant))
                 }
                 return false
                 #else
