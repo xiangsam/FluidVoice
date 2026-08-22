@@ -2701,10 +2701,39 @@ final class SettingsStore: ObservableObject {
         }
     }
 
+    enum ASRContextDuration: Int, CaseIterable, Identifiable {
+        case sec30 = 256
+        case min1 = 512
+        case min2 = 1024
+        case min5 = 2048
+
+        var id: Int { rawValue }
+
+        var tokenLimit: Int { rawValue }
+
+        var displayName: String {
+            switch self {
+            case .sec30: return "30 秒 (推荐)".loc
+            case .min1: return "1 分钟".loc
+            case .min2: return "2 分钟".loc
+            case .min5: return "5 分钟".loc
+            }
+        }
+
+        var subtitle: String {
+            switch self {
+            case .sec30: return "约 150 字 (256 Tokens)".loc
+            case .min1: return "约 300 字 (512 Tokens)".loc
+            case .min2: return "约 600 字 (1024 Tokens)".loc
+            case .min5: return "约 1500 字 (2048 Tokens)".loc
+            }
+        }
+    }
+
     var asrContextTokenLimit: Int {
         get {
             let val = self.defaults.integer(forKey: Keys.asrContextTokenLimit)
-            return val > 0 ? val : 256
+            return val > 0 ? val : ASRContextDuration.sec30.rawValue
         }
         set {
             objectWillChange.send()
@@ -2737,22 +2766,29 @@ final class SettingsStore: ObservableObject {
         let kvCacheGB: Double
         let overheadGB: Double
 
+        // Duration scaling factor based on tokens (256 = 30s, 2048 = 300s)
+        let durationSeconds = Double(tokens) * (300.0 / 2048.0)
+
         switch model {
         case .qwen3Asr:
             weightGB = (self.qwen3AsrVariant == .int8) ? 0.90 : 1.75
-            kvCacheGB = Double(tokens) * 0.00065
-            overheadGB = 0.35
+            // Audio frames (25 fps) + text tokens KV cache (0.11 MB/token)
+            let audioTokens = durationSeconds * 25.0
+            let textTokens = Double(tokens)
+            kvCacheGB = (audioTokens + textTokens) * 0.00011 // In GB
+            overheadGB = 0.35 + (durationSeconds * 0.0005)
         case .whisperLargeTurbo:
             weightGB = 0.85
-            kvCacheGB = Double(tokens) * 0.0005
+            // Whisper 30s chunked sliding window: base window is 30s, cross-attention cache scales
+            kvCacheGB = 0.10 + (Double(tokens) * 0.00012)
             overheadGB = 0.30
         case .whisperLarge:
             weightGB = 1.55
-            kvCacheGB = Double(tokens) * 0.0006
+            kvCacheGB = 0.15 + (Double(tokens) * 0.00018)
             overheadGB = 0.40
         case .whisperMedium:
             weightGB = 0.50
-            kvCacheGB = Double(tokens) * 0.0004
+            kvCacheGB = 0.08 + (Double(tokens) * 0.00010)
             overheadGB = 0.25
         case .whisperSmall:
             weightGB = 0.25

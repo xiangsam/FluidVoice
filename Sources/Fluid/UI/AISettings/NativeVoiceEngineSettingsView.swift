@@ -854,20 +854,21 @@ struct NativeVoiceEngineSettingsView: View {
             // Context Length Segmented Picker
             VStack(alignment: .leading, spacing: 5) {
                 HStack {
-                    Text("单次识别上下文上限:".loc)
+                    Text("单次识别最长时长:".loc)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     Spacer()
-                    Text("根据说话时长自动分配 KV Cache 显存".loc)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
+                    if let selectedDuration = SettingsStore.ASRContextDuration(rawValue: self.settings.asrContextTokenLimit) {
+                        Text(selectedDuration.subtitle)
+                            .font(.caption2)
+                            .foregroundStyle(self.theme.palette.accent)
+                    }
                 }
 
                 Picker("", selection: self.$settings.asrContextTokenLimit) {
-                    Text("128 (15s)").tag(128)
-                    Text("256 (30s · 推荐)".loc).tag(256)
-                    Text("512 (60s)").tag(512)
-                    Text("1024 (120s)").tag(1024)
+                    ForEach(SettingsStore.ASRContextDuration.allCases) { duration in
+                        Text(duration.displayName).tag(duration.rawValue)
+                    }
                 }
                 .pickerStyle(.segmented)
                 .controlSize(.small)
