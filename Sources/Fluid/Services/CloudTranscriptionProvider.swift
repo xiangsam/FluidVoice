@@ -421,12 +421,31 @@ final class CloudTranscriptionProvider: TranscriptionProvider {
             }
         }
 
-        // Seamless fallback to macOS built-in Apple Speech engine
+        // Seamless fallback to macOS built-in Apple Speech engine (modern SpeechAnalyzer on macOS 26+)
         if self.settings.cloudSTTAutoFallback {
             DebugLogger.shared.info(
-                "Cloud ASR timed out or failed; seamlessly falling back to macOS local Apple Speech engine",
+                "Cloud ASR timed out or failed; seamlessly falling back to macOS modern SpeechAnalyzer / Apple Speech engine",
                 source: "CloudTranscriptionProvider"
             )
+            if #available(macOS 26.0, *) {
+                let modernFallback = AppleSpeechAnalyzerProvider()
+                do {
+                    if !modernFallback.isReady {
+                        try await modernFallback.prepare(progressHandler: nil)
+                    }
+                    let result = try await modernFallback.transcribe(samples)
+                    let trimmed = result.text.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !trimmed.isEmpty {
+                        return result
+                    }
+                } catch {
+                    DebugLogger.shared.warning(
+                        "Modern SpeechAnalyzer fallback encountered error: \(error.localizedDescription), trying legacy AppleSpeechProvider",
+                        source: "CloudTranscriptionProvider"
+                    )
+                }
+            }
+
             let fallbackProvider = AppleSpeechProvider()
             return try await fallbackProvider.transcribe(samples)
         }
