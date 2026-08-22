@@ -27,6 +27,13 @@ struct FluidApp: App {
                 ContentView()
                     .environmentObject(self.menuBarManager)
                     .environmentObject(self.appServices)
+                    .background(
+                        WindowAccessor { window in
+                            window.title = "FluidVoice"
+                            window.identifier = NSUserInterfaceItemIdentifier("FluidVoice.MainWindow")
+                            window.isReleasedWhenClosed = false
+                        }
+                    )
             }
         }
         .defaultSize(width: 1000, height: 700)

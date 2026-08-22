@@ -325,7 +325,23 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
     private func isMainWindow(_ window: NSWindow) -> Bool {
         guard window.level == .normal else { return false }
         guard window.styleMask.contains(.titled) else { return false }
-        return window.title == "FluidVoice" || window.title.contains("FluidVoice")
+        guard !(window is NSPanel) else { return false }
+        let className = String(describing: type(of: window))
+        guard !className.contains("Notch") && !className.contains("Overlay") && !className.contains("Popover") && !className.contains("StatusBar") else { return false }
+
+        // Identifier check
+        if window.identifier?.rawValue == "main" || window.identifier?.rawValue == "FluidVoice.MainWindow" {
+            return true
+        }
+        // Title check
+        if window.title == "FluidVoice" || window.title.contains("FluidVoice") || window.title.contains("fluid") {
+            return true
+        }
+        // Resizable main window fallback
+        if window.styleMask.contains(.resizable) && (window.title.isEmpty || window.canBecomeKey) {
+            return true
+        }
+        return false
     }
 
     // MARK: - Periodic Update Checks
