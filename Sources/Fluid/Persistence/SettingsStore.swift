@@ -2705,6 +2705,8 @@ final class SettingsStore: ObservableObject {
         case sec30 = 256
         case min1 = 512
         case min2 = 1024
+        case min3 = 1536
+        case min4 = 1792
         case min5 = 2048
 
         var id: Int { rawValue }
@@ -2716,6 +2718,8 @@ final class SettingsStore: ObservableObject {
             case .sec30: return "30 秒 (推荐)".loc
             case .min1: return "1 分钟".loc
             case .min2: return "2 分钟".loc
+            case .min3: return "3 分钟".loc
+            case .min4: return "4 分钟".loc
             case .min5: return "5 分钟".loc
             }
         }
@@ -2725,6 +2729,8 @@ final class SettingsStore: ObservableObject {
             case .sec30: return "约 150 字 (256 Tokens)".loc
             case .min1: return "约 300 字 (512 Tokens)".loc
             case .min2: return "约 600 字 (1024 Tokens)".loc
+            case .min3: return "约 900 字 (1536 Tokens)".loc
+            case .min4: return "约 1200 字 (1792 Tokens)".loc
             case .min5: return "约 1500 字 (2048 Tokens)".loc
             }
         }
