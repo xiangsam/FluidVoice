@@ -1,116 +1,97 @@
-# 🎙️ FluidVoice (流式语音助手)
+# 🎙️ FluidVoice
 
 <p align="center">
-  <b>极速、私密、优雅的 macOS 原生 AI 语音听写与大模型智能润色助手</b>
+  <b>面向 macOS 的本地语音听写与大模型文本后处理工具</b>
   <br />
-  <i>Next-generation on-device Speech-to-Text & LLM post-processing for macOS</i>
+  <i>On-device Speech-to-Text and LLM Post-Processing for macOS</i>
 </p>
 
 <p align="center">
   <a href="https://github.com/xiangsam/FluidVoice/releases/latest"><img src="https://img.shields.io/badge/macOS-15.0%2B%20%7C%20Apple%20Silicon-blue?logo=apple" alt="macOS Version"/></a>
   <a href="https://github.com/xiangsam/FluidVoice/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-GPLv3-green.svg" alt="License: GPLv3"/></a>
-  <a href="https://ollama.com"><img src="https://img.shields.io/badge/Ollama-LAN%20%26%20Local-orange?logo=ollama" alt="Ollama STT"/></a>
-  <a href="https://github.com/xiangsam/FluidVoice"><img src="https://img.shields.io/badge/Language-100%25%20SwiftUI-red?logo=swift" alt="SwiftUI"/></a>
+  <a href="https://github.com/xiangsam/FluidVoice"><img src="https://img.shields.io/badge/Language-SwiftUI-red?logo=swift" alt="SwiftUI"/></a>
 </p>
 
-> 📌 **项目声明与致谢**：
-> 本项目是基于优秀开源项目 **[altic-dev/FluidVoice](https://github.com/altic-dev/FluidVoice)** 深度二次开发的增强版本（Fork）。
-> 在继承原项目优秀的音频底层与高效架构基础上，本项目新增了 **100% 中文本地化支持**、**Ollama 局域网私有化大模型语音识别**、**macOS 26+ 现代 Speech Analyzer 适配**、**智能容灾故障兜底机制** 以及 **现代原生 Apple HIG 界面重构**。向原作者团队 **[@altic-dev](https://github.com/altic-dev)** 的卓越工作致以崇高敬意！
+---
+
+## 概述
+
+FluidVoice 是一个基于 SwiftUI 开发的 macOS 语音听写与文本后处理工具，Fork 自开源项目 [altic-dev/FluidVoice](https://github.com/altic-dev/FluidVoice)。
+
+本项目在原项目基础上进行了中文本地化与功能扩展，主要包含以下内容：
+- **中文语言支持**：完整的界面中文本地化与多语种配置。
+- **扩展转写引擎**：支持 Apple Speech Analyzer、Whisper (`whisper.cpp`)、Qwen3-ASR (CoreML) 以及局域网/云端 Ollama STT 服务。
+- **故障回退机制**：当网络或远程服务不可用时，自动回退至本地语音引擎完成转录。
+- **LLM 文本后处理**：集成大语言模型，用于语气词过滤、标点规范化及格式整理。
+- **内存与上下文管理**：支持根据录音时长动态配置 ASR 上下文与 KV Cache，提供实时的内存占用评估。
 
 ---
 
-## 📸 应用界面预览 (Screenshots)
+## 核心功能
 
-<table width="100%">
-  <tr>
-    <td width="50%" align="center"><b>🎙️ 语音引擎选择与离线模型矩阵</b></td>
-    <td width="50%" align="center"><b>🧠 AI 大模型文本智能润色预设</b></td>
-  </tr>
-  <tr>
-    <td width="50%"><img src="assets/screenshots/voice_engine_settings.png" alt="Voice Engine Settings" width="100%" /></td>
-    <td width="50%"><img src="assets/screenshots/ai_enhancement_settings.png" alt="AI Enhancement Settings" width="100%" /></td>
-  </tr>
-  <tr>
-    <td colspan="2" align="center"><b>⚙️ 系统偏好与全局快捷键设置</b></td>
-  </tr>
-  <tr>
-    <td colspan="2" align="center"><img src="assets/screenshots/preferences_settings.png" alt="Preferences Settings" width="70%" /></td>
-  </tr>
-</table>
+### 1. 语音转文字引擎 (Speech-to-Text)
+- **Apple 原生引擎**：支持 macOS 15+ / 26+ 的 `Speech Analyzer` 及系统内置语音识别，无需常驻模型内存。
+- **本地离线模型**：
+  - **Whisper**（支持 Large-Turbo / Large-V3 / Medium / Small / Base 等 GGUF 格式）。
+  - **Qwen3-ASR**（基于 CoreML 状态化解码，适配 Apple Silicon）。
+  - **FluidAudio 神经网络模型**（Parakeet 等）。
+- **远程 / 局域网服务**：支持配置局域网 Ollama 实例或兼容 OpenAI 格式的云端 STT API。
 
----
+### 2. LLM 文本后处理
+- **预设文本清洗**：去除口语停顿词、修正倒装句、统一中英文混排空格与标点符号。
+- **多后端支持**：支持本地 Ollama、OpenAI API 兼容接口、Groq、DeepSeek 等服务。
+- **Prompt 配置**：支持自定义系统 Prompt 与实时效果预览。
 
-## 🌟 核心特色 (Key Highlights)
-
-### 1. ⚡ 全系列语音引擎支持 (Multi-Engine STT Matrix)
-- **🍏 Apple 现代内置引擎**：零下载、零内存占用，原生支持 macOS 26+ 现代流式 `Speech Analyzer` 与经典 `SFSpeechRecognizer`。
-- **💻 本地离线高精度引擎**：
-  - **Whisper 全系列**（基于 `whisper.cpp`，支持 Large-Turbo / Large-V3 / Medium / Small / Base / Tiny，完全离线高精度）。
-  - **FluidAudio 神经网络模型**（针对 Apple Silicon 深度优化，包括 Parakeet TDT、Nemotron、Qwen3-ASR）。
-- **☁️ Ollama 局域网与私有云大模型**：支持将家庭/公司局域网内部署的 Ollama 服务器作为语音转录后端，极速利用远程算力。
-
-### 2. 🧠 AI 大模型文本智能润色 (LLM Post-Processing)
-- 语音识别完成后，自动将原始口语文字交由大模型二次加工：
-  - 🧹 **去除语气词与杂音**：自动剔除“呃、啊、然后、那个”等冗余停顿词。
-  - ✍️ **口语转标准书面语**：理顺长句倒装、纠正口语语病，输出得体公文/邮件/报告。
-  - 🔤 **中英文排版规范化**：自动在中文与英文/数字间补充空格，规范标点符号。
-  - 💻 **编程与专业代码词识别**：智能匹配驼峰命名、函数名、API 与技术专业术语。
-  - ⚙️ **自定义 Prompt Playground**：支持实时对比改写前后的效果与自由编写 System Prompt。
-- 支持 **Ollama 本地大模型**、**DeepSeek**、**OpenRouter**、**Groq**、**OpenAI** 等多种提供商。
-
-### 3. 🛡️ 智能容灾与故障兜底 (Smart STT Fallback)
-- 当开启远程 Ollama 或云端 API 模式时，如果遇到局域网掉线、服务器高负载超时或认证错误，系统将在指定超时内**毫秒级自动平滑回退至 Apple 本地语音引擎**完成转录。
-- **彻底告别长语音录制失败的挫败感**，保障每一次说话都有稳定输出。
-
-### 4. 🎨 100% 原生 macOS HIG 现代界面
-- 采用 macOS 现代设计规范：全中文本地化、通透的毛玻璃卡片体系、刘海屏 Notch 灵动岛悬浮条、全局毫秒级全局快捷键唤起。
-- 拥有打字速度 (WPM) 与今日节省时间生产力统计、个性化发音纠错词典。
+### 3. 容灾回退
+- 远程或云端 STT 请求超时或异常时，自动回退到本地 Apple 引擎重新处理音频，避免转录中断。
 
 ---
 
-## 🏗️ 架构概览 (Architecture)
+## 架构简图
 
 ```mermaid
 graph TD
-    User([🗣️ 用户说话 / 快捷键唤起]) --> AudioCapture[🎙️ CoreAudio 高保真音频流捕获]
-    AudioCapture --> EngineSelector{语音引擎分流调度}
+    User([用户触发录音 / 全局快捷键]) --> AudioCapture[CoreAudio 音频捕获]
+    AudioCapture --> EngineSelector{引擎分流调度}
     
-    EngineSelector -->|🍏 系统级| AppleSpeech[Apple Speech Analyzer]
-    EngineSelector -->|💻 本地离线| WhisperCpp[Whisper / FluidAudio 神经网络]
-    EngineSelector -->|☁️ 局域网/云端| CloudSTT[Ollama / 云端 STT 引擎]
+    EngineSelector -->|系统内置| AppleSpeech[Apple Speech Analyzer]
+    EngineSelector -->|本地离线| WhisperCpp[Whisper.cpp / CoreML]
+    EngineSelector -->|远程/云端| CloudSTT[Ollama / 云端 STT]
     
-    CloudSTT -.->|⚠️ 超时/异常触发| Fallback[🛡️ 智能故障兜底 -> Apple Speech]
+    CloudSTT -.->|请求超时/失败| Fallback[自动回退 -> Apple Speech]
     
-    AppleSpeech --> RawText[原始听写文本]
+    AppleSpeech --> RawText[转录文本]
     WhisperCpp --> RawText
     CloudSTT --> RawText
     Fallback --> RawText
     
-    RawText --> LLMPipeline{是否开启 AI 智能润色?}
-    LLMPipeline -->|是| LLMEnhance[🧠 大模型后处理: 语气词剔除 / 语句通顺 / 规范排版]
+    RawText --> LLMPipeline{是否启用文本后处理?}
+    LLMPipeline -->|是| LLMEnhance[LLM 润色 / 排版规范化]
     LLMPipeline -->|否| DirectOutput[直接输出]
     
-    LLMEnhance --> SmartInsert[⌨️ macOS Accessibility 模拟输入到当前光标处]
-    DirectOutput --> SmartInsert
+    LLMEnhance --> Output[通过 Accessibility 接口模拟输入]
+    DirectOutput --> Output
 ```
 
 ---
 
-## 🚀 快速上手 (Quick Start)
+## 安装与构建
 
-### 方式一：直接下载发布包 (Recommended)
-1. 前往 [Releases](https://github.com/xiangsam/FluidVoice/releases) 下载最新的 `FluidVoice.dmg` 或 `FluidVoice.app.zip`。
-2. 解压并拖动到 `/Applications`（应用程序）文件夹。
-3. 打开应用，根据引导授予**麦克风**与**辅助功能**权限。
+### 下载预编译版本
+可前往 [Releases](https://github.com/xiangsam/FluidVoice/releases) 下载最新的应用安装包。
 
-### 方式二：从源码本地编译
+### 源码编译
+
+**环境要求**：
+- macOS 15.0 或更高版本
+- Xcode 16.0+ 或 Xcode Command Line Tools
 
 ```bash
 # 1. 克隆代码仓库
 git clone https://github.com/xiangsam/FluidVoice.git
 cd FluidVoice
 
-# 2. 一键编译并签名 Release 版本
+# 2. 编译 Release 版本
 ./build.sh release
 
 # 3. 运行应用程序
@@ -119,39 +100,37 @@ open DerivedData/Build/Products/Release/FluidVoice.app
 
 ---
 
-## ⚙️ 模型与后端支持一览 (STT Models & Providers)
+## 模型与后端支持
 
-| 分类 | 引擎 / 模型 | 适用场景 | 网络需求 | 硬件要求 |
+| 分类 | 引擎 / 模型 | 适用场景 | 网络需求 | 支持架构 |
 | :--- | :--- | :--- | :--- | :--- |
-| **Apple 内置** | Apple Speech Analyzer | 零下载即开即用、日常快速记录 | 纯离线 | macOS 15+ / 26+ |
-| **Apple 内置** | Apple Speech (经典) | 系统内置多语言识别 | 纯离线 | 所有 Mac 机型 |
-| **本地离线** | Whisper Large Turbo | 顶尖中文/英文识别准确率，极快推理 | 需首次下载 | Apple Silicon |
-| **本地离线** | Whisper Small / Base | 轻量省电，适合低功耗或老款 Mac | 需首次下载 | Apple Silicon / Intel |
-| **本地离线** | FluidAudio Parakeet | 针对 M 系列芯片神经网络深度加速 | 需首次下载 | Apple Silicon |
-| **局域网/私有云** | Ollama STT | 调用家庭服务器/公司算力私有化转录 | 局域网 | 支持 Ollama 的设备 |
-| **云端 API** | OpenAI / Groq / OpenRouter | 云端超高并发高精度转录 | 需要外网 | 所有 Mac 机型 |
+| **系统内置** | Apple Speech Analyzer | 快速听写、零资源常驻 | 离线 | macOS 15+ / Apple Silicon |
+| **系统内置** | Apple Speech (经典) | 系统级语音识别 | 离线 | 通用 |
+| **本地模型** | Whisper (Large-Turbo / Small 等) | 高准确率本地离线识别 | 首次下载后离线 | Apple Silicon / Intel |
+| **本地模型** | Qwen3-ASR | 中文及多方言本地识别 | 首次下载后离线 | Apple Silicon |
+| **远程服务** | Ollama STT | 局域网私有化服务器转录 | 局域网 | 支持 Ollama 的设备 |
+| **云端 API** | OpenAI / Groq 等 | 云端批量或高并发识别 | 互联网 | 通用 |
 
 ---
 
-## ⌨️ 常用快捷键 (Default Shortcuts)
+## 快捷键说明
 
-- **主听写模式 (Dictate)**：按住或点按 `Right Option (⌥)` 触发录音，松开或再次按下自动完成转录并键入。
-- **改写润色模式 (Rewrite)**：选中文本后按下 `Shift + Right Option`，选中的内容将被大模型重写并替换。
-- **取消录音**：按 `Escape` 键随时丢弃当前音频。
-
----
-
-## 💖 致谢与开源生态 (Acknowledgements)
-
-本项目离不开开源社区的伟大贡献，特别鸣谢以下项目与团队：
-
-- **[altic-dev/FluidVoice](https://github.com/altic-dev/FluidVoice)**：原始项目的核心架构与卓越的音频处理管线。
-- **[whisper.cpp](https://github.com/ggerganov/whisper.cpp)**：高性能 C/C++ Whisper 推理引擎。
-- **[FluidAudio](https://github.com/altic-dev/FluidAudio)**：针对 Apple 芯片优化的神经网络音频运行时。
-- **[Ollama](https://ollama.com)**：极简的本地大模型与多模态运行框架。
+- **听写模式**：默认快捷键为 `Right Option (⌥)`，按住说话或单击开始/结束。
+- **改写模式**：选中文本后按 `Shift + Right Option`，调用大模型对选中内容进行重写。
+- **取消**：按 `Escape` 键取消当前录音。
 
 ---
 
-## 📄 开源许可证 (License)
+## 参考与依赖
 
-本项目采用 [GPL-3.0 License](LICENSE) 开源。欢迎提交 Pull Request 和 Issue！
+本项目基于以下开源项目构建：
+- [altic-dev/FluidVoice](https://github.com/altic-dev/FluidVoice)
+- [whisper.cpp](https://github.com/ggerganov/whisper.cpp)
+- [FluidAudio](https://github.com/altic-dev/FluidAudio)
+- [Ollama](https://ollama.com)
+
+---
+
+## 许可证
+
+本项目遵循 [GPL-3.0 License](LICENSE)。
