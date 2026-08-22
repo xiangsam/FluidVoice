@@ -4901,29 +4901,29 @@ final class SettingsStore: ObservableObject {
         var requiredMemoryGB: Double {
             switch self {
             case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudOllama, .cloudCustom:
-                return 1.0
+                return 0.1
             case .parakeetTDT, .parakeetTDTv2, .parakeetRealtime:
-                return 4.0
+                return 1.0
             case .qwen3Asr:
-                return 8.0
+                return 1.5
             case .cohereTranscribeSixBit:
-                return 8.0
+                return 1.5
             case .nemotronOffline, .nemotronStreaming, .nemotronStreaming320:
-                return 8.0
+                return 1.5
             case .appleSpeech, .appleSpeechAnalyzer:
-                return 2.0 // Built-in, minimal overhead
+                return 0.2 // Built-in, minimal overhead
             case .whisperTiny:
-                return 2.0
+                return 0.3
             case .whisperBase:
-                return 3.0
+                return 0.5
             case .whisperSmall:
-                return 4.0
+                return 0.8
             case .whisperMedium:
-                return 5.0
+                return 1.0
             case .whisperLargeTurbo:
-                return 6.0
+                return 1.2
             case .whisperLarge:
-                return 8.0
+                return 2.0
             }
         }
 

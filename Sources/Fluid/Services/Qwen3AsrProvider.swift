@@ -85,8 +85,10 @@ final class Qwen3AsrProvider: TranscriptionProvider {
         }
 
         let optLang: String? = nil
-        let text = try await manager.transcribe(audioSamples: samples, language: optLang, maxNewTokens: 512)
+        DebugLogger.shared.info("Qwen3AsrProvider: Starting transcription for \(samples.count) samples...", source: "Qwen3AsrProvider")
+        let text = try await manager.transcribe(audioSamples: samples, language: optLang, maxNewTokens: 256)
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        DebugLogger.shared.info("Qwen3AsrProvider: Transcribed text: '\(trimmed)'", source: "Qwen3AsrProvider")
         return ASRTranscriptionResult(text: trimmed, confidence: 1.0)
     }
 

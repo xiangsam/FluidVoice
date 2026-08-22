@@ -208,12 +208,14 @@ final class WhisperProvider: TranscriptionProvider {
 
         let requiredMemoryGB = targetModel.requiredMemoryGB
         let availableMemoryGB = Self.availableMemoryGB()
+        let totalRAMGB = Double(ProcessInfo.processInfo.physicalMemory) / (1024 * 1024 * 1024)
         DebugLogger.shared.info(
-            "WhisperProvider: Memory check - Required: \(String(format: "%.1f", requiredMemoryGB))GB, Available: \(String(format: "%.1f", availableMemoryGB))GB",
+            "WhisperProvider: Memory check - Required: \(String(format: "%.1f", requiredMemoryGB))GB, Available: \(String(format: "%.1f", availableMemoryGB))GB, Total RAM: \(String(format: "%.1f", totalRAMGB))GB",
             source: "WhisperProvider"
         )
 
-        if availableMemoryGB < requiredMemoryGB {
+        // Only block if total RAM is severely constrained (< 3.5GB) or currently free memory is critical (< 350MB)
+        if totalRAMGB < 3.5 || availableMemoryGB < min(requiredMemoryGB * 0.4, 0.4) {
             let errorMessage = """
             Insufficient memory for \(targetModel.displayName).
             Required: \(String(format: "%.1f", requiredMemoryGB)) GB
