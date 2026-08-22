@@ -85,12 +85,17 @@ final class Qwen3AsrProvider: TranscriptionProvider {
         }
 
         let optLang: String? = nil
-        let maxTokens = SettingsStore.shared.asrContextTokenLimit
+        let maxTokens = min(SettingsStore.shared.asrContextTokenLimit, 256)
         DebugLogger.shared.info("Qwen3AsrProvider: Starting transcription for \(samples.count) samples (maxTokens: \(maxTokens))...", source: "Qwen3AsrProvider")
-        let text = try await manager.transcribe(audioSamples: samples, language: optLang, maxNewTokens: maxTokens)
-        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        DebugLogger.shared.info("Qwen3AsrProvider: Transcribed text: '\(trimmed)'", source: "Qwen3AsrProvider")
-        return ASRTranscriptionResult(text: trimmed, confidence: 1.0)
+        do {
+            let text = try await manager.transcribe(audioSamples: samples, language: optLang, maxNewTokens: maxTokens)
+            let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            DebugLogger.shared.info("Qwen3AsrProvider: Transcribed text: '\(trimmed)'", source: "Qwen3AsrProvider")
+            return ASRTranscriptionResult(text: trimmed, confidence: 1.0)
+        } catch {
+            DebugLogger.shared.error("Qwen3AsrProvider: Transcription failed safely with error: \(error.localizedDescription)", source: "Qwen3AsrProvider")
+            throw error
+        }
     }
 
     func transcribeFinal(_ samples: [Float]) async throws -> ASRTranscriptionResult {
