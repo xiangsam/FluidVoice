@@ -256,8 +256,18 @@ final class VoiceEngineSettingsViewModel: ObservableObject {
                 self.settings.setExternalCoreMLArtifactsDirectory(nil, for: model)
                 self.asr.resetTranscriptionProvider()
             }
+            await self.asr.checkIfModelsExistAsync()
         } catch {
             DebugLogger.shared.error("Failed to delete models: \(error)", source: "AISettingsView")
+        }
+    }
+
+    func deleteModel(_ model: SettingsStore.SpeechModel) async {
+        do {
+            try await self.asr.clearModelCache(for: model)
+            await self.asr.checkIfModelsExistAsync()
+        } catch {
+            DebugLogger.shared.error("Failed to delete model \(model.displayName): \(error)", source: "VoiceEngineSettingsViewModel")
         }
     }
 

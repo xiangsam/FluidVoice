@@ -2582,6 +2582,19 @@ final class SettingsStore: ObservableObject {
         Locale(identifier: self.selectedAppleSpeechLocaleIdentifier)
     }
 
+    #if arch(arm64) && canImport(FluidAudio)
+    var qwen3AsrVariant: Qwen3AsrVariant {
+        get {
+            let raw = self.defaults.string(forKey: Keys.qwen3AsrVariant) ?? "int8"
+            return Qwen3AsrVariant(rawValue: raw) ?? .int8
+        }
+        set {
+            objectWillChange.send()
+            self.defaults.set(newValue.rawValue, forKey: Keys.qwen3AsrVariant)
+        }
+    }
+    #endif
+
     var shouldShowOnboarding: Bool {
         !self.onboardingCompleted
     }
@@ -4467,9 +4480,7 @@ final class SettingsStore: ObservableObject {
     /// Unified speech recognition model selection.
     /// Replaces the old TranscriptionProviderOption + WhisperModelSize dual-setting.
     enum SpeechModel: String, CaseIterable, Identifiable, Codable {
-        /// Temporarily disabled in UI/runtime while Parakeet word boosting work is prioritized.
-        /// Flip to `true` in a future round to re-enable Qwen without deleting implementation.
-        static let qwenPreviewEnabled = false
+        static let qwenPreviewEnabled = true
 
         // MARK: - Cloud STT Models
 
@@ -4570,7 +4581,9 @@ final class SettingsStore: ObservableObject {
             case .parakeetTDT: return "~460.9 MiB"
             case .parakeetTDTv2: return "~442.9 MiB"
             case .parakeetRealtime: return "~428.4 MiB"
-            case .qwen3Asr: return "~2.0 GiB"
+            case .qwen3Asr:
+                let variant = SettingsStore.shared.qwen3AsrVariant
+                return variant == .int8 ? "~900 MiB (Int8 量化)" : "~1.75 GiB (FP16 全精)"
             case .cohereTranscribeSixBit: return "~1.54 GiB"
             case .nemotronOffline: return "~530.8 MiB"
             case .nemotronStreaming: return "~668.2 MiB"
@@ -4593,7 +4606,9 @@ final class SettingsStore: ObservableObject {
             case .parakeetTDT: return 483_288_717
             case .parakeetTDTv2: return 464_421_712
             case .parakeetRealtime: return 449_190_189
-            case .qwen3Asr: return 2000 * 1024 * 1024
+            case .qwen3Asr:
+                let variant = SettingsStore.shared.qwen3AsrVariant
+                return variant == .int8 ? (900 * 1024 * 1024) : (1750 * 1024 * 1024)
             case .cohereTranscribeSixBit: return 1_650_748_785
             case .nemotronOffline: return 556_552_620
             case .nemotronStreaming, .nemotronStreaming320: return 700_685_415
@@ -5087,9 +5102,10 @@ final class SettingsStore: ObservableObject {
                 return false
                 #endif
             case .qwen3Asr:
-                #if canImport(FluidAudio) && ENABLE_QWEN
+                #if arch(arm64) && canImport(FluidAudio)
                 if #available(macOS 15.0, *) {
-                    return Qwen3AsrModels.modelsExist(at: Qwen3AsrModels.defaultCacheDirectory())
+                    let variant = SettingsStore.shared.qwen3AsrVariant
+                    return Qwen3AsrModels.modelsExist(at: Qwen3AsrModels.defaultCacheDirectory(variant: variant))
                 }
                 return false
                 #else
@@ -5128,11 +5144,18 @@ final class SettingsStore: ObservableObject {
                     let modelURL,
                     let attributes = try? FileManager.default.attributesOfItem(atPath: modelURL.path),
                     let size = attributes[.size] as? NSNumber,
-                    size.int64Value > 0
+                    size.int64Value > 1_000_000
                 else {
                     return false
                 }
-                return size.int64Value == self.expectedDownloadBytes
+                let actual = size.int64Value
+                let expected = self.expectedDownloadBytes
+                if expected > 0 {
+                    let lowerBound = Int64(Double(expected) * 0.80)
+                    let upperBound = Int64(Double(expected) * 1.20)
+                    return actual >= lowerBound && actual <= upperBound
+                }
+                return true
             }
         }
 
@@ -5496,6 +5519,9 @@ private extension SettingsStore {
 
         /// Streak Settings
         static let weekendsDontBreakStreak = "WeekendsDontBreakStreak"
+
+        /// Qwen3 ASR Precision Variant ("int8" or "f32")
+        static let qwen3AsrVariant = "Qwen3AsrVariant"
     }
 }
 

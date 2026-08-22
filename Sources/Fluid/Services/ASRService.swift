@@ -378,10 +378,22 @@ final class ASRService: ObservableObject {
         case .nemotronOffline, .nemotronStreaming, .nemotronStreaming320:
             return self.getNemotronProvider(mode: model.nemotronProviderMode)
         case .qwen3Asr:
-            return self.getFluidAudioProvider()
+            return self.getQwen3AsrProvider()
         default:
             return self.getWhisperProvider()
         }
+    }
+
+    private var _qwen3AsrProvider: Qwen3AsrProvider?
+
+    private func getQwen3AsrProvider() -> Qwen3AsrProvider {
+        if let existing = self._qwen3AsrProvider {
+            return existing
+        }
+        let provider = Qwen3AsrProvider()
+        self._qwen3AsrProvider = provider
+        DebugLogger.shared.info("ASRService: Created Qwen3AsrProvider", source: "ASRService")
+        return provider
     }
 
     private func getFluidAudioProvider() -> FluidAudioProvider {
@@ -518,8 +530,7 @@ final class ASRService: ObservableObject {
         case .nemotronOffline, .nemotronStreaming, .nemotronStreaming320:
             return NemotronProvider(mode: model.nemotronProviderMode)
         case .qwen3Asr:
-            // Qwen support removed; route legacy requests to Parakeet v3.
-            return FluidAudioProvider(modelOverride: .parakeetTDT, configureWordBoosting: false)
+            return Qwen3AsrProvider(modelOverride: model)
         default:
             // Whisper models - create provider with specific model override
             return WhisperProvider(modelOverride: model)

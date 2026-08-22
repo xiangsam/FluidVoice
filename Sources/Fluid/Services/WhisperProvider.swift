@@ -144,7 +144,15 @@ final class WhisperProvider: TranscriptionProvider {
         else {
             return false
         }
-        return size.int64Value == targetModel.expectedDownloadBytes
+        let actualBytes = size.int64Value
+        guard actualBytes > 1_000_000 else { return false }
+        let expectedBytes = targetModel.expectedDownloadBytes
+        if expectedBytes > 0 {
+            let lowerBound = Int64(Double(expectedBytes) * 0.80)
+            let upperBound = Int64(Double(expectedBytes) * 1.20)
+            return actualBytes >= lowerBound && actualBytes <= upperBound
+        }
+        return true
     }
 
     func prepare(progressHandler: ((ModelPreparationProgress) -> Void)? = nil) async throws {
@@ -437,21 +445,23 @@ final class WhisperProvider: TranscriptionProvider {
 
             let attributes = try FileManager.default.attributesOfItem(atPath: downloadedURL.path)
             let actualBytes = (attributes[.size] as? NSNumber)?.int64Value ?? 0
-            guard actualBytes > 0 else {
+            guard actualBytes > 1_000_000 else {
                 throw NSError(
                     domain: "WhisperProvider",
                     code: -1,
-                    userInfo: [NSLocalizedDescriptionKey: "Downloaded model is empty. Please try again."]
+                    userInfo: [NSLocalizedDescriptionKey: "Downloaded model file is incomplete or too small (\(actualBytes) bytes). Please try again."]
                 )
             }
-            if httpResponse.expectedContentLength > 0,
-               actualBytes != httpResponse.expectedContentLength
-            {
-                throw NSError(
-                    domain: "WhisperProvider",
-                    code: -1,
-                    userInfo: [NSLocalizedDescriptionKey: "Downloaded model size mismatch. Please try again."]
-                )
+            if httpResponse.expectedContentLength > 1_000_000 {
+                let diff = abs(actualBytes - httpResponse.expectedContentLength)
+                let maxAllowedDiff = Int64(Double(httpResponse.expectedContentLength) * 0.05)
+                if diff > maxAllowedDiff {
+                    throw NSError(
+                        domain: "WhisperProvider",
+                        code: -1,
+                        userInfo: [NSLocalizedDescriptionKey: "Downloaded model size mismatch (\(actualBytes) vs expected \(httpResponse.expectedContentLength)). Please try again."]
+                    )
+                }
             }
 
             try Task.checkCancellation()
