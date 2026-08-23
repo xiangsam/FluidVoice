@@ -26,6 +26,8 @@ actor GlmMlxEngine {
         guard let size = try? FileManager.default.attributesOfItem(atPath: weights.path)[.size] as? Int,
             size > 1_000_000_000
         else { return false }
+        // Reject half-written weight files left by interrupted downloads.
+        guard MlxModelDownloader.isValidSafetensors(at: weights) else { return false }
         return FileManager.default.fileExists(
             atPath: dir.appendingPathComponent("config.json").path)
     }

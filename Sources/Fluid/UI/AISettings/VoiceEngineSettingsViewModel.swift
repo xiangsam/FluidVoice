@@ -173,9 +173,10 @@ final class VoiceEngineSettingsViewModel: ObservableObject {
     /// preparation is in flight; otherwise the click always applies and takes
     /// effect on the next transcription via the provider's self-heal.
     func selectMlxCard(_ card: MlxSttCard) {
-        guard self.downloadingModel == nil,
-            !self.asr.hasActiveModelDownload,
-            !self.asr.hasActiveModelPreparation,
+        // A background download must not lock model switching: the user can
+        // keep using any installed card while another downloads. Only block
+        // selection while the target model itself is being prepared/cancelled.
+        guard !self.asr.hasActiveModelPreparation,
             !self.asr.isCancellingModelPreparation
         else { return }
         // Switching to a local MLX card is exclusive: point the MLX card ID at
@@ -186,12 +187,21 @@ final class VoiceEngineSettingsViewModel: ObservableObject {
     }
 
     /// Download a specific MLX card (selects it first, then downloads).
+    /// If the download fails, the previous card selection is restored so the
+    /// UI never reports a card as "in use" while it is not installed.
     func downloadMlxCard(_ card: MlxSttCard) {
         guard !self.areSpeechModelActionsBlocked else { return }
+        let previousCardID = self.settings.selectedMlxSttCardID
         self.settings.selectedMlxSttCardID = card.pathID
         self.settings.selectedSpeechModel = .qwen3Asr
         self.asr.resetTranscriptionProvider()
-        self.downloadSpeechModel(.qwen3Asr)
+        self.downloadSpeechModel(.qwen3Asr) { [weak self] in
+            guard let self else { return }
+            // Only restore when the user hasn't already switched somewhere else.
+            if self.settings.selectedMlxSttCardID == card.pathID {
+                self.settings.selectedMlxSttCardID = previousCardID
+            }
+        }
     }
 
     /// Uninstall one MLX card from disk.
@@ -202,7 +212,10 @@ final class VoiceEngineSettingsViewModel: ObservableObject {
         }
     }
 
-    func downloadSpeechModel(_ model: SettingsStore.SpeechModel) {
+    func downloadSpeechModel(
+        _ model: SettingsStore.SpeechModel,
+        onFailure: (() -> Void)? = nil
+    ) {
         guard !self.areSpeechModelActionsBlocked else { return }
         Task { [weak self] in
             guard let self else { return }
@@ -211,11 +224,13 @@ final class VoiceEngineSettingsViewModel: ObservableObject {
                 DebugLogger.shared.info("Model download completed: \(model.displayName)", source: "VoiceEngineVM")
             } catch is CancellationError {
                 DebugLogger.shared.info("Model download cancelled: \(model.displayName)", source: "VoiceEngineVM")
+                onFailure?()
             } catch {
                 DebugLogger.shared.error("Failed to download model \(model.displayName): \(error)", source: "VoiceEngineVM")
                 self.asr.errorTitle = "Model Download Failed"
                 self.asr.errorMessage = error.localizedDescription
                 self.asr.showError = true
+                onFailure?()
             }
         }
     }

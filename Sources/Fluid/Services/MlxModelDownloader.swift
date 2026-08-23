@@ -18,6 +18,10 @@ enum MlxModelDownloader {
     static let singleRequestThreshold = 8 * 1024 * 1024
 
     /// Downloads `url` to `destination`, reporting `progress` (0…1).
+    ///
+    /// Writes to `destination.part` first and atomically renames it into place
+    /// only after every byte arrived, so an interrupted or cancelled download
+    /// never leaves a half-written model at the real path.
     static func downloadFile(
         from url: URL,
         to destination: URL,
@@ -29,6 +33,20 @@ enum MlxModelDownloader {
             withIntermediateDirectories: true
         )
 
+        let partURL = destination.appendingPathExtension("part")
+        // Clean any stale partial from a previous interrupted attempt.
+        if fm.fileExists(atPath: partURL.path) {
+            try? fm.removeItem(at: partURL)
+        }
+
+        defer {
+            // On any failure path below, discard the partial file so the model
+            // directory never contains a broken weight file.
+            if fm.fileExists(atPath: partURL.path) {
+                try? fm.removeItem(at: partURL)
+            }
+        }
+
         // Learn the remote size (HEAD first; Range probe as a fallback).
         let size = try await remoteFileSize(url: url)
         guard size > 0 else {
@@ -38,7 +56,8 @@ enum MlxModelDownloader {
         // Small files: single request is simpler and equally fast.
         if size <= Int64(Self.singleRequestThreshold) {
             let data = try await fetchRange(url: url, start: 0, end: UInt64(size) - 1, retries: 4)
-            try data.write(to: destination)
+            try data.write(to: partURL)
+            try Self.atomicReplace(part: partURL, at: destination, fm: fm)
             progress?(1.0)
             return
         }
@@ -48,10 +67,10 @@ enum MlxModelDownloader {
         let total = UInt64(size)
         let chunkCount = Int((total + UInt64(Self.chunkSize) - 1) / UInt64(Self.chunkSize))
 
-        if !fm.fileExists(atPath: destination.path) {
-            fm.createFile(atPath: destination.path, contents: nil)
+        if !fm.fileExists(atPath: partURL.path) {
+            fm.createFile(atPath: partURL.path, contents: nil)
         }
-        let handle = try FileHandle(forWritingTo: destination)
+        let handle = try FileHandle(forWritingTo: partURL)
         defer { try? handle.close() }
 
         let progressLock = NSLock()
@@ -80,7 +99,18 @@ enum MlxModelDownloader {
             }
         }
 
+        try handle.close()
+        try Self.atomicReplace(part: partURL, at: destination, fm: fm)
         progress?(1.0)
+    }
+
+    /// Moves the fully-downloaded `.part` file over the destination atomically.
+    private static func atomicReplace(part: URL, at destination: URL, fm: FileManager) throws {
+        if fm.fileExists(atPath: destination.path) {
+            // Remove the old (possibly stale) file so rename never fails.
+            try? fm.removeItem(at: destination)
+        }
+        try fm.moveItem(at: part, to: destination)
     }
 
     // MARK: - Range fetch
@@ -120,6 +150,45 @@ enum MlxModelDownloader {
             }
         }
         throw lastError
+    }
+
+    /// Validates that `model.safetensors` at `url` is complete: reads the
+    /// 8-byte header length, parses the JSON header and checks the declared
+    /// tensor byte range fits the actual file size. A half-written file from an
+    /// interrupted download fails this check, so callers can treat it as
+    /// missing and re-download.
+    static func isValidSafetensors(at url: URL) -> Bool {
+        guard let handle = try? FileHandle(forReadingFrom: url) else { return false }
+        defer { try? handle.close() }
+        guard let size = try? handle.seekToEnd(), size > 8 else { return false }
+        guard let headerLenBytes = try? handle.read(upToCount: 8), headerLenBytes.count == 8 else {
+            return false
+        }
+        var headerLength: UInt64 = 0
+        for b in headerLenBytes.reversed() {
+            headerLength = (headerLength << 8) | UInt64(b)
+        }
+        guard headerLength > 0, headerLength + 8 <= UInt64(size) else { return false }
+        guard let headerData = try? handle.read(upToCount: Int(headerLength)) else { return false }
+        guard let obj = try? JSONSerialization.jsonObject(with: headerData) as? [String: Any] else {
+            return false
+        }
+        // The safetensors header records each tensor's byte offsets; verify the
+        // last tensor's end falls inside the file so a truncated download is
+        // detected even when the header itself parses fine.
+        var tensorEnd: UInt64 = 0
+        for (key, value) in obj {
+            guard key != "__metadata__",
+                  let entry = value as? [String: Any],
+                  let begin = (entry["data_offsets"] as? [Int])?.first,
+                  let offset = entry["data_offsets"] as? [Int], offset.count >= 2
+            else { continue }
+            tensorEnd = max(tensorEnd, UInt64(offset[1]))
+            _ = begin
+        }
+        let headerEnd = 8 + headerLength
+        guard tensorEnd > 0, headerEnd + tensorEnd <= UInt64(size) else { return false }
+        return true
     }
 
     /// HEAD request to learn the remote file size; Range probe as fallback.
