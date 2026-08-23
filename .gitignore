@@ -188,6 +188,9 @@ SettingsStore.xcuserstate
 # Release packaging output (zipped app bundles)
 release/
 
+# Built distributable zips (GitHub Actions publishes these)
+dist/
+
 # Build and release scripts (developer-specific)
 build_*
 build_dev.sh
