@@ -38,6 +38,19 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO
 
+      - name: Re-sign app (adhoc) — unsigned CI builds leave a broken linker signature
+        shell: bash
+        run: |
+          set -euo pipefail
+          APP="$RUNNER_TEMP/DerivedData/Build/Products/Release/FluidVoice.app"
+          test -d "$APP"
+          # Unsigned xcodebuild builds produce a linker-signed bundle whose
+          # signature no longer matches after zip/re-disk, so macOS reports
+          # "app is damaged". An adhoc deep re-sign produces a self-consistent
+          # bundle that opens normally (first launch via right-click→Open).
+          codesign --force --deep --sign - "$APP"
+          codesign --verify --deep --strict "$APP"
+
       - name: Package app
         shell: bash
         run: |
