@@ -365,7 +365,7 @@ final class AutomaticDictionaryTrainingSession: ObservableObject {
 
         SettingsStore.shared.customDictionaryEntries = mergedEntries
         ASRService.invalidateDictionaryCache()
-        NotificationCenter.default.post(name: .parakeetVocabularyDidChange, object: nil)
+        NotificationCenter.default.post(name: .customVocabularyDidChange, object: nil)
         self.completeSave(title: updatedExisting ? "Dictionary Updated" : "Added to Dictionary")
     }
 

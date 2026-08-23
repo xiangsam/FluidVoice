@@ -2,10 +2,10 @@ import Accelerate
 import AVFoundation
 import Combine
 import Darwin
-import Foundation
 #if arch(arm64)
-import FluidAudio
+import MLX
 #endif
+import Foundation
 import AppKit
 import AudioToolbox
 import CoreAudio
@@ -69,15 +69,9 @@ enum AudioCaptureStartOutcome: Equatable {
 ///
 /// ## Language Support
 /// The service supports multiple models with varying language capabilities:
-/// - **Parakeet TDT v3** (Default): Automatically detects and transcribes 25 European languages:
-///   Bulgarian, Croatian, Czech, Danish, Dutch, English, Estonian, Finnish, French, German,
-///   Greek, Hungarian, Italian, Latvian, Lithuanian, Maltese, Polish, Portuguese, Romanian,
-///   Slovak, Slovenian, Spanish, Swedish, Russian, and Ukrainian.
-/// - **Parakeet TDT v2**: Specialized for high-accuracy English transcription.
+/// - **Qwen3 ASR**: Local multilingual transcription via the built-in MLX engine.
 /// - **Apple Speech**: Supports all system languages available on macOS.
 /// - **Whisper**: Supports 99 languages.
-///
-/// No manual language selection is required for Parakeet models - v3 automatically detects the spoken language.
 /// ## Thread Safety
 /// All public methods are marked with @MainActor to ensure thread safety.
 /// Audio processing happens on background threads for optimal performance.
@@ -207,11 +201,13 @@ final class ASRService: ObservableObject {
     private var isTerminating = false
     private var hasCompletedFirstTranscription: Bool = false // Track if model has warmed up with first transcription
     private var lastBoostHitTerm: String?
-    private var hasPendingParakeetVocabularyReload: Bool = false
+    private var hasPendingCustomVocabularyReload: Bool = false
     private var vocabularyChangeObserver: NSObjectProtocol?
     private var settingsBackupRestoreObserver: NSObjectProtocol?
     private var clamshellStateChangeObserver: NSObjectProtocol?
     private var inputDeviceAvailabilityChangeObserver: NSObjectProtocol?
+    private var speechModelChangeObserver: NSObjectProtocol?
+    private var lastSeenSpeechModel: SettingsStore.SpeechModel?
 
     // MARK: - Error Handling
 
@@ -254,11 +250,6 @@ final class ASRService: ObservableObject {
     // MARK: - Transcription Provider (Settable)
 
     /// Cached providers to avoid re-instantiation
-    private var fluidAudioProvider: FluidAudioProvider?
-    private var parakeetRealtimeProvider: ParakeetRealtimeProvider?
-    private var externalCoreMLProvider: ExternalCoreMLTranscriptionProvider?
-    private var nemotronProviders: [NemotronProvider.Mode: NemotronProvider] = [:]
-    private var whisperProvider: WhisperProvider?
     private var appleSpeechProvider: AppleSpeechProvider?
     private var cloudProviders: [CloudSTTType: CloudTranscriptionProvider] = [:]
     /// Stored as Any? because @available cannot be applied to stored properties
@@ -331,11 +322,6 @@ final class ASRService: ObservableObject {
         await self.providerResetDrain?.task.value
         await self.transcriptionExecutor.cancelAndAwaitPending()
 
-        self.fluidAudioProvider = nil
-        self.parakeetRealtimeProvider = nil
-        self.externalCoreMLProvider = nil
-        self.nemotronProviders.removeAll()
-        self.whisperProvider = nil
         self.appleSpeechProvider = nil
         self._appleSpeechAnalyzerProvider = nil
         self.cloudProviders.removeAll()
@@ -369,18 +355,12 @@ final class ASRService: ObservableObject {
             }
         case .appleSpeech:
             return self.getAppleSpeechProvider()
-        case .parakeetTDT, .parakeetTDTv2:
-            return self.getFluidAudioProvider()
-        case .parakeetRealtime:
-            return self.getParakeetRealtimeProvider()
-        case .cohereTranscribeSixBit:
-            return self.getExternalCoreMLProvider()
-        case .nemotronOffline, .nemotronStreaming, .nemotronStreaming320:
-            return self.getNemotronProvider(mode: model.nemotronProviderMode)
         case .qwen3Asr:
             return self.getQwen3AsrProvider()
         default:
-            return self.getWhisperProvider()
+            // Whisper models now run on the MLX engine (per-card selection),
+            // so they route through the same provider as the other MLX cards.
+            return self.getQwen3AsrProvider()
         }
     }
 
@@ -393,59 +373,6 @@ final class ASRService: ObservableObject {
         let provider = Qwen3AsrProvider()
         self._qwen3AsrProvider = provider
         DebugLogger.shared.info("ASRService: Created Qwen3AsrProvider", source: "ASRService")
-        return provider
-    }
-
-    private func getFluidAudioProvider() -> FluidAudioProvider {
-        if let existing = fluidAudioProvider {
-            return existing
-        }
-        let provider = FluidAudioProvider(
-            configureWordBoosting: SettingsStore.shared.vocabularyBoostingEnabled
-        )
-        self.fluidAudioProvider = provider
-        DebugLogger.shared.info(
-            "ASRService: Created FluidAudio provider [vocabBoosting=\(SettingsStore.shared.vocabularyBoostingEnabled)]",
-            source: "ASRService"
-        )
-        return provider
-    }
-
-    private func getParakeetRealtimeProvider() -> ParakeetRealtimeProvider {
-        if let existing = parakeetRealtimeProvider {
-            return existing
-        }
-        let provider = ParakeetRealtimeProvider()
-        self.parakeetRealtimeProvider = provider
-        DebugLogger.shared.info("ASRService: Created Parakeet real-time provider", source: "ASRService")
-        return provider
-    }
-
-    private func getExternalCoreMLProvider() -> ExternalCoreMLTranscriptionProvider {
-        if let existing = externalCoreMLProvider {
-            return existing
-        }
-        let provider = ExternalCoreMLTranscriptionProvider()
-        self.externalCoreMLProvider = provider
-        DebugLogger.shared.info("ASRService: Created external CoreML provider", source: "ASRService")
-        return provider
-    }
-
-    private func getNemotronProvider(mode: NemotronProvider.Mode) -> NemotronProvider {
-        if let existing = self.nemotronProviders[mode] { return existing }
-        let provider = NemotronProvider(mode: mode)
-        self.nemotronProviders[mode] = provider
-        DebugLogger.shared.info("ASRService: Created \(provider.name) provider", source: "ASRService")
-        return provider
-    }
-
-    private func getWhisperProvider() -> WhisperProvider {
-        if let existing = whisperProvider {
-            return existing
-        }
-        let provider = WhisperProvider()
-        self.whisperProvider = provider
-        DebugLogger.shared.info("ASRService: Created Whisper provider", source: "ASRService")
         return provider
     }
 
@@ -485,11 +412,6 @@ final class ASRService: ObservableObject {
         SettingsStore.shared.selectedSpeechModel.displayName
     }
 
-    /// Exposes the transcription provider for file transcription (MeetingTranscriptionService)
-    /// This allows file transcription to work with any provider (Parakeet, Whisper, etc.)
-    var fileTranscriptionProvider: TranscriptionProvider {
-        self.transcriptionProvider
-    }
 
     private func currentTranscriptionAnalyticsDimensions() -> (provider: String, model: String) {
         let selectedModel = SettingsStore.shared.selectedSpeechModel
@@ -520,20 +442,15 @@ final class ASRService: ObservableObject {
             }
         case .appleSpeech:
             return AppleSpeechProvider()
-        case .parakeetTDT, .parakeetTDTv2:
-            // Create a new provider configured for the specific model
-            return FluidAudioProvider(modelOverride: model, configureWordBoosting: false)
-        case .parakeetRealtime:
-            return ParakeetRealtimeProvider()
-        case .cohereTranscribeSixBit:
-            return ExternalCoreMLTranscriptionProvider(modelOverride: model)
-        case .nemotronOffline, .nemotronStreaming, .nemotronStreaming320:
-            return NemotronProvider(mode: model.nemotronProviderMode)
         case .qwen3Asr:
             return Qwen3AsrProvider(modelOverride: model)
         default:
-            // Whisper models - create provider with specific model override
-            return WhisperProvider(modelOverride: model)
+            // Whisper models route to the MLX engine (per-card downloads);
+            // ensure the matching whisper card is selected first.
+            if let cardID = MlxSttCatalog.whisperCardID(for: model) {
+                SettingsStore.shared.selectedMlxSttCardID = cardID
+            }
+            return Qwen3AsrProvider(modelOverride: model)
         }
     }
 
@@ -630,6 +547,45 @@ final class ASRService: ObservableObject {
     }
 
     /// Call this when the transcription provider setting changes to reset state
+    /// Release provider-held model memory as soon as the user switches away
+    /// from a heavyweight local engine (MLX / Whisper), regardless of which
+    /// code path performed the switch.
+    @MainActor
+    private func handleSpeechModelDidChange(_ newModel: SettingsStore.SpeechModel) {
+        guard newModel != self.lastSeenSpeechModel else { return }
+        self.lastSeenSpeechModel = newModel
+        // Legacy whisper SpeechModels map to their MLX whisper card.
+        if let whisperCardID = MlxSttCatalog.whisperCardID(for: newModel) {
+            SettingsStore.shared.selectedMlxSttCardID = whisperCardID
+        }
+        if !newModel.isMlxEngineModel {
+            // MLX engine: weights + Metal buffers are dropped with the provider.
+            // Note: Swift runs a deinit body BEFORE releasing the stored
+            // properties (engines + weight arrays), so a clearCache() inside
+            // deinit fires too early — the freshly-freed buffers then land in
+            // the MLX cache and stay resident. Schedule a second clearCache
+            // after the deallocation completes.
+            DebugLogger.shared.info("ASRService: releasing MLX provider (switch to \(newModel.rawValue))", source: "ASRService")
+            self._qwen3AsrProvider = nil
+            // Swift runs a deinit body BEFORE releasing stored properties, so
+            // the provider's own clearCache() fires while the engines (and
+            // their Metal buffers) are still alive; the buffers then land in
+            // the MLX cache and stay resident. A deferred second pass releases
+            // them once the deallocation has actually completed.
+            Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 3_000_000_000)
+                #if arch(arm64)
+                MLX.Memory.clearCache()
+                #endif
+                DebugLogger.shared.info("ASRService: MLX cache cleared after deallocation", source: "ASRService")
+            }
+        }
+        if !newModel.isCloudModel {
+            // Cloud providers hold no model weights, but keep the cache clean.
+            self.cloudProviders = [:]
+        }
+    }
+
     func resetTranscriptionProvider() {
         let newModel = SettingsStore.shared.selectedSpeechModel
         DebugLogger.shared.info("ASRService: Switching to '\(newModel.displayName)', resetting provider state...", source: "ASRService")
@@ -660,12 +616,16 @@ final class ASRService: ObservableObject {
         self.wordBoostStatusText = "Word boost: off"
 
         // Reset cached providers to force re-initialization with new settings
-        self.fluidAudioProvider = nil
-        self.parakeetRealtimeProvider = nil
-        self.externalCoreMLProvider = nil
-        self.whisperProvider = nil
         self.appleSpeechProvider = nil
         self._appleSpeechAnalyzerProvider = nil
+        // Release the MLX engine when LEAVING the MLX model (cloud / apple):
+        // the provider holds the loaded model plus its Metal buffers.
+        // MLX-internal card / legacy-whisper switches keep the provider so
+        // switching cards stays fast; switching away frees the model memory
+        // back to the system.
+        if !newModel.isMlxEngineModel {
+            self._qwen3AsrProvider = nil
+        }
 
         // CRITICAL FIX: Check if the NEW model's files exist on disk
         // This prevents UI from showing "Download" when model is already downloaded
@@ -1113,18 +1073,6 @@ final class ASRService: ObservableObject {
     private var micPermissionGranted = false
     private var isRequestingMicrophoneAccess = false
 
-    // Internal access for MeetingTranscriptionService to share models
-    // Note: Only available when using FluidAudioProvider (Apple Silicon)
-    #if arch(arm64)
-    var asrManager: AsrManager? {
-        (self.transcriptionProvider as? FluidAudioProvider)?.underlyingManager
-    }
-    #else
-    var asrManager: Any? {
-        nil
-    }
-    #endif
-
     // Thread-safe buffer to prevent "Array mutation while enumerating" and memory corruption crashes
     // during long sessions where reallocation occurs frequently.
     private let audioBuffer = ThreadSafeAudioBuffer()
@@ -1248,7 +1196,7 @@ final class ASRService: ObservableObject {
         // CRITICAL FIX: Do NOT call any framework-triggering APIs here!
         // This includes:
         // - AVCaptureDevice.authorizationStatus (triggers AVFCapture/CoreAudio)
-        // - checkIfModelsExist() (accesses transcriptionProvider, can trigger FluidAudio/CoreML)
+        // - checkIfModelsExist() (accesses transcriptionProvider, can trigger CoreML)
         //
         // All such calls are deferred to initialize() which runs 1.5 seconds after
         // SwiftUI's view graph is stable, preventing race conditions with AttributeGraph.
@@ -1258,14 +1206,39 @@ final class ASRService: ObservableObject {
         // - micPermissionGranted = false
         // - modelsExistOnDisk = false
         self.vocabularyChangeObserver = NotificationCenter.default.addObserver(
-            forName: .parakeetVocabularyDidChange,
+            forName: .customVocabularyDidChange,
             object: nil,
             queue: .main
         ) { [weak self] _ in
             Task { @MainActor [weak self] in
-                self?.handleParakeetVocabularyDidChange()
+                self?.handleCustomVocabularyDidChange()
             }
         }
+        #if DEBUG
+        // Test hook for provider-release verification (session notes): switches
+        // to the given model 30 seconds after launch through the setter.
+        if let raw = ProcessInfo.processInfo.environment["FLUID_TEST_SWITCH_MODEL"],
+            let target = SettingsStore.SpeechModel(rawValue: raw)
+        {
+            Task.detached {
+                try? await Task.sleep(nanoseconds: 30_000_000_000)
+                await MainActor.run {
+                    SettingsStore.shared.selectedSpeechModel = target
+                }
+            }
+        }
+        #endif
+        self.speechModelChangeObserver = NotificationCenter.default.addObserver(
+            forName: .fluidVoiceSpeechModelDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] note in
+            Task { @MainActor [weak self] in
+                guard let self, let newModel = note.object as? SettingsStore.SpeechModel else { return }
+                self.handleSpeechModelDidChange(newModel)
+            }
+        }
+        self.lastSeenSpeechModel = SettingsStore.shared.selectedSpeechModel
         self.settingsBackupRestoreObserver = NotificationCenter.default.addObserver(
             forName: .settingsBackupDidRestore,
             object: nil,
@@ -1347,29 +1320,24 @@ final class ASRService: ObservableObject {
     }
 
     @MainActor
-    private func handleParakeetVocabularyDidChange() {
-        let model = SettingsStore.shared.selectedSpeechModel
-        guard model.supportsCustomVocabulary else { return }
+    private func handleCustomVocabularyDidChange() {
         guard self.isRunning == false else {
-            self.hasPendingParakeetVocabularyReload = true
+            self.hasPendingCustomVocabularyReload = true
             DebugLogger.shared.info(
                 "ASRService: Vocabulary changed while recording; queued reload for when recording stops.",
                 source: "ASRService"
             )
             return
         }
-        self.hasPendingParakeetVocabularyReload = false
+        self.hasPendingCustomVocabularyReload = false
         self.resetTranscriptionProvider()
     }
 
     @MainActor
-    private func applyPendingParakeetVocabularyReloadIfNeeded() {
-        guard self.hasPendingParakeetVocabularyReload else { return }
+    private func applyPendingCustomVocabularyReloadIfNeeded() {
+        guard self.hasPendingCustomVocabularyReload else { return }
 
-        self.hasPendingParakeetVocabularyReload = false
-        let model = SettingsStore.shared.selectedSpeechModel
-        guard model.supportsCustomVocabulary else { return }
-
+        self.hasPendingCustomVocabularyReload = false
         DebugLogger.shared.info(
             "ASRService: Applying queued vocabulary reload after recording stopped.",
             source: "ASRService"
@@ -1378,41 +1346,11 @@ final class ASRService: ObservableObject {
     }
 
     private func refreshWordBoostStatus() {
-        let model = SettingsStore.shared.selectedSpeechModel
-        guard model.supportsCustomVocabulary,
-              let provider = self.fluidAudioProvider,
-              provider.isReady
-        else {
-            self.wordBoostStatusText = "Word boost: off"
-            return
-        }
-
-        if provider.isWordBoostingActive {
-            let count = provider.boostedVocabularyTermsCount
-            if let lastHit = self.lastBoostHitTerm, !lastHit.isEmpty {
-                self.wordBoostStatusText = "Word boost: ON (\(count) terms) • last hit: \(lastHit)"
-            } else {
-                self.wordBoostStatusText = "Word boost: ON (\(count) terms) • no hit yet"
-            }
-        } else {
-            self.wordBoostStatusText = "Word boost: ON (0 terms loaded)"
-        }
+        self.wordBoostStatusText = "Word boost: off"
     }
 
     private func recordWordBoostHitIfAny(transcribedText: String) {
-        let model = SettingsStore.shared.selectedSpeechModel
-        guard model.supportsCustomVocabulary,
-              let provider = self.fluidAudioProvider,
-              provider.isWordBoostingActive
-        else { return }
-
-        let hits = provider.detectBoostedTerms(in: transcribedText, limit: 1)
-        guard let hit = hits.first else { return }
-        if hit != self.lastBoostHitTerm {
-            self.lastBoostHitTerm = hit
-            DebugLogger.shared.info("BOOST_HIT: '\(hit)'", source: "ASRService")
-        }
-        self.refreshWordBoostStatus()
+        _ = transcribedText
     }
 
     /// Call this AFTER the app has finished launching to complete ASR initialization.
@@ -1807,7 +1745,6 @@ final class ASRService: ObservableObject {
         self.benchmarkStreamingChunkIndex = 0
         self.benchmarkCompletedStreamingChunks = 0
         self.benchmarkLastChunkSampleCount = 0
-        (self.transcriptionProvider as? FluidAudioProvider)?.resetStreamingPreviewCache()
         self.audioCapturePipeline.setRecordingEnabled(
             true,
             sessionID: captureSessionID,
@@ -2369,7 +2306,7 @@ final class ASRService: ObservableObject {
         }
         let useDictionaryTrainingPath = forDictionaryTraining || self.isDictionaryTrainingCaptureActive
         defer {
-            self.applyPendingParakeetVocabularyReloadIfNeeded()
+            self.applyPendingCustomVocabularyReloadIfNeeded()
             self.isDictionaryTrainingCaptureActive = false
         }
 
@@ -2738,7 +2675,7 @@ final class ASRService: ObservableObject {
         }
         guard self.isRunning else { return }
         defer {
-            self.applyPendingParakeetVocabularyReloadIfNeeded()
+            self.applyPendingCustomVocabularyReloadIfNeeded()
             self.isDictionaryTrainingCaptureActive = false
         }
 
@@ -4600,12 +4537,36 @@ final class ASRService: ObservableObject {
         let provider = self.getProvider(for: model)
         try await provider.clearCache()
 
-        if model.requiresExternalArtifacts {
-            SettingsStore.shared.setExternalCoreMLArtifactsDirectory(nil, for: model)
-        }
-
         guard SettingsStore.shared.selectedSpeechModel == model else { return }
         self.resetTranscriptionProvider()
+        await self.checkIfModelsExistAsync()
+    }
+
+    /// Uninstall one MLX STT card (family/variant directory) from disk.
+    /// If the card is the currently selected model, the provider is reset
+    /// so the next use re-checks availability.
+    @MainActor
+    func deleteMlxCard(pathID: String) async {
+        let parts = pathID.split(separator: "/")
+        guard parts.count == 2 else { return }
+        let modelID = String(parts[0])
+        let variantID = String(parts[1])
+        let directory = Qwen3MlxEngine.cacheDirectory(
+            modelID: modelID, variantID: variantID)
+        do {
+            try FileManager.default.removeItem(at: directory)
+            DebugLogger.shared.info("Uninstalled MLX STT card \(pathID)", source: "ASRService")
+        } catch {
+            DebugLogger.shared.debug(
+                "MLX card \(pathID) delete skipped: \(error.localizedDescription)",
+                source: "ASRService")
+        }
+
+        if SettingsStore.shared.selectedMlxSttCardID == pathID {
+            await self.transcriptionExecutor.cancelAndAwaitPending()
+            self.resetTranscriptionProvider()
+            self.isAsrReady = false
+        }
         await self.checkIfModelsExistAsync()
     }
 
@@ -5074,16 +5035,6 @@ private extension Character {
 }
 
 // swiftlint:enable type_body_length
-
-private extension SettingsStore.SpeechModel {
-    var nemotronProviderMode: NemotronProvider.Mode {
-        switch self {
-        case .nemotronStreaming: return .streaming
-        case .nemotronStreaming320: return .streaming320
-        default: return .offline
-        }
-    }
-}
 
 private extension ASRService {
     /// Stops the streaming timer and waits for the task to complete.

@@ -3,7 +3,7 @@
 //  Fluid
 //
 //  Single source of truth for default model lists and base URLs per provider.
-//  All views (AISettings, ContentView, CommandMode, RewriteMode) should use this
+//  All views (AISettings, ContentView, RewriteMode) should use this
 //  instead of maintaining their own hardcoded lists.
 //
 

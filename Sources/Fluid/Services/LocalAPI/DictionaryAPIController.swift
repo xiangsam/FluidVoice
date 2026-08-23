@@ -154,7 +154,7 @@ struct DictionaryAPIController: LocalAPIRouteHandler {
 
             SettingsStore.shared.customDictionaryEntries = incomingEntries + stored
             ASRService.invalidateDictionaryCache()
-            NotificationCenter.default.post(name: .parakeetVocabularyDidChange, object: nil)
+            NotificationCenter.default.post(name: .customVocabularyDidChange, object: nil)
             return self.getReplacements()
         } catch {
             return LocalAPI.error("Invalid replacement payload: \(error.localizedDescription)", status: 400)
@@ -163,7 +163,7 @@ struct DictionaryAPIController: LocalAPIRouteHandler {
 
     private func getCustomWords() -> LocalAPI.Response {
         do {
-            let entries = try ParakeetVocabularyStore.shared.loadUserBoostTerms().map(Self.apiEntry(from:))
+            let entries = try CustomVocabularyStore.shared.loadUserBoostTerms().map(Self.apiEntry(from:))
             return LocalAPI.json(CustomWordsResponse(count: entries.count, items: entries))
         } catch {
             return LocalAPI.error("Failed to load custom words: \(error.localizedDescription)", status: 500)
@@ -175,7 +175,7 @@ struct DictionaryAPIController: LocalAPIRouteHandler {
             let payload = try LocalAPI.decoder.decode(CustomWordsWriteRequest.self, from: request.body)
             let incoming = try self.customWordEntries(from: payload)
 
-            var stored = payload.mode == .replace ? [] : try ParakeetVocabularyStore.shared.loadUserBoostTerms()
+            var stored = payload.mode == .replace ? [] : try CustomVocabularyStore.shared.loadUserBoostTerms()
             for entry in incoming {
                 let normalized = Self.storeEntry(from: entry)
                 guard !normalized.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { continue }
@@ -183,8 +183,8 @@ struct DictionaryAPIController: LocalAPIRouteHandler {
                 stored.append(normalized)
             }
 
-            try ParakeetVocabularyStore.shared.saveUserBoostTerms(stored)
-            NotificationCenter.default.post(name: .parakeetVocabularyDidChange, object: nil)
+            try CustomVocabularyStore.shared.saveUserBoostTerms(stored)
+            NotificationCenter.default.post(name: .customVocabularyDidChange, object: nil)
             return self.getCustomWords()
         } catch {
             return LocalAPI.error("Invalid custom words payload: \(error.localizedDescription)", status: 400)
@@ -226,12 +226,12 @@ struct DictionaryAPIController: LocalAPIRouteHandler {
         return SettingsStore.CustomDictionaryEntry(triggers: entry.triggers, replacement: entry.replacement)
     }
 
-    private static func apiEntry(from term: ParakeetVocabularyStore.VocabularyConfig.Term) -> CustomWordEntry {
+    private static func apiEntry(from term: CustomVocabularyStore.VocabularyConfig.Term) -> CustomWordEntry {
         CustomWordEntry(text: term.text, weight: term.weight, aliases: term.aliases)
     }
 
-    private static func storeEntry(from entry: CustomWordEntry) -> ParakeetVocabularyStore.VocabularyConfig.Term {
-        ParakeetVocabularyStore.VocabularyConfig.Term(
+    private static func storeEntry(from entry: CustomWordEntry) -> CustomVocabularyStore.VocabularyConfig.Term {
+        CustomVocabularyStore.VocabularyConfig.Term(
             text: entry.text,
             weight: entry.weight,
             aliases: entry.aliases
