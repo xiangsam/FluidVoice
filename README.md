@@ -1,136 +1,188 @@
 # 🎙️ FluidVoice
 
 <p align="center">
-  <b>面向 macOS 的本地语音听写与大模型文本后处理工具</b>
+  <b>原生 Swift + MLX 架构的 macOS 语音听写工具</b>
   <br />
-  <i>On-device Speech-to-Text and LLM Post-Processing for macOS</i>
+  <i>Native Swift · MLX On-Device Speech-to-Text · Cloud STT · LLM Post-Processing for macOS</i>
 </p>
 
 <p align="center">
   <a href="https://github.com/xiangsam/FluidVoice/releases/latest"><img src="https://img.shields.io/badge/macOS-15.0%2B%20%7C%20Apple%20Silicon-blue?logo=apple" alt="macOS Version"/></a>
   <a href="https://github.com/xiangsam/FluidVoice/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-GPLv3-green.svg" alt="License: GPLv3"/></a>
-  <a href="https://github.com/xiangsam/FluidVoice"><img src="https://img.shields.io/badge/Language-SwiftUI-red?logo=swift" alt="SwiftUI"/></a>
+  <a href="https://github.com/xiangsam/FluidVoice"><img src="https://img.shields.io/badge/Language-Swift-red?logo=swift" alt="Swift"/></a>
+  <a href="https://github.com/ml-explore/mlx-swift"><img src="https://img.shields.io/badge/MLX-Native-blueviolet" alt="MLX"/></a>
+  <a href="https://github.com/xiangsam/FluidVoice"><img src="https://img.shields.io/badge/SwiftUI-100%25-teal" alt="SwiftUI"/></a>
 </p>
 
 ---
 
-## 概述
+## ✨ 项目亮点
 
-FluidVoice 是一个基于 SwiftUI 开发的 macOS 语音听写与文本后处理工具，Fork 自开源项目 [altic-dev/FluidVoice](https://github.com/altic-dev/FluidVoice)。
+FluidVoice 是一个 **100% 原生 SwiftUI + MLX 架构** 的 macOS 语音听写工具。所有本地模型都运行在 Apple Silicon 的 **MLX 引擎** 上——不依赖 transcribe.cpp、不依赖 CoreML 包装、不依赖 Python 运行时，纯净的 Swift 实现。
 
-本项目在原项目基础上进行了中文本地化与功能扩展，主要包含以下内容：
-- **中文语言支持**：完整的界面中文本地化与多语种配置。
-- **扩展转写引擎**：支持 Apple Speech Analyzer、Whisper (`whisper.cpp`)、Qwen3-ASR (CoreML) 以及局域网/云端 Ollama STT 服务。
-- **故障回退机制**：当网络或远程服务不可用时，自动回退至本地语音引擎完成转录。
-- **LLM 文本后处理**：集成大语言模型，用于语气词过滤、标点规范化及格式整理。
-- **内存与上下文管理**：支持根据录音时长动态配置 ASR 上下文与 KV Cache，提供实时的内存占用评估。
-
----
-
-## 核心功能
-
-### 1. 语音转文字引擎 (Speech-to-Text)
-- **Apple 原生引擎**：支持 macOS 15+ / 26+ 的 `Speech Analyzer` 及系统内置语音识别，无需常驻模型内存。
-- **本地离线模型**：
-  - **Whisper**（支持 Large-Turbo / Large-V3 / Medium / Small / Base 等 GGUF 格式）。
-  - **Qwen3-ASR**（基于 CoreML 状态化解码，适配 Apple Silicon）。
-  - **FluidAudio 神经网络模型**（Parakeet 等）。
-- **远程 / 局域网服务**：支持配置局域网 Ollama 实例或兼容 OpenAI 格式的云端 STT API。
-
-### 2. LLM 文本后处理
-- **预设文本清洗**：去除口语停顿词、修正倒装句、统一中英文混排空格与标点符号。
-- **多后端支持**：支持本地 Ollama、OpenAI API 兼容接口、Groq、DeepSeek 等服务。
-- **Prompt 配置**：支持自定义系统 Prompt 与实时效果预览。
-
-### 3. 容灾回退
-- 远程或云端 STT 请求超时或异常时，自动回退到本地 Apple 引擎重新处理音频，避免转录中断。
+- **🍎 原生 Swift MLX 架构** —— 离线模型全部由自研 `Sources/Fluid/Engines/` 下的 MLX Swift 引擎驱动（Qwen3-ASR / Parakeet / Nemotron / GLM / Fun-ASR / Whisper 六大引擎），直接调用 `mlx-swift`，无任何桥接层。
+- **📦 六大离线模型家族，一键下载切换** —— 模型卡 UI：下载、卸载、切换独立进行，互不干扰。
+- **☁️ 云端 STT 开箱即用** —— OpenRouter / OpenAI / Groq / Ollama / 自定义端点，支持动态模型扫描（OpenRouter 仅列真实 STT 模型）。
+- **🥇 推荐体系** —— 根据真实体验标注推荐等级：Fun-ASR 中英混说强推、Qwen3-ASR 推荐、Whisper 99 语含中文、Parakeet 仅欧洲语系（标注「不支持中文」）。
+- **🛟 智能容灾回退** —— 云端超时/异常时自动切换到本地 Apple 引擎，录音永不丢失。
+- **🧠 LLM 文本后处理** —— 语气词过滤、标点规范化、排版整理，支持 Ollama / OpenAI / Groq / DeepSeek / OpenRouter。
+- **🎛️ 内存与上下文管理** —— 动态 ASR 上下文（30s ~ 5min）+ KV Cache 估算，实时显示内存占用。
+- **⌨️ 全局热键听写** —— 按住说话 / 单击切换，听写 / 改写 / 取消 / 粘贴上次转写一应俱全。
 
 ---
 
-## 架构简图
+## 📸 截图
+
+| 语音引擎总览 | MLX 本地模型卡 |
+| :---: | :---: |
+| ![Voice Engine](docs/images/voice_engine_settings.png) | ![MLX Cards](docs/images/mlx_model_cards.png) |
+
+*MLX 引擎区展示推荐徽章：「强推」Fun-ASR、「推荐」Qwen3-ASR、「可选」Whisper/GLM/Nemotron、「不支持中文」Parakeet。*
+
+---
+
+## 🏗️ 架构
+
+### 引擎分层
 
 ```mermaid
 graph TD
-    User([用户触发录音 / 全局快捷键]) --> AudioCapture[CoreAudio 音频捕获]
-    AudioCapture --> EngineSelector{引擎分流调度}
-    
-    EngineSelector -->|系统内置| AppleSpeech[Apple Speech Analyzer]
-    EngineSelector -->|本地离线| WhisperCpp[Whisper.cpp / CoreML]
-    EngineSelector -->|远程/云端| CloudSTT[Ollama / 云端 STT]
-    
-    CloudSTT -.->|请求超时/失败| Fallback[自动回退 -> Apple Speech]
-    
-    AppleSpeech --> RawText[转录文本]
-    WhisperCpp --> RawText
-    CloudSTT --> RawText
-    Fallback --> RawText
-    
-    RawText --> LLMPipeline{是否启用文本后处理?}
-    LLMPipeline -->|是| LLMEnhance[LLM 润色 / 排版规范化]
-    LLMPipeline -->|否| DirectOutput[直接输出]
-    
-    LLMEnhance --> Output[通过 Accessibility 接口模拟输入]
-    DirectOutput --> Output
+    User([全局快捷键 / 录音按钮]) --> AudioCapture[CoreAudio 捕获 · 16kHz 单声道]
+    AudioCapture --> EngineSelector{引擎路由<br/>唯一选中态}
+
+    EngineSelector -->|本地 MLX| MlxEngine[MLX 引擎服务<br/>Qwen3AsrProvider]
+    EngineSelector -->|Apple 内置| AppleEngine[Apple Speech / Analyzer]
+    EngineSelector -->|云端 / 局域网| CloudEngine[Cloud STT Provider]
+
+    MlxEngine --> C1[Qwen3-ASR 0.6B/1.7B]
+    MlxEngine --> C2[Parakeet TDT 0.6B]
+    MlxEngine --> C3[Nemotron 3.5 ASR]
+    MlxEngine --> C4[GLM-ASR Nano]
+    MlxEngine --> C5[Fun-ASR MLT Nano]
+    MlxEngine --> C6[Whisper Tiny/Small/Large V3/Turbo]
+
+    CloudEngine -.->|超时 / 失败| Fallback[自动回退 → Apple 引擎]
+
+    C1 --> RawText[转录文本]
+    C2 --> RawText
+    C3 --> RawText
+    C4 --> RawText
+    C5 --> RawText
+    C6 --> RawText
+    AppleEngine --> RawText
+    CloudEngine --> RawText
+
+    RawText --> LLM{LLM 后处理?}
+    LLM -->|是| LLMEnhance[语气词过滤 · 标点规范化 · 排版]
+    LLM -->|否| Direct[直接输出]
+
+    LLMEnhance --> Output[Accessibility 键入 · 光标位置]
+    Direct --> Output
+```
+
+### 核心目录
+
+```
+Sources/Fluid/
+├── Engines/                  # 自研 MLX Swift 推理引擎（全部 Apple Silicon 原生）
+│   ├── Qwen3Mlx/             # Qwen3-ASR 0.6B/1.7B · 8bit/bf16
+│   ├── ParakeetMlx/          # NVIDIA Parakeet TDT (25 欧洲语言)
+│   ├── NemotronMlx/          # NVIDIA Nemotron 3.5 ASR
+│   ├── GlmMlx/               # 智谱 GLM-ASR Nano
+│   ├── FunMlx/               # 通义 Fun-ASR MLT Nano
+│   └── WhisperMlx/           # OpenAI Whisper (MLX 架构)
+├── Services/
+│   ├── Qwen3AsrProvider.swift # MLX 引擎服务（六大家族统一调度）
+│   ├── CloudTranscriptionProvider.swift # OpenRouter/OpenAI/Groq/Ollama
+│   └── ASRService.swift       # 引擎路由 · 智能回退
+└── UI/AISettings/
+    └── NativeVoiceEngineSettingsView.swift # 模型卡 UI · 推荐体系
 ```
 
 ---
 
-## 安装与构建
+## 🎯 引擎与模型支持
 
-### 下载预编译版本
-可前往 [Releases](https://github.com/xiangsam/FluidVoice/releases) 下载最新的应用安装包。
+### 本地离线（全部 MLX · Apple Silicon）
+
+| 模型家族 | 规格 | 语言 | 推荐等级 |
+| :--- | :--- | :--- | :--- |
+| **Fun-ASR MLT Nano** | 8bit（1.44 GB） | 31 语 · 中英混说 | 🟢 强推 |
+| **Qwen3-ASR** | 0.6B 8bit/bf16 · 1.7B 8bit/bf16 | 30 语 | 🔵 推荐 |
+| **Whisper** | Tiny/Small · Large V3 · Large V3 Turbo | 99 语（含中文） | ⚪ 可选 |
+| **GLM-ASR Nano** | 8bit（2.4 GB） | 多语（含中文） | ⚪ 可选 |
+| **Nemotron 3.5 ASR** | 0.6B bf16 | 多语（含中文）· 流式 | ⚪ 可选 |
+| **Parakeet TDT 0.6B v3** | bf16（2.5 GB） | 25 语言 · **仅欧洲语系** | 🟠 不支持中文 |
+
+### Apple 内置
+- **Apple Speech Analyzer**（macOS 26+）：系统级高精度识别，零内存常驻
+- **Apple Speech（Legacy）**：经典系统识别引擎
+
+### 云端 / 局域网（OpenAI 兼容）
+
+| 服务 | 端点 | 模型列表 |
+| :--- | :--- | :--- |
+| **OpenRouter** | `openrouter.ai/api/v1` | ✅ 动态扫描（仅列真实 STT 模型） |
+| **OpenAI** | `api.openai.com/v1` | 手动输入（whisper-1 等） |
+| **Groq** | `api.groq.com/openai/v1` | 手动输入 |
+| **Ollama** | 局域网实例 | ✅ 动态扫描（/api/tags） |
+| **自定义** | OpenAI 兼容端点 | 手动输入 |
+
+---
+
+## 🪄 模型卡 UI
+
+每个模型一张卡：**下载 / 卸载 / 切换**独立进行。点击卡片即切换引擎；选中态全局唯一——本地 MLX 卡、Apple 内置、云端卡之间严格互斥，同一时刻只有一张卡处于选中态。
+
+- **推荐徽章**：强推（绿）/ 推荐（蓝）/ 可选（灰）/ 不支持中文（橙）
+- **状态徽章**：量化规格（8bit/bf16）、体积、「使用中」实时标记
+- **扫描节点模型**：Ollama / OpenRouter 一键拉取真实模型列表
+
+---
+
+## 🛠️ 安装与构建
+
+### 环境要求
+- macOS 15.0+（Apple Silicon）
+- Xcode 16.0+ 或 Xcode Command Line Tools
 
 ### 源码编译
 
-**环境要求**：
-- macOS 15.0 或更高版本
-- Xcode 16.0+ 或 Xcode Command Line Tools
-
 ```bash
-# 1. 克隆代码仓库
 git clone https://github.com/xiangsam/FluidVoice.git
 cd FluidVoice
 
-# 2. 编译 Release 版本
-./build.sh release
+# Release 构建
+xcodebuild -project Fluid.xcodeproj -scheme Fluid \
+  -configuration Release -destination 'platform=macOS' build
 
-# 3. 运行应用程序
+# 运行
 open DerivedData/Build/Products/Release/FluidVoice.app
 ```
 
----
-
-## 模型与后端支持
-
-| 分类 | 引擎 / 模型 | 适用场景 | 网络需求 | 支持架构 |
-| :--- | :--- | :--- | :--- | :--- |
-| **系统内置** | Apple Speech Analyzer | 快速听写、零资源常驻 | 离线 | macOS 15+ / Apple Silicon |
-| **系统内置** | Apple Speech (经典) | 系统级语音识别 | 离线 | 通用 |
-| **本地模型** | Whisper (Large-Turbo / Small 等) | 高准确率本地离线识别 | 首次下载后离线 | Apple Silicon / Intel |
-| **本地模型** | Qwen3-ASR | 中文及多方言本地识别 | 首次下载后离线 | Apple Silicon |
-| **远程服务** | Ollama STT | 局域网私有化服务器转录 | 局域网 | 支持 Ollama 的设备 |
-| **云端 API** | OpenAI / Groq 等 | 云端批量或高并发识别 | 互联网 | 通用 |
+### 模型下载
+模型通过 `hf-mirror.com`（国内镜像）加速下载，可在设置页切换镜像源。首次下载后**完全离线**运行。
 
 ---
 
-## 快捷键说明
+## ⌨️ 快捷键
 
-- **听写模式**：默认快捷键为 `Right Option (⌥)`，按住说话或单击开始/结束。
-- **改写模式**：选中文本后按 `Shift + Right Option`，调用大模型对选中内容进行重写。
-- **取消**：按 `Escape` 键取消当前录音。
-
----
-
-## 参考与依赖
-
-本项目基于以下开源项目构建：
-- [altic-dev/FluidVoice](https://github.com/altic-dev/FluidVoice)
-- [whisper.cpp](https://github.com/ggerganov/whisper.cpp)
-- [FluidAudio](https://github.com/altic-dev/FluidAudio)
-- [Ollama](https://ollama.com)
+| 功能 | 默认快捷键 |
+| :--- | :--- |
+| 听写（按住说话 / 单击切换） | `Right Option (⌥)` |
+| 改写（选中文本后语音指令） | `Shift + Right Option` |
+| 取消当前录音 | `Escape` |
 
 ---
 
-## 许可证
+## 📦 依赖
+
+- [mlx-swift](https://github.com/ml-explore/mlx-swift) —— Apple Silicon 机器学习框架
+- [FluidAudio](https://github.com/altic-dev/FluidAudio) —— 音频捕获（CoreAudio）
+- [DynamicNotchKit](https://github.com/altic-dev/DynamicNotchKit) —— 灵动岛式听写反馈 UI
+
+---
+
+## 📄 许可证
 
 本项目遵循 [GPL-3.0 License](LICENSE)。
