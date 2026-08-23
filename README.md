@@ -143,8 +143,8 @@ Sources/Fluid/
 ## 🛠️ 安装与构建
 
 ### 环境要求
-- macOS 15.0+（Apple Silicon）
-- Xcode 16.0+ 或 Xcode Command Line Tools
+- **运行**：macOS 15.0+（Apple Silicon）—— MLX 离线模型与整个应用只支持 Apple Silicon
+- **编译**：Xcode 26.3+（Swift 6.3 工具链）—— mlx-swift 依赖要求 `swift-tools-version 6.3`
 
 ### 源码编译
 
@@ -152,13 +152,24 @@ Sources/Fluid/
 git clone https://github.com/xiangsam/FluidVoice.git
 cd FluidVoice
 
-# Release 构建
+# Release 构建（Apple Silicon）
 xcodebuild -project Fluid.xcodeproj -scheme Fluid \
-  -configuration Release -destination 'platform=macOS' build
+  -configuration Release -destination 'platform=macOS,arch=arm64' build
 
 # 运行
 open DerivedData/Build/Products/Release/FluidVoice.app
 ```
+
+### 一键打包（可选）
+
+```bash
+./scripts/package-release.sh          # 构建签名 Release + 打包 zip
+./scripts/package-release.sh --no-build  # 复用已有构建直接打包
+```
+
+### 自动构建（GitHub Actions）
+每次 push / PR 自动在 `macos-26-arm64` runner 上构建 Release 并上传 zip artifact；
+打 `v*` 标签时自动发布到 GitHub Releases。详见 `.github/workflows/build-release.yml`。
 
 ### 模型下载
 模型通过 `hf-mirror.com`（国内镜像）加速下载，可在设置页切换镜像源。首次下载后**完全离线**运行。
