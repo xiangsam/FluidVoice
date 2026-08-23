@@ -58,7 +58,13 @@ jobs:
           APP="$RUNNER_TEMP/DerivedData/Build/Products/Release/FluidVoice.app"
           echo "Using APP=$APP"
           test -d "$APP"
-          VERSION="$(defaults read "$APP/Contents/Info" CFBundleShortVersionString)"
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            # Tag builds (v1.7.0) name the artifact after the tag so the zip
+            # always matches the release it was published under.
+            VERSION="${GITHUB_REF_NAME}"
+          else
+            VERSION="$(defaults read "$APP/Contents/Info" CFBundleShortVersionString)"
+          fi
           mkdir -p release
           ditto -c -k --keepParent "$APP" "release/FluidVoice-v${VERSION}.zip"
           echo "APP_VERSION=${VERSION}" >> "$GITHUB_ENV"
