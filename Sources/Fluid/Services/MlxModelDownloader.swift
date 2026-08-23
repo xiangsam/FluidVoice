@@ -161,6 +161,12 @@ enum MlxModelDownloader {
         guard let handle = try? FileHandle(forReadingFrom: url) else { return false }
         defer { try? handle.close() }
         guard let size = try? handle.seekToEnd(), size > 8 else { return false }
+        // seekToEnd() moved the cursor to EOF — rewind before reading the header.
+        do {
+            try handle.seek(toOffset: 0)
+        } catch {
+            return false
+        }
         guard let headerLenBytes = try? handle.read(upToCount: 8), headerLenBytes.count == 8 else {
             return false
         }
