@@ -1217,7 +1217,7 @@ struct NativeVoiceEngineSettingsView: View {
                 .padding(.top, 2)
             }
 
-            Text("国内网络推荐使用国内镜像加速站（如 hf-mirror.com），支持千问 Qwen3、Whisper 等全速稳定下载。".loc)
+            Text("默认使用 Hugging Face 官方源（huggingface.co）。若所在网络访问受限，可切换到国内镜像（hf-mirror.com）或其他自定义镜像源——镜像站部分大模型无缓存，可能回源到官网。".loc)
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         }

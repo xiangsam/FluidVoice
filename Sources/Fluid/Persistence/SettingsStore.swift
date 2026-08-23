@@ -2565,8 +2565,8 @@ final class SettingsStore: ObservableObject {
 
         var displayName: String {
             switch self {
-            case .hfMirror: return "国内镜像加速 (hf-mirror.com · 推荐)"
-            case .official: return "官方源 (huggingface.co)"
+            case .hfMirror: return "国内镜像 (hf-mirror.com · 可选项)"
+            case .official: return "官方源 (huggingface.co · 默认)"
             case .custom: return "自定义镜像源"
             }
         }
@@ -2579,7 +2579,7 @@ final class SettingsStore: ObservableObject {
                 return "https://huggingface.co"
             case .custom:
                 let trimmed = customURL.trimmingCharacters(in: .whitespacesAndNewlines)
-                if trimmed.isEmpty { return "https://hf-mirror.com" }
+                if trimmed.isEmpty { return "https://huggingface.co" }
                 if !trimmed.hasPrefix("http://") && !trimmed.hasPrefix("https://") {
                     return "https://\(trimmed)"
                 }
@@ -2590,8 +2590,8 @@ final class SettingsStore: ObservableObject {
 
     var huggingFaceMirror: HuggingFaceMirror {
         get {
-            let raw = self.defaults.string(forKey: Keys.huggingFaceMirror) ?? HuggingFaceMirror.hfMirror.rawValue
-            return HuggingFaceMirror(rawValue: raw) ?? .hfMirror
+            let raw = self.defaults.string(forKey: Keys.huggingFaceMirror) ?? HuggingFaceMirror.official.rawValue
+            return HuggingFaceMirror(rawValue: raw) ?? .official
         }
         set {
             objectWillChange.send()
