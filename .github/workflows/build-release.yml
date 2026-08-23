@@ -11,12 +11,9 @@ on:
 permissions:
   contents: write
 
-env:
-  DERIVED_DATA: DerivedData
-
 jobs:
   build:
-    runs-on: macos-15
+    runs-on: macos-latest
     timeout-minutes: 120
     steps:
       - name: Checkout
@@ -24,28 +21,34 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Resolve Swift packages
-        run: |
-          xcodebuild -resolvePackageDependencies \
-            -project Fluid.xcodeproj -scheme Fluid \
-            -derivedDataPath "$DERIVED_DATA" -skipPackagePluginValidation
-
       - name: Build Release (unsigned)
         run: |
+          set -o pipefail
           xcodebuild -project Fluid.xcodeproj -scheme Fluid \
-            -configuration Release -destination 'platform=macOS' \
-            -derivedDataPath "$DERIVED_DATA" -skipPackagePluginValidation \
-            build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
+            -configuration Release \
+            -destination 'platform=macOS,arch=arm64' \
+            build \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
 
       - name: Package app
         shell: bash
         run: |
           set -euo pipefail
-          APP="$DERIVED_DATA/Build/Products/Release/FluidVoice.app"
+          APP="$(xcodebuild -project Fluid.xcodeproj -scheme Fluid -showBuildSettings 2>/dev/null | awk '/ BUILT_PRODUCTS_DIR =/{d=$3} / WRAPPER_NAME =/{w=$3} END{print d "/" w}')"
+          echo "APP=$APP"
+          if [ ! -d "$APP" ]; then
+            APP="DerivedData/Build/Products/Release/FluidVoice.app"
+          fi
+          if [ ! -d "$APP" ]; then
+            APP="$(find ~/Library/Developer/Xcode/DerivedData -name 'FluidVoice.app' -path '*Release*' 2>/dev/null | head -1)"
+          fi
+          echo "Using APP=$APP"
+          test -d "$APP"
           VERSION="$(defaults read "$APP/Contents/Info" CFBundleShortVersionString)"
           mkdir -p release
           ditto -c -k --keepParent "$APP" "release/FluidVoice-v${VERSION}.zip"
-          echo "PACKAGED=release/FluidVoice-v${VERSION}.zip" >> "$GITHUB_ENV"
           echo "APP_VERSION=${VERSION}" >> "$GITHUB_ENV"
           ls -lh release/
 
