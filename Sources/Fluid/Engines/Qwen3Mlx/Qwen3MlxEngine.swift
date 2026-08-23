@@ -125,22 +125,18 @@ actor Qwen3MlxEngine {
             let dest = directory.appendingPathComponent(shard)
             try Task.checkCancellation()
             if !fm.fileExists(atPath: dest.path) || (try? fm.attributesOfItem(atPath: dest.path)[.size] as? Int) == nil || ((try? fm.attributesOfItem(atPath: dest.path)[.size] as? Int) ?? 0) < 1024 {
-                // Retry up to 3 times (CDN connections are flaky for large files).
-                var lastError: Error = URLError(.unknown)
-                var ok = false
-                for attempt in 0..<3 {
-                    do {
-                        let data = try await fetchData(shard, owner: "mlx-community", repo: repoName)
-                        guard !data.isEmpty else { throw URLError(.zeroByteResource) }
-                        try data.write(to: dest)
-                        ok = true
-                        break
-                    } catch {
-                        lastError = error
-                        if attempt < 2 { try await Task.sleep(nanoseconds: 2_000_000_000) }
-                    }
+                guard let url = URL(string: "\(base)/mlx-community/\(repoName)/resolve/main/\(shard)") else {
+                    throw URLError(.badURL)
                 }
-                if !ok { throw lastError }
+                try await MlxModelDownloader.downloadFile(
+                    from: url,
+                    to: dest,
+                    progress: { fraction in
+                        Task { @MainActor in
+                            progressHandler?((Double(completed) + fraction) / total)
+                        }
+                    }
+                )
             }
             completed += 1
             progressHandler?(completed / total)

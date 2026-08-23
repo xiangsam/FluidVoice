@@ -66,21 +66,18 @@ actor GlmMlxEngine {
         if !fm.fileExists(atPath: weightsDest.path)
             || ((try? (fm.attributesOfItem(atPath: weightsDest.path)[.size] as? Int) ?? 0) ?? 0) < 1_000_000_000
         {
-            var lastError: Error = URLError(.unknown)
-            var ok = false
-            for _ in 0..<5 {
-                do {
-                    let data = try await fetchData("model.safetensors")
-                    guard !data.isEmpty else { throw URLError(.zeroByteResource) }
-                    try data.write(to: weightsDest)
-                    ok = true
-                    break
-                } catch {
-                    lastError = error
-                    try? await Task.sleep(nanoseconds: 3_000_000_000)
-                }
+            guard let url = URL(string: "\(base)/\(card.repo)/resolve/main/model.safetensors") else {
+                throw URLError(.badURL)
             }
-            if !ok { throw lastError }
+            try await MlxModelDownloader.downloadFile(
+                from: url,
+                to: weightsDest,
+                progress: { fraction in
+                    Task { @MainActor in
+                        progressHandler?(fraction)
+                    }
+                }
+            )
         }
         progressHandler?(1.0)
         return directory
