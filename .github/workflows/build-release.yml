@@ -60,8 +60,9 @@ jobs:
           test -d "$APP"
           if [[ "$GITHUB_REF" == refs/tags/* ]]; then
             # Tag builds (v1.7.0) name the artifact after the tag so the zip
-            # always matches the release it was published under.
-            VERSION="${GITHUB_REF_NAME}"
+            # always matches the release it was published under. Strip a
+            # leading 'v' from the tag to avoid "FluidVoice-vv1.7.0.zip".
+            VERSION="${GITHUB_REF_NAME#v}"
           else
             VERSION="$(defaults read "$APP/Contents/Info" CFBundleShortVersionString)"
           fi
