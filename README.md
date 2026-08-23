@@ -142,6 +142,29 @@ Sources/Fluid/
 
 ## 🛠️ 安装与构建
 
+### 下载安装（Release 版）
+
+> 直接从 GitHub Releases 下载编译好的应用，无需 Xcode。
+
+1. 打开 **Releases 页面**：<https://github.com/xiangsam/FluidVoice/releases>
+2. 找到最新版本（如 `v1.6.9`），下载 **`FluidVoice-vX.Y.Z.zip`**
+3. 解压 zip（双击即可），得到 `FluidVoice.app`
+4. 把 `FluidVoice.app` **拖入「应用程序」文件夹**（/Applications）
+
+**首次打开提示「无法验证开发者」怎么办？**
+
+因为发布版未做 Apple 公证（notarization），macOS Gatekeeper 会拦截，按下面任一方式放行：
+
+- **右键点击** `FluidVoice.app` → 选择 **「打开」** → 在弹出的警告窗中再点 **「打开」**，之后即可正常双击启动
+- 或打开「系统设置 → 隐私与安全性」，在「安全性」一栏点击 **「仍要打开」**
+- 或终端执行（一次性放行隔离属性）：
+
+```bash
+xattr -dr com.apple.quarantine /Applications/FluidVoice.app
+```
+
+> **系统要求**：macOS 15.0+，Apple Silicon（M 系列芯片）。Intel Mac 不支持 MLX 离线模型。
+
 ### 环境要求
 - **运行**：macOS 15.0+（Apple Silicon）—— MLX 离线模型与整个应用只支持 Apple Silicon
 - **编译**：Xcode 26.3+（Swift 6.3 工具链）—— mlx-swift 依赖要求 `swift-tools-version 6.3`
