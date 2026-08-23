@@ -32,6 +32,7 @@ jobs:
           xcodebuild -project Fluid.xcodeproj -scheme Fluid \
             -configuration Release \
             -destination 'platform=macOS,arch=arm64' \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
             build \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
@@ -41,14 +42,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          APP="$(xcodebuild -project Fluid.xcodeproj -scheme Fluid -showBuildSettings 2>/dev/null | awk '/ BUILT_PRODUCTS_DIR =/{d=$3} / WRAPPER_NAME =/{w=$3} END{print d "/" w}')"
-          echo "APP=$APP"
-          if [ ! -d "$APP" ]; then
-            APP="DerivedData/Build/Products/Release/FluidVoice.app"
-          fi
-          if [ ! -d "$APP" ]; then
-            APP="$(find ~/Library/Developer/Xcode/DerivedData -name 'FluidVoice.app' -path '*Release*' 2>/dev/null | head -1)"
-          fi
+          APP="$RUNNER_TEMP/DerivedData/Build/Products/Release/FluidVoice.app"
           echo "Using APP=$APP"
           test -d "$APP"
           VERSION="$(defaults read "$APP/Contents/Info" CFBundleShortVersionString)"
