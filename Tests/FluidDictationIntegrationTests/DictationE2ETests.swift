@@ -1214,7 +1214,6 @@ final class DictationE2ETests: XCTestCase {
         XCTAssertEqual(state.customWords.map(\.aliases), [[], []])
     }
 
-
     func testWhisperProvider_ggufCacheReadinessDoesNotDeleteLegacyUntilExplicitClear() async throws {
         let modelDirectory = Self.modelDirectoryForRun()
         try FileManager.default.createDirectory(at: modelDirectory, withIntermediateDirectories: true)

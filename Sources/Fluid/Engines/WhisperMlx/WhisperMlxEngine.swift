@@ -210,15 +210,13 @@ actor WhisperMlxEngine {
         for (k, v) in weights {
             var key = String(k.dropFirst("model.".count))
             var skip = false
-            for (old, new) in keyMap {
-                if key.contains(old) {
-                    if let new {
-                        key = key.replacingOccurrences(of: old, with: new)
-                    } else {
-                        skip = true
-                    }
-                    break
+            for (old, new) in keyMap where key.contains(old) {
+                if let new {
+                    key = key.replacingOccurrences(of: old, with: new)
+                } else {
+                    skip = true
                 }
+                break
             }
             if skip { continue }
             var value = v
@@ -245,8 +243,13 @@ actor WhisperMlxEngine {
         while offset < audioSamples.count || audioSamples.isEmpty {
             let window = Array(audioSamples[offset..<min(offset + chunk, audioSamples.count)])
             let text = try await Self.transcribeWindow(
-                model: model, spec: spec, tokenizer: tokenizer, mel: mel,
-                audio: window, language: language, maxTokens: maxTokens)
+                model: model,
+                spec: spec,
+                tokenizer: tokenizer,
+                mel: mel,
+                audio: window,
+                language: language,
+                maxTokens: maxTokens)
             if !text.isEmpty { texts.append(text) }
             offset += chunk
             if window.count < chunk { break }
@@ -296,10 +299,11 @@ actor WhisperMlxEngine {
     ///   - compressionRatio: len(utf8) / len(zlib(utf8)); > 2.4 signals a loop.
     static func decodeWindow(
         model: WhisperMlxModel, spec: WhisperMlxSpec, tokenizer: WhisperMlxTokenizer,
-        xa: MLXArray, promptTokens: [Int], temperature: Float, maxTokens: Int,
-        suppress: Set<Int>
+        xa: MLXArray, promptTokens: [Int], temperature: Float, maxTokens: Int
     ) -> (text: String, tokens: [Int], avgLogprob: Float, compressionRatio: Float) {
         let promptLen = promptTokens.count
+        let suppress = Self.makeSuppressSet(
+            tokenizer: tokenizer, vocab: spec.vocabSize, spec: spec)
         let prompt = MLXArray(promptTokens.map { Int32($0) }).reshaped([1, promptLen])
         var cache: [((MLXArray, MLXArray)?, (MLXArray, MLXArray)?)] = []
         let (logits0, cache0) = model.decode(prompt, xa: xa, kvCache: &cache, offset: 0)
@@ -313,8 +317,11 @@ actor WhisperMlxEngine {
         while generated.count < max(maxTokens - promptLen, 1) {
             // Sample the next token from the current logits (post-filter).
             let (next, logp) = Self.sampleNext(
-                logits, generated: generated, temperature: temperature,
-                suppress: suppress, vocab: spec.vocabSize,
+                logits,
+                generated: generated,
+                temperature: temperature,
+                suppress: suppress,
+                vocab: spec.vocabSize,
                 allowEOT: sawNonBlank)
             if next == WhisperTokens.eot, !sawNonBlank {
                 // The model wants to stop before saying anything; treat the
@@ -340,8 +347,10 @@ actor WhisperMlxEngine {
         // or a stray leading/trailing quote. Strip balanced-looking quotes
         // while preserving inner punctuation.
         if text.count >= 2 {
-            let first = text.first!
-            let last = text.last!
+            guard let first = text.first, let last = text.last else {
+                text = ""
+                return (text, generated, avgLogprob, 0)
+            }
             let isQuote = { (c: Character) -> Bool in
                 ["\"", "\'", "\u{201C}", "\u{201D}", "\u{2018}", "\u{2019}", "`"].contains(c)
             }
@@ -464,7 +473,9 @@ actor WhisperMlxEngine {
                 var detectCache: [((MLXArray, MLXArray)?, (MLXArray, MLXArray)?)] = []
                 let (detectLogits, _) = model.decode(
                     MLXArray([Int32(WhisperTokens.sot)]).reshaped([1, 1]),
-                    xa: xa, kvCache: &detectCache, offset: 0)
+                    xa: xa,
+                    kvCache: &detectCache,
+                    offset: 0)
                 let last = detectLogits[0, 0, 0...]
                 var best = 0
                 var bestVal = Float.leastNormalMagnitude
@@ -491,9 +502,13 @@ actor WhisperMlxEngine {
         var best: (text: String, avgLogprob: Float, compressionRatio: Float)?
         for t in temperatures {
             let result = Self.decodeWindow(
-                model: model, spec: spec, tokenizer: tokenizer, xa: xa,
-                promptTokens: tokens, temperature: t, maxTokens: maxTokens,
-                suppress: suppress)
+                model: model,
+                spec: spec,
+                tokenizer: tokenizer,
+                xa: xa,
+                promptTokens: tokens,
+                temperature: t,
+                maxTokens: maxTokens)
             let candidate = (result.text, result.avgLogprob, result.compressionRatio)
             if Self.isBetterResult(candidate, than: best) {
                 best = candidate

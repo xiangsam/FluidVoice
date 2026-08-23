@@ -104,7 +104,8 @@ actor Qwen3MlxEngine {
         let indexURL = directory.appendingPathComponent("model.safetensors.index.json")
         if !fm.fileExists(atPath: indexURL.path) {
             let data = try await fetchData(
-                "model.safetensors.index.json", owner: "mlx-community",
+                "model.safetensors.index.json",
+                owner: "mlx-community",
                 repo: String(card.repo.split(separator: "/").last ?? ""))
             try data.write(to: indexURL)
         }
@@ -244,7 +245,7 @@ actor Qwen3MlxEngine {
         }
 
         // Language line (assistant turn): "language {name}<asr_text>"
-        var languageTokens: [Int]?
+        var languageTokens: [Int] = []
         if let isoCode, !isoCode.isEmpty, isoCode.lowercased() != "auto" {
             languageTokens = try Self.tokenize(Qwen3MlxLanguage.name(for: isoCode), directory: directory)
         }
@@ -365,7 +366,8 @@ actor Qwen3MlxEngine {
     private static func encodeBPE(_ text: String, vocabToID: [String: Int], merges: [String: Int]) -> [Int] {
         let chars = Array(text.utf8).map { byte -> String in
             let cp = byteEncoder[byte] ?? UInt32(byte)
-            return String(Character(UnicodeScalar(cp)!))
+            guard let scalar = UnicodeScalar(cp) else { return "" }
+            return String(Character(scalar))
         }
         guard !chars.isEmpty else { return [] }
         var segments = chars
@@ -380,7 +382,7 @@ actor Qwen3MlxEngine {
                 }
             }
             guard bestIndex >= 0 else { break }
-            segments[bestIndex] = segments[bestIndex] + segments[bestIndex + 1]
+            segments[bestIndex] += segments[bestIndex + 1]
             segments.remove(at: bestIndex + 1)
         }
         return segments.compactMap { vocabToID[$0] }
@@ -426,14 +428,14 @@ actor Qwen3MlxEngine {
 
 enum Qwen3MlxBuilder {
     static func buildPrompt(
-        nAudioTokens: Int, contextTokens: [Int]?, languageTokens: [Int]?
+        nAudioTokens: Int, contextTokens: [Int], languageTokens: [Int]
     ) -> [Int] {
         var prompt: [Int] = [
             Qwen3MlxTokens.imStartTokenId,
             Qwen3MlxTokens.systemTokenId,
             Qwen3MlxTokens.newlineTokenId,
         ]
-        if let contextTokens, !contextTokens.isEmpty {
+        if !contextTokens.isEmpty {
             prompt.append(contentsOf: contextTokens)
         }
         prompt += [
@@ -453,7 +455,7 @@ enum Qwen3MlxBuilder {
             Qwen3MlxTokens.assistantTokenId,
             Qwen3MlxTokens.newlineTokenId,
         ]
-        if let languageTokens {
+        if !languageTokens.isEmpty {
             prompt.append(Qwen3MlxTokens.languageTokenId)
             prompt.append(contentsOf: languageTokens)
             prompt.append(Qwen3MlxTokens.asrTextTokenId)

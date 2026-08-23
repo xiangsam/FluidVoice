@@ -125,28 +125,40 @@ enum MlxSttCatalog {
 
     static let qwen3AsrCards: [MlxSttCard] = [
         MlxSttCard(
-            id: "0.6B-8bit", family: .qwen3Asr, specID: "0.6B", quant: .int8,
+            id: "0.6B-8bit",
+            family: .qwen3Asr,
+            specID: "0.6B",
+            quant: .int8,
             title: "Qwen3-ASR 0.6B",
             repo: "mlx-community/Qwen3-ASR-0.6B-8bit",
             sizeBytes: 1_010_771_234,
             note: "低内存高速度"
         ),
         MlxSttCard(
-            id: "0.6B-bf16", family: .qwen3Asr, specID: "0.6B", quant: .bf16,
+            id: "0.6B-bf16",
+            family: .qwen3Asr,
+            specID: "0.6B",
+            quant: .bf16,
             title: "Qwen3-ASR 0.6B",
             repo: "mlx-community/Qwen3-ASR-0.6B-bf16",
             sizeBytes: 1_569_435_907,
             note: "小模型最高精度"
         ),
         MlxSttCard(
-            id: "1.7B-8bit", family: .qwen3Asr, specID: "1.7B", quant: .int8,
+            id: "1.7B-8bit",
+            family: .qwen3Asr,
+            specID: "1.7B",
+            quant: .int8,
             title: "Qwen3-ASR 1.7B",
             repo: "mlx-community/Qwen3-ASR-1.7B-8bit",
             sizeBytes: 2_467_856_503,
             note: "高质量大模型"
         ),
         MlxSttCard(
-            id: "1.7B-bf16", family: .qwen3Asr, specID: "1.7B", quant: .bf16,
+            id: "1.7B-bf16",
+            family: .qwen3Asr,
+            specID: "1.7B",
+            quant: .bf16,
             title: "Qwen3-ASR 1.7B",
             repo: "mlx-community/Qwen3-ASR-1.7B-bf16",
             sizeBytes: 4_080_707_826,
@@ -158,7 +170,10 @@ enum MlxSttCatalog {
 
     static let parakeetTdtCards: [MlxSttCard] = [
         MlxSttCard(
-            id: "0.6B-v3", family: .parakeetTdt, specID: "0.6B v3", quant: .bf16,
+            id: "0.6B-v3",
+            family: .parakeetTdt,
+            specID: "0.6B v3",
+            quant: .bf16,
             title: "Parakeet TDT 0.6B v3",
             repo: "mlx-community/parakeet-tdt-0.6b-v3",
             sizeBytes: 2_508_288_736,
@@ -170,7 +185,10 @@ enum MlxSttCatalog {
 
     static let nemotronAsrCards: [MlxSttCard] = [
         MlxSttCard(
-            id: "0.6B-streaming", family: .nemotronAsr, specID: "0.6B", quant: .bf16,
+            id: "0.6B-streaming",
+            family: .nemotronAsr,
+            specID: "0.6B",
+            quant: .bf16,
             title: "Nemotron 3.5 ASR 0.6B",
             repo: "mlx-community/nemotron-3.5-asr-streaming-0.6b",
             sizeBytes: 1_276_058_836,
@@ -182,7 +200,10 @@ enum MlxSttCatalog {
 
     static let glmAsrCards: [MlxSttCard] = [
         MlxSttCard(
-            id: "0.6B-nano-8bit", family: .glmAsr, specID: "Nano", quant: .int8,
+            id: "0.6B-nano-8bit",
+            family: .glmAsr,
+            specID: "Nano",
+            quant: .int8,
             title: "GLM-ASR Nano",
             repo: "mlx-community/GLM-ASR-Nano-2512-8bit",
             sizeBytes: 2_409_627_301,
@@ -194,7 +215,10 @@ enum MlxSttCatalog {
 
     static let funAsrCards: [MlxSttCard] = [
         MlxSttCard(
-            id: "0.6B-mlt-nano-8bit", family: .funAsr, specID: "MLT Nano", quant: .int8,
+            id: "0.6B-mlt-nano-8bit",
+            family: .funAsr,
+            specID: "MLT Nano",
+            quant: .int8,
             title: "Fun-ASR MLT Nano",
             repo: "mlx-community/Fun-ASR-MLT-Nano-2512-8bit",
             sizeBytes: 1_546_273_485,
@@ -206,28 +230,40 @@ enum MlxSttCatalog {
 
     static let whisperMlxCards: [MlxSttCard] = [
         MlxSttCard(
-            id: "whisper-tiny-8bit", family: .whisperMlx, specID: "Tiny", quant: .int8,
+            id: "whisper-tiny-8bit",
+            family: .whisperMlx,
+            specID: "Tiny",
+            quant: .int8,
             title: "Whisper Tiny",
             repo: "mlx-community/whisper-tiny-8bit",
             sizeBytes: 40_245_083,
             note: "超轻量 · 最快 · 99 语（含中文）"
         ),
         MlxSttCard(
-            id: "whisper-small-8bit", family: .whisperMlx, specID: "Small", quant: .int8,
+            id: "whisper-small-8bit",
+            family: .whisperMlx,
+            specID: "Small",
+            quant: .int8,
             title: "Whisper Small",
             repo: "mlx-community/whisper-small-8bit",
             sizeBytes: 258_100_000,
             note: "轻量平衡 · 99 语（含中文）"
         ),
         MlxSttCard(
-            id: "whisper-large-v3-turbo-8bit", family: .whisperMlx, specID: "Large V3 Turbo", quant: .int8,
+            id: "whisper-large-v3-turbo-8bit",
+            family: .whisperMlx,
+            specID: "Large V3 Turbo",
+            quant: .int8,
             title: "Whisper Large V3 Turbo",
             repo: "mlx-community/whisper-large-v3-turbo-8bit",
             sizeBytes: 863_659_156,
             note: "OpenAI 旗舰 · 99 语（含中文）· 高精度"
         ),
         MlxSttCard(
-            id: "whisper-large-v3-8bit", family: .whisperMlx, specID: "Large V3", quant: .int8,
+            id: "whisper-large-v3-8bit",
+            family: .whisperMlx,
+            specID: "Large V3",
+            quant: .int8,
             title: "Whisper Large V3",
             repo: "mlx-community/whisper-large-v3-8bit",
             sizeBytes: 1_560_000_000,

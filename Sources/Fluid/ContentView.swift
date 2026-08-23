@@ -499,7 +499,6 @@ struct ContentView: View {
         self.appear = true
         self.refreshAccessibilityPermissionState()
 
-
         Task {
             await AudioStartupGate.shared.scheduleOpenAfterInitialUISettled()
         }

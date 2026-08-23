@@ -50,4 +50,3 @@ struct ThemedCard<Content: View>: View {
             .animation(.easeOut(duration: 0.15), value: self.isHovered)
     }
 }
-

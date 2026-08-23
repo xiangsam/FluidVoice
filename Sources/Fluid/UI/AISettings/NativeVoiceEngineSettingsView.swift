@@ -109,7 +109,7 @@ struct NativeVoiceEngineSettingsView: View {
             self.viewModel.onAppear()
             self.syncTabWithActiveModel()
         }
-        .onChange(of: self.settings.selectedSpeechModel) { _, newModel in
+        .onChange(of: self.settings.selectedSpeechModel) { _, _ in
             // Tab must follow the active engine so a stale cloud tab never
             // looks "alive" after switching back to a local model.
             withAnimation(.easeInOut(duration: 0.15)) {
@@ -265,7 +265,6 @@ struct NativeVoiceEngineSettingsView: View {
             }
         }
     }
-
 
     // MARK: - MLX Engine Group (flat per-card selection)
 

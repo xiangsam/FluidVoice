@@ -2480,8 +2480,8 @@ final class SettingsStore: ObservableObject {
     }
 
     enum Qwen3PrecisionVariant: String, CaseIterable, Identifiable, Codable {
-        case int8 = "int8"
-        case f32 = "f32"
+        case int8
+        case f32
 
         var id: String { rawValue }
     }
@@ -2557,9 +2557,9 @@ final class SettingsStore: ObservableObject {
     }
 
     enum HuggingFaceMirror: String, CaseIterable, Identifiable, Codable {
-        case hfMirror = "hfMirror"
-        case official = "official"
-        case custom = "custom"
+        case hfMirror
+        case official
+        case custom
 
         var id: String { rawValue }
 
@@ -2905,7 +2905,6 @@ final class SettingsStore: ObservableObject {
         if !self.savedProviders.isEmpty { return true }
         return false
     }
-
 
     var promptModeShortcutEnabled: Bool {
         get {

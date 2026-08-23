@@ -351,5 +351,4 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         return false
     }
 
-
 }

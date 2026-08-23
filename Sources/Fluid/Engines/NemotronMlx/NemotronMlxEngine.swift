@@ -111,17 +111,17 @@ actor NemotronMlxEngine {
     }
 
     static func parseSpec(from config: [String: Any]) throws -> NemotronMlxSpec {
-        func int(_ d: [String: Any]?, _ k: String, _ def: Int) -> Int {
-            (d?[k] as? NSNumber)?.intValue ?? def
+        func int(_ d: [String: Any], _ k: String, _ def: Int) -> Int {
+            (d[k] as? NSNumber)?.intValue ?? def
         }
-        func float(_ d: [String: Any]?, _ k: String, _ def: Float) -> Float {
-            (d?[k] as? NSNumber)?.floatValue ?? def
+        func float(_ d: [String: Any], _ k: String, _ def: Float) -> Float {
+            (d[k] as? NSNumber)?.floatValue ?? def
         }
-        func double(_ d: [String: Any]?, _ k: String, _ def: Double) -> Double {
-            (d?[k] as? NSNumber)?.doubleValue ?? def
+        func double(_ d: [String: Any], _ k: String, _ def: Double) -> Double {
+            (d[k] as? NSNumber)?.doubleValue ?? def
         }
-        func bool(_ d: [String: Any]?, _ k: String, _ def: Bool) -> Bool {
-            (d?[k] as? NSNumber)?.boolValue ?? def
+        func bool(_ d: [String: Any], _ k: String, _ def: Bool) -> Bool {
+            (d[k] as? NSNumber)?.boolValue ?? def
         }
 
         let pre = config["preprocessor"] as? [String: Any]
@@ -140,34 +140,34 @@ actor NemotronMlxEngine {
             .mapValues { ($0 as? NSNumber)?.intValue ?? 0 } ?? [:]
 
         return NemotronMlxSpec(
-            sampleRate: int(pre, "sample_rate", 16_000),
-            features: int(pre, "features", 128),
-            nFFT: int(pre, "n_fft", 512),
-            windowSize: double(pre, "window_size", 0.025),
-            windowStride: double(pre, "window_stride", 0.01),
-            preemph: float(pre, "preemph", 0.97),
-            logGuard: float(pre, "log_zero_guard_value", 5.960464477539063e-8),
-            featIn: int(enc, "feat_in", 128),
-            dModel: int(enc, "d_model", 1024),
-            nLayers: int(enc, "n_layers", 24),
-            nHeads: int(enc, "n_heads", 8),
-            ffExpansionFactor: int(enc, "ff_expansion_factor", 4),
-            subsamplingFactor: int(enc, "subsampling_factor", 8),
-            subsamplingConvChannels: int(enc, "subsampling_conv_channels", 256),
-            convKernelSize: int(enc, "conv_kernel_size", 9),
-            posEmbMaxLen: int(enc, "pos_emb_max_len", 5000),
-            useBias: bool(enc, "use_bias", false),
-            numPrompts: int(prompt, "num_prompts", 128),
-            promptHidden: int(prompt, "prompt_hidden", 2048),
+            sampleRate: int(pre ?? [:], "sample_rate", 16_000),
+            features: int(pre ?? [:], "features", 128),
+            nFFT: int(pre ?? [:], "n_fft", 512),
+            windowSize: double(pre ?? [:], "window_size", 0.025),
+            windowStride: double(pre ?? [:], "window_stride", 0.01),
+            preemph: float(pre ?? [:], "preemph", 0.97),
+            logGuard: float(pre ?? [:], "log_zero_guard_value", 5.960464477539063e-8),
+            featIn: int(enc ?? [:], "feat_in", 128),
+            dModel: int(enc ?? [:], "d_model", 1024),
+            nLayers: int(enc ?? [:], "n_layers", 24),
+            nHeads: int(enc ?? [:], "n_heads", 8),
+            ffExpansionFactor: int(enc ?? [:], "ff_expansion_factor", 4),
+            subsamplingFactor: int(enc ?? [:], "subsampling_factor", 8),
+            subsamplingConvChannels: int(enc ?? [:], "subsampling_conv_channels", 256),
+            convKernelSize: int(enc ?? [:], "conv_kernel_size", 9),
+            posEmbMaxLen: int(enc ?? [:], "pos_emb_max_len", 5000),
+            useBias: bool(enc ?? [:], "use_bias", false),
+            numPrompts: int(prompt ?? [:], "num_prompts", 128),
+            promptHidden: int(prompt ?? [:], "prompt_hidden", 2048),
             promptDictionary: dict,
             defaultLanguage: (config["default_language"] as? String) ?? "auto",
-            decoderVocabSize: int(dec, "vocab_size", 13087),
-            blankAsPad: bool(dec, "blank_as_pad", true),
-            predHidden: int(pred, "pred_hidden", 640),
-            predRNNLayers: int(pred, "pred_rnn_layers", 2),
-            jointHidden: int(jn, "joint_hidden", 640),
+            decoderVocabSize: int(dec ?? [:], "vocab_size", 13087),
+            blankAsPad: bool(dec ?? [:], "blank_as_pad", true),
+            predHidden: int(pred ?? [:], "pred_hidden", 640),
+            predRNNLayers: int(pred ?? [:], "pred_rnn_layers", 2),
+            jointHidden: int(jn ?? [:], "joint_hidden", 640),
             jointActivation: (jn?["activation"] as? String) ?? "relu",
-            encoderHidden: int(jn, "encoder_hidden", 1024),
+            encoderHidden: int(jn ?? [:], "encoder_hidden", 1024),
             maxSymbols: int(config, "max_symbols", 10),
             attContextSize: attCtx,
             vocabulary: vocab
