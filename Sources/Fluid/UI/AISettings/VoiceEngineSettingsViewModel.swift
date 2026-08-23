@@ -41,6 +41,15 @@ final class VoiceEngineSettingsViewModel: ObservableObject {
         self.asr.downloadProgress ?? 0.0
     }
 
+    /// True while a specific MLX card is being downloaded (the card must be
+    /// the selected one, since downloads run through the selected model).
+    func isMlxCardDownloading(_ card: MlxSttCard) -> Bool {
+        guard self.asr.downloadingModelId == SettingsStore.SpeechModel.qwen3Asr.id else {
+            return false
+        }
+        return self.settings.selectedMlxSttCardID == card.pathID
+    }
+
     var isCancellingModelDownload: Bool {
         self.asr.isCancellingModelDownload
     }
@@ -91,14 +100,12 @@ final class VoiceEngineSettingsViewModel: ObservableObject {
             break
         case .cloud:
             models = models.filter { $0.provider == .cloud }
-        case .nvidia:
-            models = models.filter { $0.provider == .nvidia }
         case .apple:
             models = models.filter { $0.provider == .apple }
-        case .cohere:
-            models = models.filter { $0.provider == .cohere }
         case .openai:
             models = models.filter { $0.provider == .openai }
+        case .qwen:
+            models = models.filter { $0.provider == .qwen }
         }
 
         if self.englishOnlyFilter {
@@ -131,7 +138,19 @@ final class VoiceEngineSettingsViewModel: ObservableObject {
             self.settings.selectedSpeechModel = model
             self.previewSpeechModel = model
             self.setSelectedSpeechProvider(model.provider)
+            // Exclusive selection: only ONE engine can be active at a time.
+            // When the user picks Apple or a cloud model, clear the MLX card
+            // ID so the local card list shows no card as selected. The MLX
+            // card ID is re-pointed when an MLX card is picked again.
+            if !model.isMlxEngineModel {
+                self.settings.selectedMlxSttCardID = ""
+            }
         }
+        // Exclusive engine selection: the ASR routing is driven by
+        // selectedSpeechModel and (for MLX cards) selectedMlxSttCardID only.
+        // Whenever the user picks a different model, force a provider reset so
+        // a stale cloud/Apple provider can never keep serving transcription
+        // after the switch back to a local card.
         self.asr.resetTranscriptionProvider()
         Task {
             do {
@@ -144,6 +163,42 @@ final class VoiceEngineSettingsViewModel: ObservableObject {
                 self.asr.errorMessage = error.localizedDescription
                 self.asr.showError = true
             }
+        }
+    }
+
+    // MARK: - MLX STT Cards (per-card lifecycle)
+
+    /// Activate an MLX card: select it as the active MLX model and point the
+    /// engine at the card's repository. Only blocked while a download /
+    /// preparation is in flight; otherwise the click always applies and takes
+    /// effect on the next transcription via the provider's self-heal.
+    func selectMlxCard(_ card: MlxSttCard) {
+        guard self.downloadingModel == nil,
+            !self.asr.hasActiveModelDownload,
+            !self.asr.hasActiveModelPreparation,
+            !self.asr.isCancellingModelPreparation
+        else { return }
+        // Switching to a local MLX card is exclusive: point the MLX card ID at
+        // the new card AND switch the unified SpeechModel to the MLX engine so
+        // the ASR routing can never keep serving a cloud/Apple engine.
+        self.settings.selectedMlxSttCardID = card.pathID
+        self.activateSpeechModel(.qwen3Asr)
+    }
+
+    /// Download a specific MLX card (selects it first, then downloads).
+    func downloadMlxCard(_ card: MlxSttCard) {
+        guard !self.areSpeechModelActionsBlocked else { return }
+        self.settings.selectedMlxSttCardID = card.pathID
+        self.settings.selectedSpeechModel = .qwen3Asr
+        self.asr.resetTranscriptionProvider()
+        self.downloadSpeechModel(.qwen3Asr)
+    }
+
+    /// Uninstall one MLX card from disk.
+    func uninstallMlxCard(_ card: MlxSttCard) {
+        guard !self.areSpeechModelActionsBlocked else { return }
+        Task { [weak self] in
+            await self?.asr.deleteMlxCard(pathID: card.pathID)
         }
     }
 
@@ -216,20 +271,8 @@ final class VoiceEngineSettingsViewModel: ObservableObject {
             return "Apple Speech (Legacy) uses built-in macOS speech recognition. No model download required, works on Intel and Apple Silicon."
         case .appleSpeechAnalyzer:
             return "Apple Speech uses advanced on-device recognition with fast, accurate transcription. Requires macOS 26+."
-        case .parakeetTDT:
-            return "Parakeet TDT v3 uses CoreML and Neural Engine for fastest transcription (25 languages) on Apple Silicon."
-        case .parakeetTDTv2:
-            return "Parakeet TDT v2 is an English-only model optimized for accuracy and consistency on Apple Silicon."
-        case .parakeetRealtime:
-            return "Parakeet Flash uses FluidAudio's true streaming EOU pipeline for low-latency English dictation. Best when you want words to appear live as you speak."
         case .qwen3Asr:
-            return "Qwen3 ASR is a multilingual FluidAudio model with strong quality, but higher memory usage. Requires macOS 15+."
-        case .cohereTranscribeSixBit:
-            return "Cohere Transcribe downloads a CoreML pipeline from Hugging Face and caches it locally. Select the language manually before dictation. Best on Apple Silicon with 8GB+ RAM."
-        case .nemotronOffline:
-            return "Nemotron 3.5 Multilingual is slower but more accurate. Supports around 40 languages with auto or manual language selection. Best on Apple Silicon with 8GB+ RAM."
-        case .nemotronStreaming, .nemotronStreaming320:
-            return "Nemotron Speech 3.5 Streaming Capable uses NVIDIA's streaming CoreML pipeline. Supports around 40 languages with auto or manual language selection."
+            return "Qwen3 ASR is a multilingual local model with strong quality, but higher memory usage. Requires macOS 15+."
         default:
             return "Whisper models support 99 languages and work on any Mac."
         }
@@ -251,11 +294,6 @@ final class VoiceEngineSettingsViewModel: ObservableObject {
     func deleteModels() async {
         do {
             try await self.asr.clearModelCache()
-            let model = self.settings.selectedSpeechModel
-            if model.requiresExternalArtifacts {
-                self.settings.setExternalCoreMLArtifactsDirectory(nil, for: model)
-                self.asr.resetTranscriptionProvider()
-            }
             await self.asr.checkIfModelsExistAsync()
         } catch {
             DebugLogger.shared.error("Failed to delete models: \(error)", source: "AISettingsView")
@@ -275,8 +313,4 @@ final class VoiceEngineSettingsViewModel: ObservableObject {
         self.selectedSpeechProvider = provider
     }
 
-    func openExternalModelSource(for model: SettingsStore.SpeechModel) {
-        guard let url = model.externalCoreMLSpec?.sourceURL else { return }
-        NSWorkspace.shared.open(url)
-    }
 }

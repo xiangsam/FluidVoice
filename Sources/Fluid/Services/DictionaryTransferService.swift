@@ -209,7 +209,7 @@ enum DictionaryTransferImportMode {
 
 struct DictionaryTransferState {
     let replacements: [SettingsStore.CustomDictionaryEntry]
-    let customWords: [ParakeetVocabularyStore.VocabularyConfig.Term]
+    let customWords: [CustomVocabularyStore.VocabularyConfig.Term]
 }
 
 struct DictionaryTransferSummary {
@@ -240,7 +240,7 @@ final class DictionaryTransferService {
     func makeExportDocument() throws -> DictionaryTransferDocument {
         try DictionaryTransferDocument(
             replacements: SettingsStore.shared.customDictionaryEntries.compactMap(Self.exportReplacement(from:)),
-            customWordEntries: Self.exportCustomWords(from: ParakeetVocabularyStore.shared.loadUserBoostTerms())
+            customWordEntries: Self.exportCustomWords(from: CustomVocabularyStore.shared.loadUserBoostTerms())
         )
     }
 
@@ -265,13 +265,13 @@ final class DictionaryTransferService {
             document: document,
             mode: mode,
             currentReplacements: SettingsStore.shared.customDictionaryEntries,
-            currentCustomWords: ParakeetVocabularyStore.shared.loadUserBoostTerms()
+            currentCustomWords: CustomVocabularyStore.shared.loadUserBoostTerms()
         )
 
-        try ParakeetVocabularyStore.shared.saveUserBoostTerms(state.customWords)
+        try CustomVocabularyStore.shared.saveUserBoostTerms(state.customWords)
         SettingsStore.shared.customDictionaryEntries = state.replacements
         ASRService.invalidateDictionaryCache()
-        NotificationCenter.default.post(name: .parakeetVocabularyDidChange, object: nil)
+        NotificationCenter.default.post(name: .customVocabularyDidChange, object: nil)
 
         return DictionaryTransferSummary(
             replacementCount: state.replacements.count,
@@ -289,7 +289,7 @@ final class DictionaryTransferService {
         document: DictionaryTransferDocument,
         mode: DictionaryTransferImportMode,
         currentReplacements: [SettingsStore.CustomDictionaryEntry],
-        currentCustomWords: [ParakeetVocabularyStore.VocabularyConfig.Term]
+        currentCustomWords: [CustomVocabularyStore.VocabularyConfig.Term]
     ) throws -> DictionaryTransferState {
         let normalizedDocument = self.normalizedDocument(document)
         var replacements = mode == .replace ? [] : currentReplacements
@@ -305,7 +305,7 @@ final class DictionaryTransferService {
                 continue
             }
             customWords.append(
-                ParakeetVocabularyStore.VocabularyConfig.Term(
+                CustomVocabularyStore.VocabularyConfig.Term(
                     text: word.text,
                     weight: word.weight ?? self.importedCustomWordWeight,
                     aliases: []
@@ -347,7 +347,7 @@ final class DictionaryTransferService {
     }
 
     private static func exportCustomWords(
-        from terms: [ParakeetVocabularyStore.VocabularyConfig.Term]
+        from terms: [CustomVocabularyStore.VocabularyConfig.Term]
     ) -> [DictionaryTransferCustomWord] {
         self.exportCustomWords(
             from: terms.map { DictionaryTransferCustomWord(text: $0.text, weight: $0.weight) }

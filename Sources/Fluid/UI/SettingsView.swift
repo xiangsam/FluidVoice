@@ -7,7 +7,6 @@
 
 import AppKit
 import AVFoundation
-import PromiseKit
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -39,11 +38,9 @@ struct SettingsView: View {
     @Binding var primaryDictationShortcuts: [HotkeyShortcut]
     @Binding var activeShortcutRecordingTarget: ShortcutRecordingTarget?
     @Binding var shortcutRecordingMessage: String?
-    @Binding var commandModeShortcut: HotkeyShortcut?
     @Binding var rewriteShortcut: HotkeyShortcut
     @Binding var cancelRecordingShortcut: HotkeyShortcut
     @Binding var pasteLastTranscriptionShortcut: HotkeyShortcut?
-    @Binding var commandModeShortcutEnabled: Bool
     @Binding var rewriteShortcutEnabled: Bool
     @Binding var pasteLastTranscriptionShortcutEnabled: Bool
     @Binding var hotkeyManagerInitialized: Bool
@@ -62,7 +59,6 @@ struct SettingsView: View {
     @State private var showAnalyticsPrivacy: Bool = false
     @State private var pendingAnalyticsValue: Bool? = nil
     @State private var showAreYouSureToStopAnalytics: Bool = false
-    @State private var rollbackVersion: String = ""
     @State private var isRollingBack: Bool = false
     @State private var audioHistoryBudgetText: String = Self.audioBudgetText(for: SettingsStore.shared.audioHistoryBudgetGB)
     @State private var audioHistoryUsageBytes: Int64 = DictationAudioHistoryStore.shared.audioUsageBytes()
@@ -137,10 +133,6 @@ struct SettingsView: View {
                 }
             }
         )
-    }
-
-    private var currentAppVersion: String {
-        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "Unknown"
     }
 
     private var appDisplayName: String {
@@ -421,34 +413,6 @@ struct SettingsView: View {
 
                             Divider().opacity(0.2)
 
-                            // Automatic Updates
-                            VStack(alignment: .leading, spacing: 6) {
-                                HStack(alignment: .center) {
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text("Automatic Updates".loc)
-                                            .font(self.theme.typography.bodyStrong)
-                                            .foregroundStyle(self.settingsTitleText)
-                                        Text("Disabled for custom fork build to prevent overwriting custom features.".loc)
-                                            .font(self.theme.typography.bodySmall)
-                                            .foregroundStyle(self.settingsSecondaryText)
-                                    }
-
-                                    Spacer()
-
-                                    Toggle("", isOn: Binding(
-                                        get: { SettingsStore.shared.autoUpdateCheckEnabled },
-                                        set: { SettingsStore.shared.autoUpdateCheckEnabled = $0 }
-                                    ))
-                                    .toggleStyle(.switch)
-                                    .tint(self.theme.palette.accent)
-                                    .labelsHidden()
-                                }
-
-                                Text("Current version: \(self.currentAppVersion) (Custom Fork)")
-                                    .font(self.theme.typography.bodySmall)
-                                    .foregroundStyle(self.settingsSecondaryText)
-                            }
-
                             // Info & Links
                             HStack(spacing: 12) {
                                 Button {
@@ -616,35 +580,6 @@ struct SettingsView: View {
 
                                     self.primaryDictationShortcutsList()
                                     self.dictationPromptPicker(for: .primary)
-                                    Divider().opacity(0.2).padding(.vertical, 4)
-
-                                    self.shortcutRow(
-                                        content: .init(
-                                            icon: "terminal.fill",
-                                            iconColor: .secondary,
-                                            title: "Command Mode".loc,
-                                            description: "Execute voice commands".loc
-                                        ),
-                                        shortcut: self.commandModeShortcut,
-                                        isRecording: self.isRecording(.command),
-                                        isAnyRecordingActive: self.isRecordingAnyShortcut,
-                                        recordingMessage: self.isRecording(.command) ? self.shortcutRecordingMessage : nil,
-                                        isEnabled: self.$commandModeShortcutEnabled,
-                                        requiresShortcutToEnable: true,
-                                        onChangePressed: {
-                                            DebugLogger.shared.debug("Starting to record new command mode shortcut", source: "SettingsView")
-                                            self.shortcutRecordingMessage = nil
-                                            self.activeShortcutRecordingTarget = .command
-                                        },
-                                        onRemovePressed: {
-                                            if self.activeShortcutRecordingTarget == .command {
-                                                self.shortcutRecordingMessage = nil
-                                                self.activeShortcutRecordingTarget = nil
-                                            }
-                                            self.commandModeShortcut = nil
-                                            self.commandModeShortcutEnabled = false
-                                        }
-                                    )
                                     Divider().opacity(0.2).padding(.vertical, 4)
 
                                     self.shortcutRow(
@@ -1453,7 +1388,6 @@ struct SettingsView: View {
 }
 
     private func refreshRollbackState() {
-        self.rollbackVersion = SimpleUpdater.shared.latestRollbackVersion() ?? ""
     }
 
     private func openIssueReportingPage() {
@@ -1643,56 +1577,6 @@ struct SettingsView: View {
         alert.runModal()
     }
 
-    private func openPreviousBuildPicker() {
-        Task { @MainActor in
-            do {
-                let options = try await SimpleUpdater.shared.fetchRecentReleaseBuildOptions(
-                    owner: "altic-dev",
-                    repo: "Fluid-oss",
-                    limit: 3,
-                    includePrerelease: SettingsStore.shared.betaReleasesEnabled
-                )
-                self.presentPreviousBuildPicker(options)
-            } catch {
-                self.openAllReleasesPage()
-            }
-        }
-    }
-
-    private func presentPreviousBuildPicker(_ options: [SimpleUpdater.ReleaseBuildOption]) {
-        guard !options.isEmpty else {
-            self.openAllReleasesPage()
-            return
-        }
-
-        let picker = NSAlert()
-        picker.messageText = "Download Previous Build"
-        picker.informativeText = "No local rollback backup was found. Choose a recent release build:"
-        picker.alertStyle = .informational
-
-        for option in options {
-            picker.addButton(withTitle: option.version)
-        }
-        picker.addButton(withTitle: "All Releases")
-        picker.addButton(withTitle: "Cancel")
-
-        let response = picker.runModal()
-        let first = NSApplication.ModalResponse.alertFirstButtonReturn.rawValue
-        let index = response.rawValue - first
-
-        if index >= 0, index < options.count {
-            NSWorkspace.shared.open(options[index].url)
-            return
-        }
-        if index == options.count {
-            self.openAllReleasesPage()
-        }
-    }
-
-    private func openAllReleasesPage() {
-        guard let url = URL(string: "https://github.com/altic-dev/Fluid-oss/releases") else { return }
-        NSWorkspace.shared.open(url)
-    }
 
     private func applyAnalyticsConsentChange(_ enabled: Bool) {
         SettingsStore.shared.shareAnonymousAnalytics = enabled
@@ -2610,71 +2494,3 @@ struct FlowLayout: Layout {
     }
 }
 
-// MARK: - Analytics modal confirmation
-
-struct AnalyticsConfirmationView: View {
-    let onConfirm: () -> Void
-    let onCancel: () -> Void
-    @Environment(\.theme) private var theme
-
-    private var contactInfoText: AttributedString {
-        var text = AttributedString(
-            "If you have any concerns we would love to hear about it, please email alticdev@gmail.com or file an issue in our GitHub."
-        )
-
-        if let emailRange = text.range(of: "alticdev@gmail.com") {
-            text[emailRange].link = URL(string: "mailto:alticdev@gmail.com")
-            text[emailRange].foregroundColor = self.theme.palette.accent
-        }
-
-        if let githubRange = text.range(of: "GitHub") {
-            text[githubRange].link = URL(string: "https://github.com/altic-dev/FluidVoice")
-            text[githubRange].foregroundColor = self.theme.palette.accent
-        }
-
-        return text
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Are you sure you want to stop sharing anonymous analytics?".loc)
-                .font(.headline)
-
-            Text("By sharing anonymous usage data, you help us build the features you care about most. We never collect personal information (Audio, Transcription text etc), ever. Your support simply helps us make FluidVoice better for you.")
-                .font(self.theme.typography.bodySmall)
-                .foregroundStyle(.secondary)
-                .padding(12)
-                .background(
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(self.theme.palette.cardBackground)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(self.theme.palette.cardBorder.opacity(0.6), lineWidth: 1)
-                )
-
-            Text(self.contactInfoText)
-                .font(self.theme.typography.bodySmall)
-                .foregroundStyle(.secondary)
-                .textSelection(.enabled)
-
-            Divider()
-
-            HStack {
-                Spacer()
-
-                Button("Cancel".loc) {
-                    self.onCancel()
-                }
-
-                Button("Yes") {
-                    self.onConfirm()
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(.red)
-            }
-        }
-        .padding(20)
-        .frame(width: 420)
-    }
-}

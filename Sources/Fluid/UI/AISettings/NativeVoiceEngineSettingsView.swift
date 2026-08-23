@@ -6,9 +6,6 @@
 //
 
 import SwiftUI
-#if canImport(FluidAudio)
-import FluidAudio
-#endif
 
 typealias SpeechModel = SettingsStore.SpeechModel
 
@@ -37,9 +34,51 @@ struct NativeVoiceEngineSettingsView: View {
     @State private var isTestingConnection: Bool = false
     @State private var connectionTestMessage: String? = nil
     @State private var connectionTestSuccess: Bool? = nil
+    @State private var fetchedOllamaModels: [String] = []
+    @State private var isFetchingOllamaModels = false
+    @State private var ollamaFetchErrorMessage: String? = nil
+    @State private var fetchedOpenRouterModels: [String] = []
+    @State private var isFetchingOpenRouterModels = false
+    @State private var openRouterFetchErrorMessage: String? = nil
+
+    /// Curated OpenRouter transcription-capable model IDs (same set as the
+    /// site filter `output_modalities=transcription`). Used as the fallback
+    /// list when the feed cannot be fetched.
+    private static let curatedOpenRouterSTTModels: [String] = [
+        "openai/gpt-4o-mini-transcribe",
+        "openai/gpt-4o-transcribe",
+        "openai/gpt-transcribe",
+        "openai/whisper-large-v3-turbo",
+        "openai/whisper-large-v3",
+        "openai/whisper-1",
+        "nvidia/nemotron-3.5-asr-streaming-multilingual-0.6b",
+        "nvidia/parakeet-tdt-0.6b-v3",
+        "qwen/qwen3-asr-0.6b",
+        "qwen/qwen3-asr-1.7b",
+        "qwen/qwen3-asr-flash-2026-02-10",
+        "mistralai/voxtral-mini-3b-2507",
+        "mistralai/voxtral-mini-transcribe",
+        "mistralai/voxtral-small-24b-2507-stt",
+        "fish-audio/transcribe-1",
+        "deepgram/nova-3",
+        "google/chirp-3",
+        "microsoft/mai-transcribe-1.5",
+        "x-ai/grok-stt-1.0",
+    ]
 
     private var activeModel: SpeechModel {
         self.settings.selectedSpeechModel
+    }
+
+    /// Move the category picker to the tab matching the active model.
+    private func syncTabWithActiveModel() {
+        if self.activeModel == .appleSpeech || self.activeModel == .appleSpeechAnalyzer {
+            self.selectedTab = .apple
+        } else if self.activeModel.isCloudModel {
+            self.selectedTab = .cloud
+        } else {
+            self.selectedTab = .local
+        }
     }
 
     var body: some View {
@@ -68,13 +107,13 @@ struct NativeVoiceEngineSettingsView: View {
         .padding(.vertical, 8)
         .onAppear {
             self.viewModel.onAppear()
-            // Auto sync tab with active model
-            if self.activeModel == .appleSpeech || self.activeModel == .appleSpeechAnalyzer {
-                self.selectedTab = .apple
-            } else if self.activeModel.isCloudModel {
-                self.selectedTab = .cloud
-            } else {
-                self.selectedTab = .local
+            self.syncTabWithActiveModel()
+        }
+        .onChange(of: self.settings.selectedSpeechModel) { _, newModel in
+            // Tab must follow the active engine so a stale cloud tab never
+            // looks "alive" after switching back to a local model.
+            withAnimation(.easeInOut(duration: 0.15)) {
+                self.syncTabWithActiveModel()
             }
         }
     }
@@ -205,51 +244,9 @@ struct NativeVoiceEngineSettingsView: View {
                 // Download Mirror Acceleration Bar
                 self.downloadAccelerationSection
 
-                // Whisper Family Group
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "waveform.badge.magnifyingglass")
-                            .foregroundStyle(self.theme.palette.accent)
-                        Text("Whisper 本地离线全系列".loc)
-                            .font(.headline)
-                            .foregroundStyle(.primary)
-                        Text("(whisper.cpp 高精度通用转录)".loc)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    VStack(spacing: 10) {
-                        self.modelCard(for: .whisperLargeTurbo)
-                        self.modelCard(for: .whisperLarge)
-                        self.modelCard(for: .whisperMedium)
-                        self.modelCard(for: .whisperSmall)
-                        self.modelCard(for: .whisperBase)
-                        self.modelCard(for: .whisperTiny)
-                    }
-                }
-
-                // FluidAudio Neural Group
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "bolt.badge.sparkle")
-                            .foregroundStyle(.orange)
-                        Text("FluidAudio 神经网络模型".loc)
-                            .font(.headline)
-                            .foregroundStyle(.primary)
-                        Text("(Apple Silicon 极速低延迟)".loc)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    VStack(spacing: 10) {
-                        self.modelCard(for: .parakeetTDT)
-                        self.modelCard(for: .parakeetTDTv2)
-                        self.modelCard(for: .parakeetRealtime)
-                        self.modelCard(for: .qwen3Asr)
-                        self.modelCard(for: .nemotronOffline)
-                        self.modelCard(for: .cohereTranscribeSixBit)
-                    }
-                }
+                // MLX Engine Group (built into FluidVoice, independent of the
+                // FluidAudio package): one engine, flat per-model cards.
+                self.mlxEngineGroupSection
             }
 
         case .cloud:
@@ -269,7 +266,209 @@ struct NativeVoiceEngineSettingsView: View {
         }
     }
 
+
+    // MARK: - MLX Engine Group (flat per-card selection)
+
+    private var selectedMlxCard: MlxSttCard? {
+        MlxSttCatalog.card(pathID: self.settings.selectedMlxSttCardID)
+    }
+
+    /// One engine, flat model cards: Qwen3-ASR / Parakeet / Nemotron /
+    /// GLM-ASR / Fun-ASR / Whisper all live under the single built-in MLX
+    /// engine and are selected by clicking their card row directly.
+    private var mlxEngineGroupSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 6) {
+                Image(systemName: "waveform.badge.magnifyingglass")
+                    .foregroundStyle(self.theme.palette.accent)
+                Text("MLX Engine".loc)
+                    .font(.headline)
+                    .foregroundStyle(.primary)
+                Text("(内置独立引擎 · 完全离线)".loc)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                if self.activeModel.isMlxEngineModel,
+                    let card = self.selectedMlxCard
+                {
+                    self.miniBadge(text: card.title, color: Color.fluidGreen)
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 12) {
+                // Context / hotwords (official Qwen3-ASR "Vocabulary: ..." system prompt).
+                // Qwen3-ASR 模型卡专属；其余模型卡（Parakeet/Nemotron/GLM/Fun/Whisper）不使用。
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("词汇 / 热词 (Vocabulary · 仅 Qwen3-ASR 卡生效)".loc)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(.secondary)
+                    TextField(
+                        "e.g. qwen3, 千问, Qwen3-ASR",
+                        text: Binding(
+                            get: { self.settings.qwen3ContextWords },
+                            set: { self.settings.qwen3ContextWords = $0 }
+                        )
+                    )
+                    .textFieldStyle(.roundedBorder)
+                    .font(.system(size: 11))
+                    .frame(maxWidth: 380)
+                    Text("以官方 Vocabulary 提示词注入，显著提升专有名词/品牌词识别（如 qwen3 → 千万三）。".loc)
+                        .font(.system(size: 10))
+                        .foregroundStyle(.secondary)
+                }
+
+                Divider().opacity(0.3)
+
+                Text("模型卡：每张卡独立下载 / 卸载 · 点击卡片即切换".loc)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(.secondary)
+
+                VStack(spacing: 6) {
+                    ForEach(MlxSttCatalog.cardsByRecommendation) { card in
+                        self.mlxCardRow(card)
+                    }
+                }
+            }
+            .padding(12)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(nsColor: .controlBackgroundColor).opacity(0.6))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.secondary.opacity(0.14), lineWidth: 1)
+                    )
+            )
+        }
+    }
+
+    /// One MLX model card row: select / download / uninstall per card.
+    private func mlxCardRow(_ card: MlxSttCard) -> some View {
+        let isSelected = self.settings.selectedMlxSttCardID == card.pathID
+        let isInstalled: Bool
+        switch card.family {
+        case .parakeetTdt:
+            isInstalled = ParakeetMlxEngine.modelsExist(modelID: card.family.rawValue, variantID: card.id)
+        case .nemotronAsr:
+            isInstalled = NemotronMlxEngine.modelsExist(modelID: card.family.rawValue, variantID: card.id)
+        case .glmAsr:
+            isInstalled = GlmMlxEngine.modelsExist(modelID: card.family.rawValue, variantID: card.id)
+        case .funAsr:
+            isInstalled = FunMlxEngine.modelsExist(modelID: card.family.rawValue, variantID: card.id)
+        case .whisperMlx:
+            isInstalled = WhisperMlxEngine.modelsExist(modelID: card.family.rawValue, variantID: card.id)
+        case .qwen3Asr:
+            isInstalled = Qwen3MlxEngine.modelsExist(modelID: card.family.rawValue, variantID: card.id)
+        }
+        let isDownloading = self.viewModel.downloadingModel == .qwen3Asr
+            && self.viewModel.isMlxCardDownloading(card)
+        // Exclusive: an MLX card is only "selected" while the app is actually
+        // running on the MLX engine (qwen3-asr / whisper). When the user picks
+        // Apple or a cloud model, the MLX card list must NOT show any card as
+        // active/selected — the single selectedSpeechModel drives the routing.
+        let isMlxEngineActive = self.activeModel.isMlxEngineModel
+        let isActive = isMlxEngineActive && isSelected
+        let isCardHighlighted = isMlxEngineActive && isSelected
+
+        return HStack(spacing: 10) {
+            Image(systemName: "waveform.badge.mic")
+                .font(.system(size: 13))
+                .foregroundStyle(isCardHighlighted ? self.theme.palette.accent : .secondary)
+                .frame(width: 20)
+
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 6) {
+                    Text(card.title)
+                        .font(.system(size: 12, weight: isCardHighlighted ? .semibold : .regular))
+                    let rec = MlxSttCatalog.recommendation(for: card)
+                    self.miniBadge(
+                        text: rec.label,
+                        color: rec == .notRecommended ? .orange : (rec == .mustHave ? Color.fluidGreen : rec == .recommended ? .blue : .secondary)
+                    )
+                    self.miniBadge(text: card.family.displayName, color: .blue)
+                    if let quant = card.quantLabel {
+                        self.miniBadge(text: quant, color: .orange)
+                    }
+                    self.miniBadge(text: card.sizeDescription, color: .secondary)
+                    if isActive {
+                        self.miniBadge(text: "使用中".loc, color: Color.fluidGreen)
+                    }
+                }
+                Text(card.footnote)
+                    .font(.system(size: 10))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+
+            Spacer()
+
+            if isDownloading {
+                VStack(alignment: .trailing, spacing: 3) {
+                    ProgressView(value: self.viewModel.downloadProgress)
+                        .frame(width: 70)
+                    Text("\(Int(self.viewModel.downloadProgress * 100))%")
+                        .font(.system(size: 9))
+                        .monospacedDigit()
+                        .foregroundStyle(.secondary)
+                }
+            } else if !isInstalled {
+                Button {
+                    self.viewModel.downloadMlxCard(card)
+                } label: {
+                    Image(systemName: "arrow.down.circle")
+                        .font(.system(size: 13))
+                        .foregroundStyle(self.theme.palette.accent)
+                }
+                .buttonStyle(.plain)
+                .help("下载此量化模型卡".loc)
+            } else {
+                HStack(spacing: 10) {
+                    Button {
+                        self.viewModel.uninstallMlxCard(card)
+                    } label: {
+                        Image(systemName: "trash")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary.opacity(0.7))
+                    }
+                    .buttonStyle(.plain)
+                    .help("卸载此模型卡以释放磁盘空间".loc)
+
+                    Button {
+                        self.viewModel.selectMlxCard(card)
+                    } label: {
+                        if isActive {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundStyle(self.theme.palette.accent)
+                                .font(.system(size: 16))
+                        } else {
+                            Circle()
+                                .strokeBorder(Color.secondary.opacity(0.35), lineWidth: 1.5)
+                                .frame(width: 16, height: 16)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .help("使用此模型卡".loc)
+                }
+            }
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(isActive ? self.theme.palette.accent.opacity(0.08) : Color.secondary.opacity(0.05))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(isActive ? self.theme.palette.accent.opacity(0.4) : Color.secondary.opacity(0.12), lineWidth: 1)
+                )
+        )
+        .contentShape(Rectangle())
+        .onTapGesture {
+            // 整行可点击：点击卡片即切换为该模型卡（引擎为 MLX，无需嵌套选择）。
+            self.viewModel.selectMlxCard(card)
+        }
+    }
+
     // MARK: - Model Card Component
+
     private func modelCard(for model: SpeechModel) -> some View {
         let isSelected = self.activeModel == model
         let isInstalled = model.isInstalled
@@ -298,7 +497,7 @@ struct NativeVoiceEngineSettingsView: View {
                             self.miniBadge(text: model.downloadSize, color: .secondary)
                         }
 
-                        if model == .whisperLargeTurbo || model == .appleSpeechAnalyzer {
+                        if model == .appleSpeechAnalyzer {
                             self.miniBadge(text: "Recommended".loc, color: Color.fluidGreen)
                         }
                     }
@@ -307,10 +506,6 @@ struct NativeVoiceEngineSettingsView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(2)
-
-                    if model == .qwen3Asr {
-                        self.qwen3VariantPicker()
-                    }
                 }
 
                 Spacer()
@@ -340,14 +535,16 @@ struct NativeVoiceEngineSettingsView: View {
         .onTapGesture {
             if isInstalled && !isSelected {
                 withAnimation(.easeInOut(duration: 0.15)) {
-                    self.settings.selectedSpeechModel = model
+                    self.viewModel.activateSpeechModel(model)
                 }
             }
         }
     }
 
     @ViewBuilder
-    private func modelActionView(for model: SpeechModel, isSelected: Bool, isInstalled: Bool, isDownloading: Bool) -> some View {
+    private func modelActionView(
+        for model: SpeechModel, isSelected: Bool, isInstalled: Bool, isDownloading: Bool
+    ) -> some View {
         if isDownloading {
             VStack(alignment: .trailing, spacing: 4) {
                 HStack(spacing: 6) {
@@ -379,7 +576,7 @@ struct NativeVoiceEngineSettingsView: View {
         } else {
             HStack(spacing: 12) {
                 // Delete / Uninstall button for downloadable offline models
-                if !model.isCloudModel && model != .appleSpeech && model != .appleSpeechAnalyzer {
+                if !model.isCloudModel && model != .appleSpeech && model != .appleSpeechAnalyzer && model != .qwen3Asr {
                     Button {
                         Task {
                             await self.viewModel.deleteModel(model)
@@ -395,7 +592,7 @@ struct NativeVoiceEngineSettingsView: View {
 
                 Button {
                     withAnimation(.easeInOut(duration: 0.15)) {
-                        self.settings.selectedSpeechModel = model
+                        self.viewModel.activateSpeechModel(model)
                     }
                 } label: {
                     if isSelected {
@@ -422,32 +619,6 @@ struct NativeVoiceEngineSettingsView: View {
             .foregroundStyle(color)
     }
 
-    @ViewBuilder
-    private func qwen3VariantPicker() -> some View {
-        HStack(spacing: 8) {
-            Text("精度规格:".loc)
-                .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(.secondary)
-
-            Picker("", selection: Binding(
-                get: { self.settings.qwen3AsrVariant },
-                set: { (newVariant: SettingsStore.Qwen3PrecisionVariant) in
-                    self.settings.qwen3AsrVariant = newVariant
-                    Task {
-                        await self.viewModel.asr.checkIfModelsExistAsync()
-                    }
-                }
-            )) {
-                Text("Int8 量化版 (~900 MB)".loc).tag(SettingsStore.Qwen3PrecisionVariant.int8)
-                Text("FP16 全精版 (~1.75 GB)".loc).tag(SettingsStore.Qwen3PrecisionVariant.f32)
-            }
-            .pickerStyle(.segmented)
-            .controlSize(.mini)
-            .frame(maxWidth: 240)
-        }
-        .padding(.top, 2)
-    }
-
     // MARK: - Inline Configuration View for Selected Cloud Engine
     @ViewBuilder
     private func inlineCloudConfigView(for model: SpeechModel) -> some View {
@@ -466,6 +637,59 @@ struct NativeVoiceEngineSettingsView: View {
                         .frame(width: 140, alignment: .leading)
                     TextField("e.g. qwen3-asr", text: self.$settings.cloudSTTOllamaModel)
                         .textFieldStyle(.roundedBorder)
+                }
+
+                // Ollama model list (scan the server's /api/tags)
+                HStack(alignment: .center) {
+                    Text("Available Models".loc)
+                        .font(.subheadline)
+                        .frame(width: 140, alignment: .leading)
+
+                    if self.isFetchingOllamaModels {
+                        ProgressView()
+                            .controlSize(.small)
+                            .padding(.leading, 4)
+                    } else if self.fetchedOllamaModels.isEmpty, self.ollamaFetchErrorMessage == nil {
+                        Text("Click Scan Models to load the list from your server".loc)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Picker("", selection: self.$settings.cloudSTTOllamaModel) {
+                            ForEach(self.fetchedOllamaModels, id: \.self) { name in
+                                Text(name).tag(name)
+                            }
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.menu)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+
+                    Spacer()
+
+                    Button {
+                        self.fetchOllamaModels()
+                    } label: {
+                        HStack(spacing: 4) {
+                            if self.isFetchingOllamaModels {
+                                ProgressView().controlSize(.small)
+                            } else {
+                                Image(systemName: "arrow.clockwise")
+                            }
+                            Text("Scan Models".loc)
+                        }
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .disabled(self.isFetchingOllamaModels)
+                }
+
+                if let message = self.ollamaFetchErrorMessage {
+                    HStack {
+                        Text(message)
+                            .font(.caption)
+                            .foregroundStyle(.red.opacity(0.85))
+                        Spacer()
+                    }
                 }
             } else if model == .cloudOpenAI {
                 HStack(alignment: .center) {
@@ -504,6 +728,66 @@ struct NativeVoiceEngineSettingsView: View {
                         .frame(width: 140, alignment: .leading)
                     SecureField("sk-or-...", text: self.$settings.cloudSTTOpenRouterAPIKey)
                         .textFieldStyle(.roundedBorder)
+                }
+                HStack(alignment: .center) {
+                    Text("Model".loc)
+                        .font(.subheadline)
+                        .frame(width: 140, alignment: .leading)
+                    TextField("e.g. openai/whisper-large-v3-turbo", text: self.$settings.cloudSTTOpenRouterModel)
+                        .textFieldStyle(.roundedBorder)
+                }
+
+                // OpenRouter model list (GET /api/v1/models, OpenAI format)
+                HStack(alignment: .center) {
+                    Text("Available Models".loc)
+                        .font(.subheadline)
+                        .frame(width: 140, alignment: .leading)
+
+                    if self.isFetchingOpenRouterModels {
+                        ProgressView()
+                            .controlSize(.small)
+                            .padding(.leading, 4)
+                    } else if self.fetchedOpenRouterModels.isEmpty, self.openRouterFetchErrorMessage == nil {
+                        Text("Click Scan Models to load the list from OpenRouter".loc)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Picker("", selection: self.$settings.cloudSTTOpenRouterModel) {
+                            ForEach(self.fetchedOpenRouterModels, id: \.self) { name in
+                                Text(name).tag(name)
+                            }
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.menu)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+
+                    Spacer()
+
+                    Button {
+                        self.fetchOpenRouterModels()
+                    } label: {
+                        HStack(spacing: 4) {
+                            if self.isFetchingOpenRouterModels {
+                                ProgressView().controlSize(.small)
+                            } else {
+                                Image(systemName: "arrow.clockwise")
+                            }
+                            Text("Scan Models".loc)
+                        }
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .disabled(self.isFetchingOpenRouterModels)
+                }
+
+                if let message = self.openRouterFetchErrorMessage {
+                    HStack {
+                        Text(message)
+                            .font(.caption)
+                            .foregroundStyle(.red.opacity(0.85))
+                        Spacer()
+                    }
                 }
             } else if model == .cloudCustom {
                 HStack(alignment: .center) {
@@ -647,7 +931,6 @@ struct NativeVoiceEngineSettingsView: View {
         case .appleSpeech, .appleSpeechAnalyzer: return "apple.logo"
         case .cloudOllama: return "network"
         case .cloudOpenAI, .cloudGroq, .cloudOpenRouter, .cloudCustom: return "cloud.fill"
-        case .parakeetTDT, .parakeetTDTv2, .parakeetRealtime: return "bird.fill"
         default: return "cpu.fill"
         }
     }
@@ -661,13 +944,7 @@ struct NativeVoiceEngineSettingsView: View {
         case .cloudGroq: return "Groq Cloud STT (极速 LPUs)".loc
         case .cloudOpenRouter: return "OpenRouter Cloud STT".loc
         case .cloudCustom: return "Custom Cloud STT (自定义接口)".loc
-        case .parakeetTDT: return "Parakeet TDT v3 (中英多语言极速)".loc
-        case .parakeetTDTv2: return "Parakeet TDT v2 (纯英文高精度)".loc
-        case .parakeetRealtime: return "Parakeet Flash (实时流式)".loc
-        case .qwen3Asr: return "Qwen3 ASR (千问本地离线)".loc
-        case .cohereTranscribeSixBit: return "Cohere Transcribe (6-bit)".loc
-        case .nemotronOffline: return "Nemotron 3.5 (NVIDIA 离线)".loc
-        case .nemotronStreaming, .nemotronStreaming320: return "Nemotron Speech (低延迟流式)".loc
+        case .qwen3Asr: return "MLX 语音引擎 (本地离线)".loc
         case .whisperTiny: return "Whisper Tiny (超轻量)".loc
         case .whisperBase: return "Whisper Base (基础模型)".loc
         case .whisperSmall: return "Whisper Small (平衡推荐)".loc
@@ -693,20 +970,8 @@ struct NativeVoiceEngineSettingsView: View {
             return "通过 OpenRouter 聚合网关调用云端语音大模型。".loc
         case .cloudCustom:
             return "自定义兼容 OpenAI 标准格式的语音识别服务地址。".loc
-        case .parakeetTDT:
-            return "FluidAudio 驱动的端到端超快多语言模型（支持 25 种语言），推理极速。".loc
-        case .parakeetTDTv2:
-            return "针对纯英文深度优化的端到端极速模型，极高准确率。".loc
-        case .parakeetRealtime:
-            return "支持边说边出字的原生流式离线模型。".loc
         case .qwen3Asr:
-            return "阿里通义千问 Qwen3-ASR 本地离线神经网络模型，对中文理解极深。".loc
-        case .cohereTranscribeSixBit:
-            return "Cohere 6-bit 量化高精度离线模型。".loc
-        case .nemotronOffline:
-            return "NVIDIA Nemotron 3.5 离线多语言高精度语音模型。".loc
-        case .nemotronStreaming, .nemotronStreaming320:
-            return "NVIDIA Nemotron 超低延迟流式语音模型。".loc
+            return "内置 MLX 语音引擎：Qwen3-ASR / Parakeet / Nemotron / GLM-ASR / Fun-ASR 多模型卡，纯本地完全离线。".loc
         case .whisperTiny:
             return "体积仅 ~44MB，极低资源占用，适合省电或老款机型。".loc
         case .whisperBase:
@@ -729,12 +994,161 @@ struct NativeVoiceEngineSettingsView: View {
         case .cloudOllama: return "\(self.settings.cloudSTTOllamaBaseURL) (\(self.settings.cloudSTTOllamaModel))"
         case .cloudOpenAI: return "OpenAI Cloud STT (\(self.settings.cloudSTTOpenAIModel))"
         case .cloudGroq: return "Groq Cloud STT (\(self.settings.cloudSTTGroqModel))"
+        case .qwen3Asr:
+            // The hero card reflects the currently selected MLX model card.
+            if let card = MlxSttCatalog.card(pathID: self.settings.selectedMlxSttCardID) {
+                return "\(card.title) · \(card.sizeDescription)"
+            }
+            return "本地离线神经网络引擎 (\(model.downloadSize))".loc
         default: return "本地离线神经网络引擎 (\(model.downloadSize))".loc
         }
     }
 
-    private func testConnection() {
-        self.isTestingConnection = true
+    /// Fetch the model list from an Ollama server (`/api/tags`) with a short
+    /// timeout and visible error reporting.
+    private func fetchOllamaModels() {
+        let rawBase = self.settings.cloudSTTOllamaBaseURL
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        let base = rawBase.isEmpty ? "http://localhost:11434" : rawBase
+
+        self.isFetchingOllamaModels = true
+        self.ollamaFetchErrorMessage = nil
+        Task {
+            defer {
+                Task { @MainActor in
+                    self.isFetchingOllamaModels = false
+                }
+            }
+            do {
+                guard let url = URL(string: "\(base)/api/tags") else {
+                    throw NSError(
+                        domain: "NativeVoiceEngineSettingsView",
+                        code: -1,
+                        userInfo: [NSLocalizedDescriptionKey: "Invalid Ollama base URL: \(base)"]
+                    )
+                }
+                var request = URLRequest(url: url)
+                request.timeoutInterval = 8
+                let (data, response) = try await URLSession.shared.data(for: request)
+                if let http = response as? HTTPURLResponse, http.statusCode >= 400 {
+                    throw NSError(
+                        domain: "NativeVoiceEngineSettingsView",
+                        code: http.statusCode,
+                        userInfo: [NSLocalizedDescriptionKey: "HTTP \(http.statusCode)"]
+                    )
+                }
+                if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                   let modelsArray = json["models"] as? [[String: Any]]
+                {
+                    let names = modelsArray.compactMap { $0["name"] as? String }
+                    await MainActor.run {
+                        self.fetchedOllamaModels = names
+                        if names.isEmpty {
+                            self.ollamaFetchErrorMessage =
+                                "No models found. Make sure the Ollama server is running and has models pulled.".loc
+                        }
+                    }
+                } else {
+                    await MainActor.run {
+                        self.fetchedOllamaModels = []
+                        self.ollamaFetchErrorMessage =
+                            "Unexpected response from %@. Is this really an Ollama server?".locFormat(url.host ?? base)
+                    }
+                }
+            } catch {
+                DebugLogger.shared.error("Failed to fetch Ollama models: \(error)", source: "NativeVoiceEngineSettingsView")
+                await MainActor.run {
+                    self.fetchedOllamaModels = []
+                    self.ollamaFetchErrorMessage =
+                        "Could not reach Ollama at %@. Please check the address and that the server is running.".locFormat(base)
+                        + " (\(error.localizedDescription))"
+                }
+            }
+        }
+    }
+
+    /// Fetch the model list from OpenRouter (`/api/v1/models`, OpenAI format)
+    /// with a short timeout and visible error reporting. Typical response:
+    /// { "data": [{ "id": "openai/whisper-large-v3-turbo", ... }, ...] }
+    private func fetchOpenRouterModels() {
+        let rawBase = self.settings.cloudSTTOpenRouterBaseURL
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        let base = rawBase.isEmpty ? "https://openrouter.ai/api/v1" : rawBase
+
+        self.isFetchingOpenRouterModels = true
+        self.openRouterFetchErrorMessage = nil
+        Task {
+            defer {
+                Task { @MainActor in
+                    self.isFetchingOpenRouterModels = false
+                }
+            }
+            do {
+                guard let url = URL(string: "\(base)/models?output_modalities=transcription") else {
+                    throw NSError(
+                        domain: "NativeVoiceEngineSettingsView",
+                        code: -1,
+                        userInfo: [NSLocalizedDescriptionKey: "Invalid OpenRouter base URL: \(base)"]
+                    )
+                }
+                var request = URLRequest(url: url)
+                request.timeoutInterval = 10
+                let apiKey = self.settings.cloudSTTOpenRouterAPIKey
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                if !apiKey.isEmpty {
+                    request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+                }
+                let (data, response) = try await URLSession.shared.data(for: request)
+                if let http = response as? HTTPURLResponse, http.statusCode >= 400 {
+                    throw NSError(
+                        domain: "NativeVoiceEngineSettingsView",
+                        code: http.statusCode,
+                        userInfo: [NSLocalizedDescriptionKey: "HTTP \(http.statusCode)"]
+                    )
+                }
+                if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                   let modelsArray = json["data"] as? [[String: Any]]
+                {
+                    // The endpoint already filters to transcription-capable
+                    // models (output_modalities=transcription) — same source as
+                    // the site's STT page. Sort with the curated/recommended
+                    // ones first, then the rest alphabetically.
+                    let names = modelsArray.compactMap { $0["id"] as? String }
+                    let unique = Array(Set(names)).sorted()
+                    let curatedFirst = Self.curatedOpenRouterSTTModels.filter { unique.contains($0) }
+                        + unique.filter { !Self.curatedOpenRouterSTTModels.contains($0) }
+                    await MainActor.run {
+                        self.fetchedOpenRouterModels = curatedFirst
+                        if unique.isEmpty {
+                            // Fall back to the curated list so the user always
+                            // has a working STT model to pick.
+                            self.fetchedOpenRouterModels = Self.curatedOpenRouterSTTModels
+                            self.openRouterFetchErrorMessage =
+                                "No ASR models detected; showing the recommended list.".loc
+                        }
+                    }
+                } else {
+                    await MainActor.run {
+                        self.fetchedOpenRouterModels = []
+                        self.openRouterFetchErrorMessage =
+                            "Unexpected response from OpenRouter. Expected a JSON `data` array.".loc
+                    }
+                }
+            } catch {
+                DebugLogger.shared.error("Failed to fetch OpenRouter models: \(error)", source: "NativeVoiceEngineSettingsView")
+                await MainActor.run {
+                    self.fetchedOpenRouterModels = []
+                    self.openRouterFetchErrorMessage =
+                        "Could not reach OpenRouter at %@. Please check the address and that the server is running.".locFormat(base)
+                        + " (\(error.localizedDescription))"
+                }
+            }
+        }
+    }
+
+    private func testConnection() {        self.isTestingConnection = true
         self.connectionTestMessage = nil
         self.connectionTestSuccess = nil
 
@@ -803,7 +1217,7 @@ struct NativeVoiceEngineSettingsView: View {
                 .padding(.top, 2)
             }
 
-            Text("国内网络推荐使用国内镜像加速站（如 hf-mirror.com），支持千问 Qwen3、Parakeet、Whisper 等全速稳定下载。".loc)
+            Text("国内网络推荐使用国内镜像加速站（如 hf-mirror.com），支持千问 Qwen3、Whisper 等全速稳定下载。".loc)
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         }
@@ -900,7 +1314,7 @@ struct NativeVoiceEngineSettingsView: View {
 
                     Spacer()
 
-                    Text("\("预计:".loc) \(String(format: "%.2f", estimate.totalGB))G / \(String(format: "%.0f", estimate.totalDeviceRAMGB))G RAM")
+                    Text("\("预计:".loc) \(String(format: "%.2f", estimate.totalGB))G / \(String(format: "%.0f", estimate.totalDeviceRAMGB))G RAM · 可用 \(String(format: "%.1f", estimate.availableRAMGB))G")
                         .font(.system(size: 11, weight: .bold))
                         .foregroundStyle(estimate.pressure == .safe ? Color.fluidGreen : Color.primary)
                 }

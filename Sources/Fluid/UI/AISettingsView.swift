@@ -78,10 +78,9 @@ enum ModelSortOption: String, CaseIterable, Identifiable {
 enum SpeechProviderFilter: String, CaseIterable, Identifiable {
     case all = "All"
     case cloud = "Cloud"
-    case nvidia = "NVIDIA"
     case apple = "Apple"
-    case cohere = "Cohere"
     case openai = "OpenAI"
+    case qwen = "Qwen"
 
     var id: String { self.rawValue }
 
@@ -89,75 +88,10 @@ enum SpeechProviderFilter: String, CaseIterable, Identifiable {
         switch self {
         case .all: return "All".loc
         case .cloud: return "Cloud".loc
-        case .nvidia: return "NVIDIA"
         case .apple: return "Apple"
-        case .cohere: return "Cohere"
         case .openai: return "OpenAI"
+        case .qwen: return "Qwen"
         }
     }
 }
 
-enum AISettingsLayout {
-    static let labelWidth: CGFloat = 110
-    static let pickerWidth: CGFloat = 220
-    static let controlHeight: CGFloat = 34
-    static let providerRowControlHeight: CGFloat = 34
-    static let actionMinWidth: CGFloat = 120
-    static let compactActionMinWidth: CGFloat = 96
-    static let wideActionMinWidth: CGFloat = 140
-    static let primaryActionMinWidth: CGFloat = 150
-    static let promptActionMinWidth: CGFloat = 90
-    static let promptModeMinHeight: CGFloat = 260
-    static let promptModeHintHeight: CGFloat = 18
-    static let promptInlinePickerWidth: CGFloat = 145
-    static let promptInlineModelWidth: CGFloat = 180
-    static let promptScopeLabelWidth: CGFloat = 110
-    static let promptEditorLabelColumnWidth: CGFloat = 180
-    static let promptEditorControlColumnWidth: CGFloat = 270
-    static let rowLeadingIndent: CGFloat = labelWidth + 12
-}
-
-struct AISettingsView: View {
-    let appServices: AppServices
-    let menuBarManager: MenuBarManager
-    let theme: AppTheme
-
-    @StateObject private var voiceViewModel: VoiceEngineSettingsViewModel
-    @StateObject private var enhancementViewModel: AIEnhancementSettingsViewModel
-
-    init(appServices: AppServices, menuBarManager: MenuBarManager, theme: AppTheme) {
-        self.appServices = appServices
-        self.menuBarManager = menuBarManager
-        self.theme = theme
-        _voiceViewModel = StateObject(wrappedValue: VoiceEngineSettingsViewModel(
-            settings: SettingsStore.shared,
-            appServices: appServices
-        ))
-        _enhancementViewModel = StateObject(wrappedValue: AIEnhancementSettingsViewModel(
-            settings: SettingsStore.shared,
-            menuBarManager: menuBarManager,
-            promptTest: DictationPromptTestCoordinator.shared
-        ))
-    }
-
-    var body: some View {
-        ScrollView(.vertical, showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 14) {
-                VoiceEngineSettingsView(
-                    viewModel: self.voiceViewModel,
-                    settings: self.voiceViewModel.settings,
-                    theme: self.theme
-                )
-                AIEnhancementSettingsView(
-                    viewModel: self.enhancementViewModel,
-                    settings: self.enhancementViewModel.settings,
-                    promptTest: self.enhancementViewModel.promptTest,
-                    theme: self.theme,
-                    activeShortcutRecordingTarget: .constant(nil),
-                    shortcutRecordingMessage: .constant(nil)
-                )
-            }
-            .padding(14)
-        }
-    }
-}
