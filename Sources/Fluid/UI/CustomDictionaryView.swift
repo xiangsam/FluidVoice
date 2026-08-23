@@ -8,6 +8,10 @@
 
 import AppKit
 import SwiftUI
+
+extension Notification.Name {
+    static let openCustomDictionaryFromVoiceEngine = Notification.Name("OpenCustomDictionaryFromVoiceEngine")
+}
 import UniformTypeIdentifiers
 
 // This legacy screen still owns several dictionary editors; split them into standalone views incrementally.
@@ -18,10 +22,10 @@ struct CustomDictionaryView: View {
     @EnvironmentObject private var appServices: AppServices
 
     @State private var entries: [SettingsStore.CustomDictionaryEntry] = SettingsStore.shared.customDictionaryEntries
-    @State private var boostTerms: [ParakeetVocabularyStore.VocabularyConfig.Term] = []
+    @State private var boostTerms: [CustomVocabularyStore.VocabularyConfig.Term] = []
     @State private var editingEntry: SettingsStore.CustomDictionaryEntry?
 
-    @State private var boostStatusMessage = "Add custom words for better Parakeet recognition."
+    @State private var boostStatusMessage = "Add custom words for better recognition."
     @State private var boostHasError = false
     @State private var automaticDictionaryLearningEnabled = SettingsStore.shared.automaticDictionaryLearningEnabled
     @State private var vocabBoostingEnabled: Bool = SettingsStore.shared.vocabularyBoostingEnabled
@@ -311,7 +315,7 @@ struct CustomDictionaryView: View {
             self.punctuationAutoConvertEnabled = SettingsStore.shared.autoConvertPunctuationEnabled
             self.formattingActionRules = SettingsStore.shared.spokenFormattingActionRules
         }
-        .onReceive(NotificationCenter.default.publisher(for: .parakeetVocabularyDidChange)) { _ in
+        .onReceive(NotificationCenter.default.publisher(for: .customVocabularyDidChange)) { _ in
             self.entries = SettingsStore.shared.customDictionaryEntries
         }
         .onDisappear {
@@ -1064,7 +1068,7 @@ struct CustomDictionaryView: View {
                                 .foregroundStyle(self.theme.palette.tertiaryText)
                         }
                     }
-                    Text("Help the Parakeet voice engine recognize names, products, and uncommon terms.")
+                    Text("Help the voice engine recognize names, products, and uncommon terms.")
                         .font(self.theme.typography.caption)
                         .foregroundStyle(self.theme.palette.secondaryText)
                 }
@@ -1106,7 +1110,7 @@ struct CustomDictionaryView: View {
                 SettingsStore.shared.vocabularyBoostingEnabled = newValue
             }
             .frame(width: Self.DictionaryHeaderControlLayout.toggleColumnWidth, alignment: .trailing)
-            .help("Improve recognition of your custom words when using Parakeet.")
+            .help("Improve recognition of your custom words.")
     }
 
     private var customWordsPopover: some View {
@@ -1116,7 +1120,7 @@ struct CustomDictionaryView: View {
                     Text("Custom Words".loc)
                         .font(self.theme.typography.sectionTitle)
 
-                    Text("Add names, products, and uncommon terms for Parakeet to recognize.".loc)
+                    Text("Add names, products, and uncommon terms to recognize.".loc)
                         .font(self.theme.typography.caption)
                         .foregroundStyle(self.theme.palette.secondaryText)
                 }
@@ -1751,7 +1755,7 @@ struct CustomDictionaryView: View {
         SettingsStore.shared.customDictionaryEntries = self.entries
         // Invalidate cached regex patterns so changes take effect immediately
         ASRService.invalidateDictionaryCache()
-        NotificationCenter.default.post(name: .parakeetVocabularyDidChange, object: nil)
+        NotificationCenter.default.post(name: .customVocabularyDidChange, object: nil)
     }
 
     private func updateTrainedReplacementGlow() {
@@ -1969,7 +1973,7 @@ struct CustomDictionaryView: View {
 
     private func saveBoostTermIfValid() {
         guard self.canSaveBoostTerm else { return }
-        let updatedTerm = ParakeetVocabularyStore.VocabularyConfig.Term(
+        let updatedTerm = CustomVocabularyStore.VocabularyConfig.Term(
             text: self.normalizedBoostTermText,
             weight: self.boostTermStrength.weight,
             aliases: []
@@ -1978,7 +1982,7 @@ struct CustomDictionaryView: View {
         if let index = self.editingBoostTermIndex,
            self.boostTerms.indices.contains(index)
         {
-            self.boostTerms[index] = ParakeetVocabularyStore.VocabularyConfig.Term(
+            self.boostTerms[index] = CustomVocabularyStore.VocabularyConfig.Term(
                 text: updatedTerm.text,
                 weight: updatedTerm.weight,
                 aliases: self.boostTerms[index].aliases
@@ -2344,7 +2348,7 @@ struct CustomDictionaryView: View {
 
     private func loadBoostTerms() {
         do {
-            self.boostTerms = try ParakeetVocabularyStore.shared.loadUserBoostTerms()
+            self.boostTerms = try CustomVocabularyStore.shared.loadUserBoostTerms()
             self.boostStatusMessage = "Loaded \(self.boostTerms.count) custom words."
             self.boostHasError = false
         } catch {
@@ -2356,7 +2360,7 @@ struct CustomDictionaryView: View {
 
     private func saveBoostTerms() {
         do {
-            try ParakeetVocabularyStore.shared.saveUserBoostTerms(self.boostTerms)
+            try CustomVocabularyStore.shared.saveUserBoostTerms(self.boostTerms)
             self.boostStatusMessage = "Saved \(self.boostTerms.count) custom words."
             self.boostHasError = false
         } catch {
@@ -2558,7 +2562,7 @@ private struct VoiceMatchingSettingsRow: View {
                 }
                 .padding(.horizontal, 2)
             } else if !self.isAdvancedAvailable {
-                Text("Advanced voice matching requires Parakeet TDT on Apple Silicon.".loc)
+                Text("Advanced voice matching is currently unavailable.".loc)
                     .font(self.theme.typography.caption)
                     .foregroundStyle(self.theme.palette.secondaryText)
                     .padding(.horizontal, 2)
@@ -3255,7 +3259,7 @@ private enum BoostStrengthPreset: String, CaseIterable, Identifiable {
 // MARK: - Boost Term Row
 
 struct BoostTermRow: View {
-    let term: ParakeetVocabularyStore.VocabularyConfig.Term
+    let term: CustomVocabularyStore.VocabularyConfig.Term
     let onEdit: () -> Void
     let onDelete: () -> Void
 
@@ -3437,157 +3441,6 @@ private struct PunctuationDictionaryRuleRow: View {
                         .stroke(self.theme.palette.cardBorder.opacity(0.28), lineWidth: 1)
                 )
         )
-    }
-}
-
-// MARK: - Add Entry Sheet
-
-struct AddDictionaryEntrySheet: View {
-    @Environment(\.dismiss) private var dismiss
-    @Environment(\.theme) private var theme
-
-    let existingTriggers: Set<String>
-    let onSave: (SettingsStore.CustomDictionaryEntry) -> Void
-
-    @State private var triggersText = ""
-    @State private var replacement = ""
-
-    private var duplicateTriggers: [String] {
-        self.parseTriggers().filter { self.existingTriggers.contains($0) }
-    }
-
-    private var canSave: Bool {
-        !self.parseTriggers().isEmpty &&
-            !self.replacement.trimmingCharacters(in: .whitespaces).isEmpty &&
-            self.duplicateTriggers.isEmpty
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            // Header
-            HStack {
-                Text("Add Dictionary Entry".loc)
-                    .font(.headline)
-                Spacer()
-                Button("Cancel".loc) { self.dismiss() }
-                    .buttonStyle(.bordered)
-            }
-
-            Divider()
-
-            // Triggers input
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Misheard Words (triggers)")
-                    .font(.subheadline.weight(.medium))
-                Text("Add one version per line. Commas can be saved too.".loc)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                TextEditor(text: self.$triggersText)
-                    .font(.body)
-                    .frame(minHeight: 54, maxHeight: 76)
-                    .scrollContentBackground(.hidden)
-                    .dictionaryInputChrome(minHeight: 54)
-
-                // Duplicate warning
-                if !self.duplicateTriggers.isEmpty {
-                    HStack(spacing: 4) {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .foregroundStyle(.orange)
-                        Text("Duplicate triggers: \(self.duplicateTriggers.joined(separator: ", "))")
-                            .foregroundStyle(.orange)
-                    }
-                    .font(.caption)
-                }
-            }
-
-            // Replacement input
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Correct Spelling (replacement)".loc)
-                    .font(.subheadline.weight(.medium))
-                Text("This is what will appear in the final transcription.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                TextField("FluidVoice", text: self.$replacement)
-                    .dictionaryInputChrome()
-                    .onSubmit { self.saveIfValid() }
-            }
-
-            Spacer()
-
-            // Preview
-            if !self.triggersText.isEmpty && !self.replacement.isEmpty {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Preview")
-                        .font(.caption.weight(.medium))
-                        .foregroundStyle(.secondary)
-
-                    FlowLayout(spacing: 6) {
-                        ForEach(self.parseTriggers(), id: \.self) { trigger in
-                            Text(trigger)
-                                .font(.caption)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 3)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 4).fill(
-                                        self.duplicateTriggers.contains(trigger)
-                                            ? AnyShapeStyle(Color.orange.opacity(0.3))
-                                            : AnyShapeStyle(.quaternary)
-                                    )
-                                )
-                        }
-
-                        Image(systemName: "arrow.right")
-                            .font(.caption)
-                            .foregroundStyle(.tertiary)
-
-                        Text(self.replacement)
-                            .font(.caption.weight(.medium))
-                            .foregroundStyle(self.theme.palette.accent)
-                    }
-                }
-                .padding(10)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .fill(self.theme.palette.cardBackground)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                .stroke(self.theme.palette.cardBorder.opacity(0.5), lineWidth: 1)
-                        )
-                )
-            }
-
-            // Save button
-            HStack {
-                Spacer()
-                Button("Add Replacement".loc) { self.saveIfValid() }
-                    .buttonStyle(.borderedProminent)
-                    .tint(self.theme.palette.accent)
-                    .disabled(!self.canSave)
-                    .keyboardShortcut(.return, modifiers: [])
-            }
-        }
-        .padding(20)
-        .frame(minWidth: 400, idealWidth: 450, maxWidth: 500)
-        .frame(minHeight: 350, idealHeight: 400, maxHeight: 450)
-        .dismissTextFocusOnBackgroundTap()
-    }
-
-    private func parseTriggers() -> [String] {
-        CustomDictionaryManualEntry.normalizedTriggers(
-            self.triggersText.components(separatedBy: .newlines)
-        )
-    }
-
-    private func saveIfValid() {
-        guard self.canSave else { return }
-
-        let entry = SettingsStore.CustomDictionaryEntry(
-            triggers: self.parseTriggers(),
-            replacement: self.replacement.trimmingCharacters(in: .whitespaces)
-        )
-        self.onSave(entry)
-        self.dismiss()
     }
 }
 

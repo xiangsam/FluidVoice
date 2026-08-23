@@ -18,8 +18,6 @@ struct VoiceEngineLanguageRoute: Identifiable, Equatable {
     enum LanguageBinding: Equatable {
         case automatic
         case appleSpeech(localeIdentifier: String)
-        case cohere(SettingsStore.CohereLanguage)
-        case nemotron(SettingsStore.NemotronLanguage)
         case whisper(languageCode: String)
 
         var id: String {
@@ -28,10 +26,6 @@ struct VoiceEngineLanguageRoute: Identifiable, Equatable {
                 return "auto"
             case let .appleSpeech(localeIdentifier):
                 return "apple-\(localeIdentifier)"
-            case let .cohere(language):
-                return "cohere-\(language.rawValue)"
-            case let .nemotron(language):
-                return "nemotron-\(language.rawValue)"
             case let .whisper(languageCode):
                 return "whisper-\(languageCode)"
             }
@@ -48,7 +42,7 @@ struct VoiceEngineLanguageRoute: Identifiable, Equatable {
 
     var badgeText: String? {
         switch self.model {
-        case .parakeetTDT, .parakeetTDTv2:
+        case .qwen3Asr:
             return "Optimized for FluidVoice"
         default:
             return nil
@@ -121,39 +115,13 @@ enum VoiceEngineLanguageCatalog {
             break
         case let .appleSpeech(localeIdentifier):
             settings.selectedAppleSpeechLocaleIdentifier = localeIdentifier
-        case let .cohere(language):
-            settings.selectedCohereLanguage = language
-        case let .nemotron(language):
-            settings.selectedNemotronLanguage = language
         }
     }
 
     private static func routeCandidates(for language: VoiceEngineLanguage) -> [VoiceEngineLanguageRoute] {
         var routes: [VoiceEngineLanguageRoute] = []
 
-        if language.id == "en" {
-            routes.append(Self.route(language, .parakeetTDTv2, .automatic))
-            routes.append(Self.route(language, .parakeetRealtime, .automatic))
-        }
-
-        if Self.parakeetV3LanguageIDs.contains(language.id) {
-            routes.append(Self.route(language, .parakeetTDT, .automatic))
-        }
-
-        if let cohereLanguage = Self.cohereLanguage(for: language.id) {
-            routes.append(Self.route(language, .cohereTranscribeSixBit, .cohere(cohereLanguage)))
-        }
-
-        if let nemotronLanguage = Self.nemotronLanguage(for: language.id) {
-            routes.append(Self.route(language, .nemotronStreaming, .nemotron(nemotronLanguage)))
-            routes.append(Self.route(language, .nemotronOffline, .nemotron(nemotronLanguage)))
-        }
-
-        if let whisperLanguageCode = Self.whisperLanguageCode(for: language.id) {
-            for model in Self.whisperModelOrder {
-                routes.append(Self.route(language, model, .whisper(languageCode: whisperLanguageCode)))
-            }
-        }
+        routes.append(Self.route(language, .qwen3Asr, .automatic))
 
         if let appleSpeechAnalyzerLocale = Self.appleSpeechAnalyzerLocaleIdentifier(for: language.id) {
             routes.append(Self.route(language, .appleSpeechAnalyzer, .appleSpeech(localeIdentifier: appleSpeechAnalyzerLocale)))
@@ -172,14 +140,6 @@ enum VoiceEngineLanguageCatalog {
         _ binding: VoiceEngineLanguageRoute.LanguageBinding
     ) -> VoiceEngineLanguageRoute {
         VoiceEngineLanguageRoute(language: language, model: model, binding: binding)
-    }
-
-    private static func cohereLanguage(for languageID: String) -> SettingsStore.CohereLanguage? {
-        self.cohereLanguageMap[languageID]
-    }
-
-    private static func nemotronLanguage(for languageID: String) -> SettingsStore.NemotronLanguage? {
-        self.nemotronLanguageMap[languageID]
     }
 
     private static func whisperLanguageCode(for languageID: String) -> String? {
@@ -211,81 +171,6 @@ enum VoiceEngineLanguageCatalog {
         "zh",
         "hi",
         "ar",
-    ]
-
-    private static let parakeetV3LanguageIDs: Set<String> = [
-        "bg",
-        "hr",
-        "cs",
-        "da",
-        "nl",
-        "en",
-        "et",
-        "fi",
-        "fr",
-        "de",
-        "el",
-        "hu",
-        "it",
-        "lv",
-        "lt",
-        "mt",
-        "pl",
-        "pt",
-        "ro",
-        "sk",
-        "sl",
-        "es",
-        "sv",
-        "ru",
-        "uk",
-    ]
-
-    private static let cohereLanguageMap: [String: SettingsStore.CohereLanguage] = [
-        "ar": .arabic,
-        "de": .german,
-        "el": .greek,
-        "en": .english,
-        "es": .spanish,
-        "fr": .french,
-        "it": .italian,
-        "ja": .japanese,
-        "ko": .korean,
-        "nl": .dutch,
-        "pl": .polish,
-        "pt": .portuguese,
-        "vi": .vietnamese,
-        "zh": .mandarinChinese,
-    ]
-
-    private static let nemotronLanguageMap: [String: SettingsStore.NemotronLanguage] = {
-        let supportedLanguageIDs = Set(Self.languageDefinitions.map(\.id))
-        var languageMap: [String: SettingsStore.NemotronLanguage] = [:]
-
-        for nemotronLanguage in SettingsStore.NemotronLanguage.allCases where nemotronLanguage.rawValue != SettingsStore.NemotronLanguage.auto.rawValue {
-            let languageID = Self.languageID(forNemotronLanguage: nemotronLanguage)
-            guard supportedLanguageIDs.contains(languageID) else { continue }
-            languageMap[languageID] = nemotronLanguage
-        }
-
-        return languageMap
-    }()
-
-    private static func languageID(forNemotronLanguage language: SettingsStore.NemotronLanguage) -> String {
-        switch language.rawValue {
-        case "nb-NO":
-            return "no"
-        default:
-            return language.rawValue
-                .split(separator: "-", maxSplits: 1)
-                .first
-                .map(String.init) ?? language.rawValue
-        }
-    }
-
-    private static let whisperModelOrder: [SettingsStore.SpeechModel] = [
-        .whisperSmall,
-        .whisperLargeTurbo,
     ]
 
     private static let appleSpeechAnalyzerLocaleMap: [String: String] = [

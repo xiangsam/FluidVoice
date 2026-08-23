@@ -1,8 +1,4 @@
-import CoreML
 import Foundation
-#if arch(arm64)
-import FluidAudio
-#endif
 
 /// A robust downloader for Hugging Face models with progress tracking and error handling.
 /// Supports downloading entire model repositories with proper file structure preservation.
@@ -29,17 +25,12 @@ final class HuggingFaceModelDownloader {
     private var baseApiURL: URL
     private var baseResolveURL: URL
 
-    /// Initialize with default model repository settings
+    /// Initialize with default (empty) repository settings.
     init() {
         self.owner = "FluidInference"
-        self.repo = "parakeet-tdt-0.6b-v3-coreml"
+        self.repo = "models"
         self.revision = "main"
-        self.requiredItemsList = [
-            ModelItem(path: "MelEncoder.mlmodelc", isDirectory: true),
-            ModelItem(path: "Decoder.mlmodelc", isDirectory: true),
-            ModelItem(path: "JointDecision.mlmodelc", isDirectory: true),
-            ModelItem(path: "parakeet_v3_vocab.json", isDirectory: false),
-        ]
+        self.requiredItemsList = []
         let base = SettingsStore.shared.huggingFaceBaseURL
         guard var apiBase = URL(string: "\(base)/api/models/") else {
             preconditionFailure("Invalid base Hugging Face API URL")
@@ -69,14 +60,7 @@ final class HuggingFaceModelDownloader {
         self.owner = owner
         self.repo = repo
         self.revision = revision
-        self.requiredItemsList = requiredItems.isEmpty
-            ? [
-                ModelItem(path: "MelEncoder.mlmodelc", isDirectory: true),
-                ModelItem(path: "Decoder.mlmodelc", isDirectory: true),
-                ModelItem(path: "JointDecision.mlmodelc", isDirectory: true),
-                ModelItem(path: "parakeet_v3_vocab.json", isDirectory: false),
-            ]
-            : requiredItems
+        self.requiredItemsList = requiredItems
         let base = SettingsStore.shared.huggingFaceBaseURL
         guard var apiBase = URL(string: "\(base)/api/models/") else {
             preconditionFailure("Invalid base Hugging Face API URL")
@@ -755,92 +739,3 @@ final nonisolated class ProgressiveFileDownloader: @unchecked Sendable {
         }
     }
 }
-
-#if arch(arm64)
-extension HuggingFaceModelDownloader {
-    /// Load ASR models directly from disk using unified v3 model names
-    func loadLocalAsrModels(from repoDirectory: URL) async throws -> AsrModels {
-        let config = AsrModels.defaultConfiguration()
-        let fm = FileManager.default
-
-        // Try to load with new naming convention first (Preprocessor + Encoder)
-        let preprocessorUrl = repoDirectory.appendingPathComponent("Preprocessor.mlmodelc")
-        let encoderUrl = repoDirectory.appendingPathComponent("Encoder.mlmodelc")
-        let decUrl = repoDirectory.appendingPathComponent("Decoder.mlmodelc")
-        let jointUrl = repoDirectory.appendingPathComponent("JointDecision.mlmodelc")
-
-        DebugLogger.shared.info("[ModelDL] Loading v3 models from: \(repoDirectory.path)", source: "ModelDownloader")
-        DebugLogger.shared.debug("[ModelDL] Preprocessor path: \(preprocessorUrl.path)", source: "ModelDownloader")
-        DebugLogger.shared.debug("[ModelDL] Encoder path: \(encoderUrl.path)", source: "ModelDownloader")
-        DebugLogger.shared.debug("[ModelDL] Decoder path: \(decUrl.path)", source: "ModelDownloader")
-        DebugLogger.shared.debug("[ModelDL] JointDecision path: \(jointUrl.path)", source: "ModelDownloader")
-
-        // Check if new structure exists
-        let hasNewStructure = fm.fileExists(atPath: preprocessorUrl.path) && fm.fileExists(atPath: encoderUrl.path)
-
-        let encoder: MLModel
-        let preprocessor: MLModel?
-
-        if hasNewStructure {
-            // Load with new structure (separate Preprocessor and Encoder)
-            DebugLogger.shared.info("[ModelDL] Loading with new model structure (Preprocessor + Encoder)", source: "ModelDownloader")
-            preprocessor = try MLModel(contentsOf: preprocessorUrl, configuration: config)
-            encoder = try MLModel(contentsOf: encoderUrl, configuration: config)
-        } else {
-            // Fallback: Try old structure (MelEncoder)
-            let melEncUrl = repoDirectory.appendingPathComponent("MelEncoder.mlmodelc")
-            DebugLogger.shared.info("[ModelDL] New structure not found, trying legacy MelEncoder", source: "ModelDownloader")
-            DebugLogger.shared.debug("[ModelDL] MelEncoder path: \(melEncUrl.path)", source: "ModelDownloader")
-            DebugLogger.shared.debug("[ModelDL] MelEncoder exists: \(fm.fileExists(atPath: melEncUrl.path))", source: "ModelDownloader")
-
-            if fm.fileExists(atPath: melEncUrl.path) {
-                encoder = try MLModel(contentsOf: melEncUrl, configuration: config)
-                preprocessor = nil
-                DebugLogger.shared.info("[ModelDL] Using MelEncoder (legacy mode)", source: "ModelDownloader")
-            } else {
-                throw NSError(domain: "ModelDL", code: -1, userInfo: [
-                    NSLocalizedDescriptionKey: "Neither new model structure (Preprocessor + Encoder) nor legacy structure (MelEncoder) found",
-                ])
-            }
-        }
-
-        // Load decoder and joint (same for both structures)
-        let decoder = try MLModel(contentsOf: decUrl, configuration: config)
-        let joint = try MLModel(contentsOf: jointUrl, configuration: config)
-
-        // Load vocabulary (JSON: {"0": "<pad>", ...}) from repo root
-        let vocabPath = repoDirectory.deletingLastPathComponent().appendingPathComponent("parakeet-tdt-0.6b-v3-coreml")
-            .appendingPathComponent("parakeet_v3_vocab.json")
-        guard fm.fileExists(atPath: vocabPath.path) else {
-            throw NSError(
-                domain: "ModelDL",
-                code: -2,
-                userInfo: [NSLocalizedDescriptionKey: "Vocabulary file not found at \(vocabPath.path)"]
-            )
-        }
-        let vocabData = try Data(contentsOf: vocabPath)
-        let raw = try JSONSerialization.jsonObject(with: vocabData) as? [String: String] ?? [:]
-        var vocabulary: [Int: String] = [:]
-        vocabulary.reserveCapacity(raw.count)
-        for (k, v) in raw {
-            if let idx = Int(k) { vocabulary[idx] = v }
-        }
-
-        DebugLogger.shared.debug("[ModelDL] Creating AsrModels", source: "ModelDownloader")
-
-        // For v2 models without separate preprocessor, use encoder as preprocessor
-        // For v3 models, use the separate preprocessor
-        let finalPreprocessor = preprocessor ?? encoder
-
-        return AsrModels(
-            encoder: encoder,
-            preprocessor: finalPreprocessor,
-            decoder: decoder,
-            joint: joint,
-            configuration: config,
-            vocabulary: vocabulary,
-            version: preprocessor != nil ? .v3 : .v2
-        )
-    }
-}
-#endif

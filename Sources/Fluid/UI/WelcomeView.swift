@@ -20,7 +20,6 @@ struct WelcomeView: View {
     @Binding var playgroundUsed: Bool
     var isTranscriptionFocused: FocusState<Bool>.Binding
     @State private var isHowToUseExpanded = false
-    @State private var isCommandModeGuideExpanded = false
     @State private var isEditModeGuideExpanded = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.theme) private var theme
@@ -31,9 +30,6 @@ struct WelcomeView: View {
     let openAccessibilitySettings: () -> Void
     let restartApp: () -> Void
 
-    private var commandModeShortcutDisplay: String {
-        self.settings.commandModeHotkeyShortcut?.displayString ?? "Not set"
-    }
 
     private var writeModeShortcutDisplay: String {
         self.settings.rewriteModeHotkeyShortcut.displayString
@@ -41,7 +37,7 @@ struct WelcomeView: View {
 
     private let playgroundSectionID = "welcome-playground-section"
 
-    private var commandModeColor: Color {
+    private var warningColor: Color {
         self.theme.palette.warning
     }
 
@@ -105,7 +101,7 @@ struct WelcomeView: View {
                                         : (
                                             self.asr.modelsExistOnDisk
                                                 ? "Model downloaded, will load when needed"
-                                                : "Download the AI model for offline voice transcription (~500MB)"
+                                                : "Download the MLX voice model for fully offline transcription"
                                         ),
                                     status: (self.asr.isAsrReady || self.asr.modelsExistOnDisk) ? .completed : .pending,
                                     action: {
@@ -217,7 +213,7 @@ struct WelcomeView: View {
                                 }
                             }
 
-                            if self.settings.selectedSpeechModel == .parakeetTDT || self.settings.selectedSpeechModel == .parakeetTDTv2 {
+                            if SettingsStore.shared.vocabularyBoostingEnabled {
                                 HStack(spacing: 6) {
                                     Image(systemName: "text.magnifyingglass")
                                         .font(self.theme.typography.caption)
@@ -360,18 +356,6 @@ struct WelcomeView: View {
 
                             Divider().opacity(0.2)
 
-                            self.guideDisclosureRow(
-                                title: "Command Mode".loc,
-                                systemImage: "terminal.fill",
-                                color: self.commandModeColor,
-                                isExpanded: self.$isCommandModeGuideExpanded
-                            ) {
-                                self.featureBadge("New", color: self.commandModeColor)
-                                self.featureBadge("Alpha", color: self.commandModeColor.opacity(0.75))
-                            } content: {
-                                self.commandModeGuide
-                            }
-
                             Divider().opacity(0.2)
 
                             self.guideDisclosureRow(
@@ -448,56 +432,7 @@ struct WelcomeView: View {
         }
     }
 
-    private var commandModeGuide: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("Control your Mac with voice commands. Execute terminal commands, open apps, and more.")
-                    .font(self.theme.typography.bodySmall)
-                    .foregroundStyle(.secondary)
 
-                Spacer()
-
-                Button("Open") {
-                    self.selectedSidebarItem = .commandMode
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-            }
-
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Getting Started".loc)
-                    .font(self.theme.typography.bodySmallStrong)
-                    .foregroundStyle(self.commandModeColor)
-
-                HStack(spacing: 4) {
-                    Text("Press")
-                    self.keyboardBadge(self.commandModeShortcutDisplay)
-                    Text("to open, speak your command, then press again to send.")
-                }
-                .font(self.theme.typography.caption)
-                .foregroundStyle(.primary.opacity(0.8))
-            }
-
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Examples".loc)
-                    .font(self.theme.typography.bodySmallStrong)
-                    .foregroundStyle(self.commandModeColor)
-                self.commandModeExample(icon: "folder", text: "\"List files in my Downloads folder\"")
-                self.commandModeExample(icon: "plus.rectangle.on.folder", text: "\"Create a folder called Projects on Desktop\"")
-                self.commandModeExample(icon: "network", text: "\"What's my IP address?\"")
-                self.commandModeExample(icon: "safari", text: "\"Open Safari\"")
-            }
-
-            HStack(spacing: 4) {
-                Image(systemName: "exclamationmark.triangle.fill")
-                    .font(self.theme.typography.captionSmall)
-                    .foregroundStyle(self.commandModeColor)
-                Text("AI can make mistakes. Avoid destructive commands.".loc)
-                    .font(self.theme.typography.caption)
-                    .foregroundStyle(.secondary)
-            }
-        }
-    }
 
     private var editModeGuide: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -596,17 +531,7 @@ struct WelcomeView: View {
             .background(self.theme.palette.cardBackground.opacity(0.7), in: RoundedRectangle(cornerRadius: 4, style: .continuous))
     }
 
-    private func commandModeExample(icon: String, text: String) -> some View {
-        HStack(spacing: 6) {
-            Image(systemName: icon)
-                .font(self.theme.typography.captionSmall)
-                .foregroundStyle(self.commandModeColor.opacity(0.8))
-                .frame(width: 14)
-            Text(text)
-                .font(self.theme.typography.caption)
-                .foregroundStyle(.primary.opacity(0.8))
-        }
-    }
+
 
     private func writeModeExample(text: String) -> some View {
         HStack(spacing: 6) {
@@ -2605,18 +2530,8 @@ struct OnboardingFlowView: View {
 
     private func onboardingModelSubtitle(for model: SettingsStore.SpeechModel) -> String {
         switch model {
-        case .parakeetTDT:
-            return "Parakeet v3"
-        case .parakeetTDTv2:
-            return "Parakeet v2"
-        case .parakeetRealtime:
-            return "Parakeet Flash"
-        case .cohereTranscribeSixBit:
-            return "Cohere"
-        case .nemotronStreaming:
-            return "Nemotron Streaming"
-        case .nemotronOffline:
-            return "Nemotron Offline"
+        case .qwen3Asr:
+            return "Qwen3 ASR"
         case .whisperTiny, .whisperBase, .whisperSmall, .whisperMedium, .whisperLarge:
             return "Whisper"
         default:
@@ -2730,18 +2645,12 @@ struct OnboardingFlowView: View {
             return true
         case let .appleSpeech(localeIdentifier):
             return self.settings.selectedAppleSpeechLocaleIdentifier == localeIdentifier
-        case let .cohere(language):
-            return self.settings.selectedCohereLanguage == language
-        case let .nemotron(language):
-            return self.settings.selectedNemotronLanguage == language
         }
     }
 
     private func selectOnboardingRoute(_ route: VoiceEngineLanguageRoute) {
         let oldModel = self.settings.selectedSpeechModel
         let oldAppleSpeechLocaleIdentifier = self.settings.selectedAppleSpeechLocaleIdentifier
-        let oldCohereLanguage = self.settings.selectedCohereLanguage
-        let oldNemotronLanguage = self.settings.selectedNemotronLanguage
 
         self.selectedModelRouteID = route.id
         VoiceEngineLanguageCatalog.apply(route, to: self.settings)
@@ -2752,10 +2661,6 @@ struct OnboardingFlowView: View {
             languageChanged = false
         case .appleSpeech:
             languageChanged = oldAppleSpeechLocaleIdentifier != self.settings.selectedAppleSpeechLocaleIdentifier
-        case .cohere:
-            languageChanged = oldCohereLanguage != self.settings.selectedCohereLanguage
-        case .nemotron:
-            languageChanged = oldNemotronLanguage != self.settings.selectedNemotronLanguage
         }
 
         if oldModel != self.settings.selectedSpeechModel || languageChanged {
@@ -2899,10 +2804,6 @@ private extension OnboardingFlowView {
             return self.settings.onboardingSelectedLanguageID == route.language.id
         case let .appleSpeech(localeIdentifier):
             return self.settings.selectedAppleSpeechLocaleIdentifier == localeIdentifier
-        case let .cohere(language):
-            return self.settings.selectedCohereLanguage == language
-        case let .nemotron(language):
-            return self.settings.selectedNemotronLanguage == language
         }
     }
 

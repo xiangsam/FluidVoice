@@ -17,8 +17,6 @@ struct SettingsBackupPayload: Codable, Equatable {
     let privateAIBackendPreference: SettingsStore.PrivateAIBackendPreference?
     let privateAIContextTokenLimit: Int?
     let selectedSpeechModel: SettingsStore.SpeechModel
-    let selectedCohereLanguage: SettingsStore.CohereLanguage
-    let selectedNemotronLanguage: SettingsStore.NemotronLanguage?
     let selectedAppleSpeechLocaleIdentifier: String?
     let hotkeyShortcut: HotkeyShortcut
     // Older backup files only contain hotkeyShortcut; nil restores that legacy single shortcut.
@@ -28,12 +26,6 @@ struct SettingsBackupPayload: Codable, Equatable {
     let promptModeShortcutEnabled: Bool
     let promptModeSelectedPromptID: String?
     let secondaryDictationPromptOff: Bool?
-    let commandModeHotkeyShortcut: HotkeyShortcut?
-    let commandModeShortcutEnabled: Bool
-    let commandModeSelectedModel: String?
-    let commandModeSelectedProviderID: String
-    let commandModeConfirmBeforeExecute: Bool
-    let commandModeLinkedToGlobal: Bool
     let rewriteModeHotkeyShortcut: HotkeyShortcut
     let rewriteModeShortcutEnabled: Bool
     let rewriteModeSelectedModel: String?
@@ -50,8 +42,6 @@ struct SettingsBackupPayload: Codable, Equatable {
     let transcriptionStartSound: SettingsStore.TranscriptionStartSound
     let transcriptionSoundVolume: Float
     let transcriptionSoundIndependentVolume: Bool
-    let autoUpdateCheckEnabled: Bool
-    let betaReleasesEnabled: Bool
     let enableDebugLogs: Bool
     let shareAnonymousAnalytics: Bool
     let pressAndHoldMode: Bool
@@ -112,8 +102,6 @@ struct SettingsBackupPayload: Codable, Equatable {
     let editPromptRoutingScope: SettingsStore.PromptRoutingScope?
     let defaultDictationPromptOverride: String?
     let defaultEditPromptOverride: String?
-    let fileTranscriptionSpeakerLabelsEnabled: Bool?
-    let fileTranscriptionExpectedSpeakerCount: Int?
 }
 
 struct AppBackupDocument: Codable, Equatable {

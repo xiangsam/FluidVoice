@@ -11,14 +11,14 @@ import QuartzCore
 import SwiftUI
 
 private enum OverlayShortcutResolver {
-    static func shortcutDisplay(for mode: OverlayMode, settings: SettingsStore = .shared) -> String {
+    static func shortcutDisplay(for mode: OverlayMode, settings: SettingsStore) -> String {
         switch mode {
-        case .dictation:
-            return settings.primaryDictationShortcutDisplayString
-        case .edit, .write, .rewrite:
+        case .edit, .rewrite:
             return settings.rewriteModeHotkeyShortcut.displayString
-        case .command:
-            return settings.commandModeHotkeyShortcut?.displayString ?? "Not set"
+        case .dictation:
+            return settings.primaryDictationShortcuts.first?.displayString ?? ""
+        case .write:
+            return ""
         }
     }
 }
@@ -127,7 +127,6 @@ final class BottomOverlayWindowController {
         switch mode {
         case .dictation: NotchContentState.shared.promptPickerMode = .dictate
         case .edit, .write, .rewrite: NotchContentState.shared.promptPickerMode = .edit
-        case .command: break
         }
         NotchContentState.shared.updateTranscription("")
         NotchContentState.shared.bottomOverlayAudioLevel = 0
@@ -726,8 +725,6 @@ final class BottomOverlayPromptMenuController {
             return .dictate
         case .edit, .write, .rewrite:
             return .edit
-        case .command:
-            return NotchContentState.shared.promptPickerMode.normalized
         }
     }
 
@@ -1337,8 +1334,6 @@ private struct BottomOverlayModeMenuView: View {
             return .dictation
         case .edit, .write, .rewrite:
             return .edit
-        case .command:
-            return .command
         }
     }
 
@@ -1416,7 +1411,6 @@ private struct BottomOverlayModeMenuView: View {
             Divider()
                 .padding(.vertical, 4)
 
-            self.modeRow("Command", mode: .command, rowID: "command")
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
@@ -2121,7 +2115,6 @@ struct BottomOverlayView: View {
         switch self.contentState.mode {
         case .dictation: return "Dictate"
         case .edit, .rewrite, .write: return "Edit"
-        case .command: return "Command"
         }
     }
 
@@ -2133,7 +2126,6 @@ struct BottomOverlayView: View {
         switch self.contentState.mode {
         case .dictation: return "Refining..."
         case .edit, .rewrite, .write: return "Thinking..."
-        case .command: return "Working..."
         }
     }
 
@@ -2166,8 +2158,6 @@ struct BottomOverlayView: View {
             return .dictation
         case .edit, .write, .rewrite:
             return .edit
-        case .command:
-            return .command
         }
     }
 
@@ -2177,7 +2167,7 @@ struct BottomOverlayView: View {
             return .dictate
         case .edit:
             return .edit
-        case .command, .write, .rewrite:
+        case .write, .rewrite:
             return nil
         }
     }
@@ -3166,7 +3156,6 @@ struct BottomOverlayView: View {
             switch self.contentState.mode {
             case .dictation: self.contentState.promptPickerMode = .dictate
             case .edit, .write, .rewrite: self.contentState.promptPickerMode = .edit
-            case .command: break
             }
             if !self.layout.usesFixedCanvas {
                 self.dynamicPreviewResizeBucket = self.previewResizeBucket(for: self.currentPreviewSizingText)
@@ -3234,13 +3223,6 @@ struct BottomOverlayView: View {
             self.isHoveringActionsChip = false
             self.isHoveringSettingsChip = false
         }
-        // TODO: Add tap-to-expand for command mode history (future enhancement)
-        // .contentShape(Rectangle())
-        // .onTapGesture {
-        //     if contentState.mode == .command && !contentState.commandConversationHistory.isEmpty {
-        //         NotchOverlayManager.shared.onNotchClicked?()
-        //     }
-        // }
     }
 }
 

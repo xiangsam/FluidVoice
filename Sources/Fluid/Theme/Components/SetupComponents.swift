@@ -122,35 +122,3 @@ struct SetupStepView: View {
     }
 }
 
-// MARK: - Instruction Step
-
-struct InstructionStep: View {
-    @Environment(\.theme) private var theme
-    let number: Int
-    let title: String
-    let description: String
-
-    var body: some View {
-        HStack(alignment: .top, spacing: 8) {
-            ZStack {
-                Circle()
-                    .fill(self.theme.palette.accent.opacity(0.15))
-                    .frame(width: 22, height: 22)
-
-                Text("\(self.number)")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(self.theme.palette.accent)
-            }
-
-            VStack(alignment: .leading, spacing: 1) {
-                Text(self.title)
-                    .font(.subheadline.weight(.medium))
-
-                Text(self.description)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
-            }
-        }
-    }
-}

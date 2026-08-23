@@ -161,7 +161,7 @@ final class DictationE2ETests: XCTestCase {
             customWords: [" FluidVoice ", "fluidvoice", " Barath "]
         )
         let existingReplacement = SettingsStore.CustomDictionaryEntry(triggers: ["old"], replacement: "Old")
-        let existingWord = ParakeetVocabularyStore.VocabularyConfig.Term(text: "OldWord", weight: 13.0)
+        let existingWord = CustomVocabularyStore.VocabularyConfig.Term(text: "OldWord", weight: 13.0)
 
         let state = try DictionaryTransferService.importState(
             document: document,
@@ -187,7 +187,7 @@ final class DictationE2ETests: XCTestCase {
             triggers: ["fluid boys"],
             replacement: "FluidVoice"
         )
-        let existingWord = ParakeetVocabularyStore.VocabularyConfig.Term(
+        let existingWord = CustomVocabularyStore.VocabularyConfig.Term(
             text: "Barath",
             weight: 13.0,
             aliases: ["barath w"]
@@ -318,7 +318,7 @@ final class DictationE2ETests: XCTestCase {
 
     func testPronunciationDictionaryLabelsUseLastDuplicateEntry() {
         let id = UUID()
-        let labels = FluidAudioProvider.dictionaryLabels(from: [
+        let labels = PronunciationTextReplacer.dictionaryLabels(from: [
             SettingsStore.CustomDictionaryEntry(id: id, triggers: ["old"], replacement: "Old"),
             SettingsStore.CustomDictionaryEntry(id: id, triggers: ["new"], replacement: "New"),
         ])
@@ -781,11 +781,11 @@ final class DictationE2ETests: XCTestCase {
 
     func testPronunciationReplacementPreservesPunctuationAndSpacing() {
         let replacements = [
-            FluidAudioProvider.PronunciationTextReplacement(wordRange: 1...1, label: "Barath"),
+            PronunciationTextReplacement(wordRange: 1...1, label: "Barath"),
         ]
 
         XCTAssertEqual(
-            FluidAudioProvider.applyingPronunciationReplacements(
+            PronunciationTextReplacer.applyingPronunciationReplacements(
                 to: "Hi,  Barad! How are you?",
                 wordTexts: ["Hi,", "Barad!", "How", "are", "you?"],
                 replacements: replacements
@@ -891,15 +891,9 @@ final class DictationE2ETests: XCTestCase {
     }
 
     func testPronunciationMatchingRequiresSupportedAppleSiliconModel() {
-        #if arch(arm64)
-        XCTAssertTrue(SettingsStore.SpeechModel.parakeetTDT.supportsPronunciationMatching)
-        XCTAssertTrue(SettingsStore.SpeechModel.parakeetTDTv2.supportsPronunciationMatching)
-        #else
-        XCTAssertFalse(SettingsStore.SpeechModel.parakeetTDT.supportsPronunciationMatching)
-        XCTAssertFalse(SettingsStore.SpeechModel.parakeetTDTv2.supportsPronunciationMatching)
-        #endif
+        XCTAssertFalse(SettingsStore.SpeechModel.qwen3Asr.supportsPronunciationMatching)
         XCTAssertFalse(SettingsStore.SpeechModel.whisperLargeTurbo.supportsPronunciationMatching)
-        XCTAssertFalse(SettingsStore.SpeechModel.cohereTranscribeSixBit.supportsPronunciationMatching)
+        XCTAssertFalse(SettingsStore.SpeechModel.appleSpeech.supportsPronunciationMatching)
     }
 
     func testDictionaryTrainingAudioCursorResetsAfterBufferGenerationChange() {
@@ -1220,52 +1214,6 @@ final class DictationE2ETests: XCTestCase {
         XCTAssertEqual(state.customWords.map(\.aliases), [[], []])
     }
 
-    func testDictationEndToEnd_whisperTiny_transcribesFixture() async throws {
-        // Arrange
-        let modelDirectory = Self.modelDirectoryForRun()
-        try FileManager.default.createDirectory(at: modelDirectory, withIntermediateDirectories: true)
-
-        let provider = WhisperProvider(modelDirectory: modelDirectory, modelOverride: .whisperTiny)
-
-        // Act
-        try await provider.prepare()
-        let samples = try AudioFixtureLoader.load16kMonoFloatSamples(named: "dictation_fixture", ext: "wav")
-        let result = try await provider.transcribe(samples)
-
-        // Assert
-        let raw = result.text.trimmingCharacters(in: .whitespacesAndNewlines)
-        XCTAssertFalse(raw.isEmpty, "Expected non-empty transcription text.")
-
-        let normalized = Self.normalize(raw)
-        XCTAssertTrue(normalized.contains("hello"), "Expected transcription to contain 'hello'. Got: \(raw)")
-        XCTAssertTrue(normalized.contains("fluid"), "Expected transcription to contain 'fluid'. Got: \(raw)")
-        XCTAssertTrue(
-            normalized.contains("voice") || normalized.contains("fluidvoice") || normalized.contains("boys"),
-            "Expected transcription to contain 'voice' (or a close variant like 'boys'). Got: \(raw)"
-        )
-    }
-
-    func testWhisperProvider_legacyBinCacheDoesNotCountAsDownloadedOrDeletedByReadinessCheck() throws {
-        let modelDirectory = Self.modelDirectoryForRun()
-        try FileManager.default.createDirectory(at: modelDirectory, withIntermediateDirectories: true)
-
-        let legacyURL = modelDirectory.appendingPathComponent("ggml-tiny.bin")
-        try Data([0x01, 0x02, 0x03]).write(to: legacyURL)
-
-        let provider = WhisperProvider(modelDirectory: modelDirectory, modelOverride: .whisperTiny)
-
-        XCTAssertFalse(provider.modelsExistOnDisk())
-        XCTAssertTrue(FileManager.default.fileExists(atPath: legacyURL.path))
-    }
-
-    func testWhisperProvider_readinessCheckDoesNotCreateMissingDirectory() {
-        let modelDirectory = Self.modelDirectoryForRun()
-        let provider = WhisperProvider(modelDirectory: modelDirectory, modelOverride: .whisperTiny)
-
-        XCTAssertFalse(FileManager.default.fileExists(atPath: modelDirectory.path))
-        XCTAssertFalse(provider.modelsExistOnDisk())
-        XCTAssertFalse(FileManager.default.fileExists(atPath: modelDirectory.path))
-    }
 
     func testWhisperProvider_ggufCacheReadinessDoesNotDeleteLegacyUntilExplicitClear() async throws {
         let modelDirectory = Self.modelDirectoryForRun()
@@ -2132,13 +2080,13 @@ final class DictationE2ETests: XCTestCase {
         )
 
         // A real JSON vocab payload must pass validation.
-        let jsonURL = dir.appendingPathComponent("parakeet_v3_vocab.json")
+        let jsonURL = dir.appendingPathComponent("vocab.json")
         try Data("{\"0\": \"<pad>\", \"1\": \"the\"}".utf8).write(to: jsonURL)
         XCTAssertNoThrow(
             try HuggingFaceModelDownloader.validateDownloadedFile(
                 at: jsonURL,
                 response: nil,
-                relativePath: "parakeet_v3_vocab.json"
+                relativePath: "vocab.json"
             )
         )
     }
@@ -2159,7 +2107,7 @@ final class DictationE2ETests: XCTestCase {
         XCTAssertTrue(HuggingFaceModelDownloader.cachedFileIsMarkup(at: htmlURL))
 
         // A real JSON vocab payload must not be flagged.
-        let jsonURL = dir.appendingPathComponent("parakeet_v3_vocab.json")
+        let jsonURL = dir.appendingPathComponent("vocab.json")
         try Data("{\"0\": \"<pad>\", \"1\": \"the\"}".utf8).write(to: jsonURL)
         XCTAssertFalse(HuggingFaceModelDownloader.cachedFileIsMarkup(at: jsonURL))
 

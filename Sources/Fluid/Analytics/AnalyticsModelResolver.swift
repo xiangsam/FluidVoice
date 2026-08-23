@@ -11,7 +11,7 @@ extension SettingsStore.SpeechModel {
                 resolvedModel = .appleSpeech
             }
         case .qwen3Asr:
-            resolvedModel = .parakeetTDT
+            resolvedModel = self
         default:
             resolvedModel = self
         }

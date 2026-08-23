@@ -1384,24 +1384,6 @@ final class SettingsStore: ObservableObject {
         }
     }
 
-    /// Label speakers ("Speaker 1", "Speaker 2") in file transcriptions (default: OFF).
-    var fileTranscriptionSpeakerLabelsEnabled: Bool {
-        get { self.defaults.bool(forKey: Keys.fileTranscriptionSpeakerLabelsEnabled) }
-        set {
-            objectWillChange.send()
-            self.defaults.set(newValue, forKey: Keys.fileTranscriptionSpeakerLabelsEnabled)
-        }
-    }
-
-    /// Expected speaker count hint for file transcription diarization. 0 = auto-detect.
-    var fileTranscriptionExpectedSpeakerCount: Int {
-        get { self.defaults.integer(forKey: Keys.fileTranscriptionExpectedSpeakerCount) }
-        set {
-            objectWillChange.send()
-            self.defaults.set(newValue, forKey: Keys.fileTranscriptionExpectedSpeakerCount)
-        }
-    }
-
     /// Anonymous analytics toggle (default: ON). Uses default-true semantics so existing installs
     /// upgrading to a version that includes analytics do not silently default to OFF.
     var shareAnonymousAnalytics: Bool {
@@ -1529,10 +1511,6 @@ final class SettingsStore: ObservableObject {
             self.selectedModel = nil
         }
 
-        if retiredProviderIDs.contains(self.commandModeSelectedProviderID) {
-            self.commandModeSelectedProviderID = ""
-            self.commandModeSelectedModel = nil
-        }
         if retiredProviderIDs.contains(self.rewriteModeSelectedProviderID) {
             self.rewriteModeSelectedProviderID = ""
             self.rewriteModeSelectedModel = nil
@@ -2405,88 +2383,6 @@ final class SettingsStore: ObservableObject {
         set { self.showInDock = !newValue }
     }
 
-    var autoUpdateCheckEnabled: Bool {
-        get {
-            let value = self.defaults.object(forKey: Keys.autoUpdateCheckEnabled)
-            return value as? Bool ?? false // Default to disabled for custom fork
-        }
-        set {
-            self.defaults.set(newValue, forKey: Keys.autoUpdateCheckEnabled)
-        }
-    }
-
-    var lastUpdateCheckDate: Date? {
-        get {
-            return self.defaults.object(forKey: Keys.lastUpdateCheckDate) as? Date
-        }
-        set {
-            self.defaults.set(newValue, forKey: Keys.lastUpdateCheckDate)
-        }
-    }
-
-    // MARK: - Update Check Helper
-
-    func shouldCheckForUpdates() -> Bool {
-        guard self.autoUpdateCheckEnabled else { return false }
-
-        guard let lastCheck = lastUpdateCheckDate else {
-            // Never checked before, should check
-            return true
-        }
-
-        // Check if more than 1 hour has passed
-        let hourInSeconds: TimeInterval = 60 * 60
-        return Date().timeIntervalSince(lastCheck) >= hourInSeconds
-    }
-
-    func updateLastCheckDate() {
-        self.lastUpdateCheckDate = Date()
-    }
-
-    // MARK: - Update Prompt Snooze
-
-    /// Date until which update prompts are snoozed (user clicked "Later")
-    var updatePromptSnoozedUntil: Date? {
-        get { self.defaults.object(forKey: Keys.updatePromptSnoozedUntil) as? Date }
-        set { self.defaults.set(newValue, forKey: Keys.updatePromptSnoozedUntil) }
-    }
-
-    /// The version that was snoozed (to allow prompting for newer versions)
-    var snoozedUpdateVersion: String? {
-        get { self.defaults.string(forKey: Keys.snoozedUpdateVersion) }
-        set { self.defaults.set(newValue, forKey: Keys.snoozedUpdateVersion) }
-    }
-
-    /// Check if we should show the update prompt for a given version
-    /// Returns false if user snoozed this version within the last 24 hours
-    func shouldShowUpdatePrompt(forVersion version: String) -> Bool {
-        // If a different (newer) version is available, always show
-        if let snoozedVersion = snoozedUpdateVersion, snoozedVersion != version {
-            return true
-        }
-
-        // Check if snooze period has expired
-        guard let snoozedUntil = updatePromptSnoozedUntil else {
-            return true // Never snoozed, show prompt
-        }
-
-        return Date() >= snoozedUntil
-    }
-
-    /// Snooze update prompts for 24 hours for the given version
-    func snoozeUpdatePrompt(forVersion version: String) {
-        let snoozeUntil = Date().addingTimeInterval(24 * 60 * 60) // 24 hours
-        self.updatePromptSnoozedUntil = snoozeUntil
-        self.snoozedUpdateVersion = version
-        DebugLogger.shared.info("Update prompt snoozed for version \(version) until \(snoozeUntil)", source: "SettingsStore")
-    }
-
-    /// Clear the snooze (e.g., when update is installed)
-    func clearUpdateSnooze() {
-        self.updatePromptSnoozedUntil = nil
-        self.snoozedUpdateVersion = nil
-    }
-
     var playgroundUsed: Bool {
         get { self.defaults.bool(forKey: Keys.playgroundUsed) }
         set { self.defaults.set(newValue, forKey: Keys.playgroundUsed) }
@@ -2601,6 +2497,65 @@ final class SettingsStore: ObservableObject {
         }
     }
 
+    /// Qwen3-ASR context/hotwords injected as `Vocabulary: ...` in the system prompt.
+    /// The official Qwen3-ASR prompt format: words listed here are strongly biased
+    /// during decoding (fixes e.g. hearing "qwen3" as "千万三" on other engines).
+    /// Including the most common local pronunciations ("千问三", "千万三") as extra
+    /// variants measurably improves the bias toward the English term.
+    var qwen3ContextWords: String {
+        get {
+            let raw = self.defaults.string(forKey: Keys.qwen3ContextWords) ?? ""
+            return raw.isEmpty ? "Qwen3, qwen3, Qwen3-ASR, 千问三, 千万三, 前问3" : raw
+        }
+        set {
+            objectWillChange.send()
+            self.defaults.set(newValue, forKey: Keys.qwen3ContextWords)
+        }
+    }
+
+    /// Selected MLX STT model card (`MlxSttCard.pathID`, e.g.
+    /// "qwen3-asr/0.6B-8bit"); auto-maps to the matching mlx-community repo.
+    /// Legacy "SelectedMlxSttVariant" values are migrated transparently.
+    var selectedMlxSttCardID: String {
+        get {
+            if let raw = self.defaults.string(forKey: Keys.selectedMlxSttCardID),
+                !raw.isEmpty, raw.contains("/")
+            {
+                return raw
+            }
+            // Migrate from the old single-family variant key.
+            if let legacy = self.defaults.string(forKey: Keys.selectedMlxSttVariant),
+                !legacy.isEmpty
+            {
+                return "qwen3-asr/\(legacy)"
+            }
+            // No MLX card is selected yet. Only fall back to the default card
+            // while the app is actually running on the MLX engine; when the
+            // user picked Apple / a cloud model the card list must show NO
+            // selection (exclusive engine state).
+            if self.selectedSpeechModel.isMlxEngineModel {
+                return MlxSttCatalog.defaultCardPathID
+            }
+            return ""
+        }
+        set {
+            objectWillChange.send()
+            self.defaults.set(newValue, forKey: Keys.selectedMlxSttCardID)
+            self.defaults.removeObject(forKey: Keys.selectedMlxSttVariant)
+        }
+    }
+
+    /// Family id of the selected card, e.g. "qwen3-asr".
+    var selectedMlxSttFamilyID: String {
+        String(self.selectedMlxSttCardID.split(separator: "/").first ?? "qwen3-asr")
+    }
+
+    /// Card id inside the selected family, e.g. "0.6B-8bit".
+    var selectedMlxSttVariantID: String {
+        let parts = self.selectedMlxSttCardID.split(separator: "/")
+        return parts.count > 1 ? String(parts[1]) : "0.6B-8bit"
+    }
+
     enum HuggingFaceMirror: String, CaseIterable, Identifiable, Codable {
         case hfMirror = "hfMirror"
         case official = "official"
@@ -2691,9 +2646,18 @@ final class SettingsStore: ObservableObject {
         }
 
         var pressure: Pressure {
-            if self.totalGB <= self.totalDeviceRAMGB * 0.45 {
+            // Load pressure is judged against the CURRENTLY AVAILABLE RAM
+            // (other apps already occupy most of the machine, and macOS does
+            // not reclaim wired/in-use pages on demand), not against the total
+            // RAM as if the machine were idle.
+            let available = self.availableRAMGB
+            if available <= 0 {
+                return .tight
+            }
+            let fraction = self.totalGB / available
+            if fraction <= 0.45 {
                 return .safe
-            } else if self.totalGB <= self.totalDeviceRAMGB * 0.75 {
+            } else if fraction <= 0.75 {
                 return .moderate
             } else {
                 return .tight
@@ -2747,6 +2711,8 @@ final class SettingsStore: ObservableObject {
         }
     }
 
+    // MARK: - Whisper Punctuation Prompt
+
     func estimateMemoryBreakdown(model: SpeechModel, contextTokens: Int? = nil) -> ModelMemoryBreakdown {
         let tokens = contextTokens ?? self.asrContextTokenLimit
         let totalRAM = Double(ProcessInfo.processInfo.physicalMemory) / (1024 * 1024 * 1024)
@@ -2777,7 +2743,13 @@ final class SettingsStore: ObservableObject {
 
         switch model {
         case .qwen3Asr:
-            weightGB = (self.qwen3AsrVariant == .int8) ? 0.90 : 1.75
+            // Weight estimate follows the selected MLX card (family × size ×
+            // quant), not a fixed Qwen3 variant.
+            if let card = MlxSttCatalog.card(pathID: self.selectedMlxSttCardID) {
+                weightGB = Double(card.sizeBytes) / 1_073_741_824
+            } else {
+                weightGB = (self.qwen3AsrVariant == .int8) ? 0.90 : 1.75
+            }
             // Audio frames (25 fps) + text tokens KV cache (0.11 MB/token)
             let audioTokens = durationSeconds * 25.0
             let textTokens = Double(tokens)
@@ -2808,14 +2780,6 @@ final class SettingsStore: ObservableObject {
             weightGB = 0.04
             kvCacheGB = Double(tokens) * 0.0001
             overheadGB = 0.10
-        case .parakeetTDT, .parakeetTDTv2, .parakeetRealtime:
-            weightGB = 0.60
-            kvCacheGB = 0.05
-            overheadGB = 0.25
-        case .cohereTranscribeSixBit, .nemotronOffline, .nemotronStreaming, .nemotronStreaming320:
-            weightGB = 0.70
-            kvCacheGB = 0.10
-            overheadGB = 0.30
         case .appleSpeech, .appleSpeechAnalyzer:
             weightGB = 0.05
             kvCacheGB = 0.02
@@ -2942,30 +2906,6 @@ final class SettingsStore: ObservableObject {
         return false
     }
 
-    // MARK: - Command Mode Settings
-
-    var commandModeSelectedModel: String? {
-        get { self.defaults.string(forKey: Keys.commandModeSelectedModel) }
-        set {
-            objectWillChange.send()
-            self.defaults.set(newValue, forKey: Keys.commandModeSelectedModel)
-        }
-    }
-
-    var commandModeSelectedProviderID: String {
-        get { self.defaults.string(forKey: Keys.commandModeSelectedProviderID) ?? "" }
-        set {
-            objectWillChange.send()
-            let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
-            if trimmed.isEmpty {
-                self.defaults.removeObject(forKey: Keys.commandModeSelectedProviderID)
-            } else {
-                self.defaults.set(trimmed, forKey: Keys.commandModeSelectedProviderID)
-            }
-        }
-    }
-
-    // MARK: - Prompt Mode Settings (Transcribe with Prompt)
 
     var promptModeShortcutEnabled: Bool {
         get {
@@ -2985,7 +2925,7 @@ final class SettingsStore: ObservableObject {
             {
                 return shortcut
             }
-            // Default to Right Shift key (keyCode: 60, no modifiers) — avoids conflict with Command Mode (Right Command, keyCode 54)
+            // Default to Right Shift key (keyCode: 60, no modifiers)
             return HotkeyShortcut(keyCode: 60, modifierFlags: [])
         }
         set {
@@ -3019,38 +2959,6 @@ final class SettingsStore: ObservableObject {
         set {
             objectWillChange.send()
             self.defaults.set(newValue, forKey: Keys.secondaryDictationPromptOff)
-        }
-    }
-
-    var commandModeShortcutEnabled: Bool {
-        get {
-            let value = self.defaults.object(forKey: Keys.commandModeShortcutEnabled)
-            return value as? Bool ?? false
-        }
-        set {
-            objectWillChange.send()
-            self.defaults.set(newValue, forKey: Keys.commandModeShortcutEnabled)
-        }
-    }
-
-    var commandModeHotkeyShortcut: HotkeyShortcut? {
-        get {
-            if let data = defaults.data(forKey: Keys.commandModeHotkeyShortcut),
-               let shortcut = try? JSONDecoder().decode(HotkeyShortcut.self, from: data)
-            {
-                return shortcut
-            }
-            return nil
-        }
-        set {
-            objectWillChange.send()
-            guard let newValue else {
-                self.defaults.removeObject(forKey: Keys.commandModeHotkeyShortcut)
-                return
-            }
-            if let data = try? JSONEncoder().encode(newValue) {
-                self.defaults.set(data, forKey: Keys.commandModeHotkeyShortcut)
-            }
         }
     }
 
@@ -3105,18 +3013,6 @@ final class SettingsStore: ObservableObject {
             if let data = try? JSONEncoder().encode(newValue) {
                 self.defaults.set(data, forKey: Keys.pasteLastTranscriptionHotkeyShortcut)
             }
-        }
-    }
-
-    var commandModeConfirmBeforeExecute: Bool {
-        get {
-            // Default to true (safer - ask before running commands)
-            let value = self.defaults.object(forKey: Keys.commandModeConfirmBeforeExecute)
-            return value as? Bool ?? true
-        }
-        set {
-            objectWillChange.send()
-            self.defaults.set(newValue, forKey: Keys.commandModeConfirmBeforeExecute)
         }
     }
 
@@ -3295,7 +3191,7 @@ final class SettingsStore: ObservableObject {
             || modelLower.contains("claude-mythos")
     }
 
-    /// Whether to display thinking tokens in the UI (Command Mode, Rewrite Mode)
+    /// Whether to display thinking tokens in the UI (Rewrite Mode)
     /// If false, thinking tokens are extracted but not shown to user
     var showThinkingTokens: Bool {
         get {
@@ -3440,8 +3336,6 @@ final class SettingsStore: ObservableObject {
             privateAIBackendPreference: self.privateAIBackendPreference,
             privateAIContextTokenLimit: self.privateAIContextTokenLimit,
             selectedSpeechModel: self.selectedSpeechModel,
-            selectedCohereLanguage: self.selectedCohereLanguage,
-            selectedNemotronLanguage: self.selectedNemotronLanguage,
             selectedAppleSpeechLocaleIdentifier: self.selectedAppleSpeechLocaleIdentifier,
             hotkeyShortcut: self.hotkeyShortcut,
             primaryDictationShortcuts: self.primaryDictationShortcuts,
@@ -3449,12 +3343,6 @@ final class SettingsStore: ObservableObject {
             promptModeShortcutEnabled: self.promptModeShortcutEnabled,
             promptModeSelectedPromptID: self.promptModeSelectedPromptID,
             secondaryDictationPromptOff: self.isSecondaryDictationPromptOff,
-            commandModeHotkeyShortcut: self.commandModeHotkeyShortcut,
-            commandModeShortcutEnabled: self.commandModeShortcutEnabled,
-            commandModeSelectedModel: self.commandModeSelectedModel,
-            commandModeSelectedProviderID: self.commandModeSelectedProviderID,
-            commandModeConfirmBeforeExecute: self.commandModeConfirmBeforeExecute,
-            commandModeLinkedToGlobal: self.commandModeLinkedToGlobal,
             rewriteModeHotkeyShortcut: self.rewriteModeHotkeyShortcut,
             rewriteModeShortcutEnabled: self.rewriteModeShortcutEnabled,
             rewriteModeSelectedModel: self.rewriteModeSelectedModel,
@@ -3470,8 +3358,6 @@ final class SettingsStore: ObservableObject {
             transcriptionStartSound: self.transcriptionStartSound,
             transcriptionSoundVolume: self.transcriptionSoundVolume,
             transcriptionSoundIndependentVolume: self.transcriptionSoundIndependentVolume,
-            autoUpdateCheckEnabled: self.autoUpdateCheckEnabled,
-            betaReleasesEnabled: self.betaReleasesEnabled,
             enableDebugLogs: self.enableDebugLogs,
             shareAnonymousAnalytics: self.shareAnonymousAnalytics,
             pressAndHoldMode: self.pressAndHoldMode,
@@ -3525,9 +3411,7 @@ final class SettingsStore: ObservableObject {
             selectedEditPromptID: self.selectedEditPromptID,
             editPromptRoutingScope: self.editPromptRoutingScope,
             defaultDictationPromptOverride: self.defaultDictationPromptOverride,
-            defaultEditPromptOverride: self.defaultEditPromptOverride,
-            fileTranscriptionSpeakerLabelsEnabled: self.fileTranscriptionSpeakerLabelsEnabled,
-            fileTranscriptionExpectedSpeakerCount: self.fileTranscriptionExpectedSpeakerCount
+            defaultEditPromptOverride: self.defaultEditPromptOverride
         )
     }
 
@@ -3557,22 +3441,12 @@ final class SettingsStore: ObservableObject {
             self.privateAIContextTokenLimit = privateAIContextTokenLimit
         }
         self.selectedSpeechModel = payload.selectedSpeechModel
-        self.selectedCohereLanguage = payload.selectedCohereLanguage
-        if let selectedNemotronLanguage = payload.selectedNemotronLanguage {
-            self.selectedNemotronLanguage = selectedNemotronLanguage
-        }
         if let selectedAppleSpeechLocaleIdentifier = payload.selectedAppleSpeechLocaleIdentifier {
             self.selectedAppleSpeechLocaleIdentifier = selectedAppleSpeechLocaleIdentifier
         }
         self.primaryDictationShortcuts = payload.primaryDictationShortcuts ?? [payload.hotkeyShortcut]
         self.promptModeHotkeyShortcut = payload.promptModeHotkeyShortcut
         self.promptModeShortcutEnabled = payload.promptModeShortcutEnabled
-        self.commandModeHotkeyShortcut = payload.commandModeHotkeyShortcut
-        self.commandModeShortcutEnabled = payload.commandModeShortcutEnabled
-        self.commandModeSelectedModel = payload.commandModeSelectedModel
-        self.commandModeSelectedProviderID = payload.commandModeSelectedProviderID
-        self.commandModeConfirmBeforeExecute = payload.commandModeConfirmBeforeExecute
-        self.commandModeLinkedToGlobal = payload.commandModeLinkedToGlobal
         self.rewriteModeHotkeyShortcut = payload.rewriteModeHotkeyShortcut
         self.rewriteModeShortcutEnabled = payload.rewriteModeShortcutEnabled
         self.rewriteModeSelectedModel = payload.rewriteModeSelectedModel
@@ -3594,8 +3468,6 @@ final class SettingsStore: ObservableObject {
         self.transcriptionStartSound = payload.transcriptionStartSound
         self.transcriptionSoundVolume = payload.transcriptionSoundVolume
         self.transcriptionSoundIndependentVolume = payload.transcriptionSoundIndependentVolume
-        self.autoUpdateCheckEnabled = payload.autoUpdateCheckEnabled
-        self.betaReleasesEnabled = payload.betaReleasesEnabled
         self.enableDebugLogs = payload.enableDebugLogs
         self.shareAnonymousAnalytics = payload.shareAnonymousAnalytics
         self.hotkeyMode = payload.hotkeyMode ?? (payload.pressAndHoldMode ? .hold : .toggle)
@@ -3688,12 +3560,6 @@ final class SettingsStore: ObservableObject {
         self.selectedEditPromptID = payload.selectedEditPromptID
         self.defaultDictationPromptOverride = payload.defaultDictationPromptOverride
         self.defaultEditPromptOverride = payload.defaultEditPromptOverride
-        if let fileTranscriptionSpeakerLabelsEnabled = payload.fileTranscriptionSpeakerLabelsEnabled {
-            self.fileTranscriptionSpeakerLabelsEnabled = fileTranscriptionSpeakerLabelsEnabled
-        }
-        if let fileTranscriptionExpectedSpeakerCount = payload.fileTranscriptionExpectedSpeakerCount {
-            self.fileTranscriptionExpectedSpeakerCount = fileTranscriptionExpectedSpeakerCount
-        }
         self.promptModeSelectedPromptID = payload.promptModeSelectedPromptID
         self.isSecondaryDictationPromptOff = payload.secondaryDictationPromptOff ?? false
         self.normalizePromptSelectionsIfNeeded()
@@ -4106,10 +3972,6 @@ final class SettingsStore: ObservableObject {
             self.rewriteModeSelectedModel = model
         }
 
-        if self.commandModeLinkedToGlobal {
-            self.commandModeSelectedProviderID = linkedProviderID
-            self.commandModeSelectedModel = model
-        }
     }
 
     private func isPrivateAIProviderID(_ providerID: String) -> Bool {
@@ -4152,10 +4014,7 @@ final class SettingsStore: ObservableObject {
         case .edit:
             providerID = self.rewriteModeLinkedToGlobal ? self.selectedProviderID : self.rewriteModeSelectedProviderID
             selectedModel = self.rewriteModeLinkedToGlobal ? self.modelSelection(for: providerID) : self.rewriteModeSelectedModel
-        case .command:
-            providerID = self.commandModeLinkedToGlobal ? self.selectedProviderID : self.commandModeSelectedProviderID
-            selectedModel = self.commandModeLinkedToGlobal ? self.modelSelection(for: providerID) : self.commandModeSelectedModel
-        case .dictation, .meeting:
+        case .dictation, .meeting, .command:
             providerID = self.selectedProviderID
             selectedModel = self.modelSelection(for: providerID)
         }
@@ -4694,7 +4553,7 @@ final class SettingsStore: ObservableObject {
         set {
             objectWillChange.send()
             self.defaults.set(newValue, forKey: Keys.vocabularyBoostingEnabled)
-            NotificationCenter.default.post(name: .parakeetVocabularyDidChange, object: nil)
+            NotificationCenter.default.post(name: .customVocabularyDidChange, object: nil)
         }
     }
 
@@ -4747,16 +4606,9 @@ final class SettingsStore: ObservableObject {
         case cloudOllama = "cloud-ollama"
         case cloudCustom = "cloud-custom"
 
-        // MARK: - FluidAudio Models (Apple Silicon Only)
+        // MARK: - Local Neural Models (Apple Silicon)
 
-        case parakeetTDT = "parakeet-tdt"
-        case parakeetTDTv2 = "parakeet-tdt-v2"
-        case parakeetRealtime = "parakeet-realtime"
         case qwen3Asr = "qwen3-asr"
-        case cohereTranscribeSixBit = "cohere-transcribe-6bit"
-        case nemotronOffline = "nemotron-3.5-offline"
-        case nemotronStreaming = "nemotron-3.5-streaming"
-        case nemotronStreaming320 = "nemotron-3.5-streaming-320"
 
         // MARK: - Apple Native
 
@@ -4771,6 +4623,17 @@ final class SettingsStore: ObservableObject {
         case whisperMedium = "whisper-medium"
         case whisperLargeTurbo = "whisper-large-turbo"
         case whisperLarge = "whisper-large"
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.singleValueContainer()
+            let raw = try container.decode(String.self)
+            self = SpeechModel(rawValue: raw) ?? .defaultModel
+        }
+
+        func encode(to encoder: Encoder) throws {
+            var container = encoder.singleValueContainer()
+            try container.encode(self.rawValue)
+        }
 
         var id: String {
             rawValue
@@ -4794,14 +4657,7 @@ final class SettingsStore: ObservableObject {
             case .cloudGroq: return "Groq Cloud STT (Ultra Fast)"
             case .cloudOllama: return "Ollama ASR (Local / LAN)"
             case .cloudCustom: return "Custom Cloud STT"
-            case .parakeetTDT: return "Parakeet TDT v3 (Multilingual)"
-            case .parakeetTDTv2: return "Parakeet TDT v2 (English Only)"
-            case .parakeetRealtime: return "Parakeet Flash (Beta)"
             case .qwen3Asr: return "Qwen3 ASR (Beta)"
-            case .cohereTranscribeSixBit: return "Cohere Transcribe"
-            case .nemotronOffline: return "Nemotron 3.5 Multilingual"
-            case .nemotronStreaming: return "Nemotron Speech 3.5 - Ultra Fast Low Latency"
-            case .nemotronStreaming320: return "Nemotron Speech 3.5 - Ultra Fast Low Latency"
             case .appleSpeech: return "Apple ASR Legacy"
             case .appleSpeechAnalyzer: return "Apple Speech - macOS 26+"
             case .whisperTiny: return "Whisper Tiny"
@@ -4817,13 +4673,7 @@ final class SettingsStore: ObservableObject {
             switch self {
             case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudOllama, .cloudCustom:
                 return "99+ Languages"
-            case .parakeetTDT:
-                return "25 Languages"
-            case .parakeetTDTv2: return "English Only (Higher Accuracy)"
-            case .parakeetRealtime: return "English Only (Live Streaming)"
             case .qwen3Asr: return "30 Languages"
-            case .cohereTranscribeSixBit: return "14 Languages (Select Manually)"
-            case .nemotronOffline, .nemotronStreaming, .nemotronStreaming320: return "Around 40 Languages"
             case .appleSpeech: return "System Languages"
             case .appleSpeechAnalyzer: return "EN, ES, FR, DE, IT, JA, KO, PT, ZH"
             case .whisperTiny, .whisperBase, .whisperSmall, .whisperMedium, .whisperLargeTurbo, .whisperLarge:
@@ -4835,16 +4685,16 @@ final class SettingsStore: ObservableObject {
             switch self {
             case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudOllama, .cloudCustom:
                 return "Cloud API"
-            case .parakeetTDT: return "~460.9 MiB"
-            case .parakeetTDTv2: return "~442.9 MiB"
-            case .parakeetRealtime: return "~428.4 MiB"
             case .qwen3Asr:
+                // The MLX engine ships multiple model cards; report the size of
+                // the currently selected card instead of one fixed variant.
+                if let card = MlxSttCatalog.card(
+                    pathID: SettingsStore.shared.selectedMlxSttCardID
+                ) {
+                    return "~\(card.sizeDescription)"
+                }
                 let variant = SettingsStore.shared.qwen3AsrVariant
                 return variant == .int8 ? "~900 MiB (Int8 量化)" : "~1.75 GiB (FP16 全精)"
-            case .cohereTranscribeSixBit: return "~1.54 GiB"
-            case .nemotronOffline: return "~530.8 MiB"
-            case .nemotronStreaming: return "~668.2 MiB"
-            case .nemotronStreaming320: return "~668.2 MiB"
             case .appleSpeech: return "Built-in"
             case .appleSpeechAnalyzer: return "Built-in"
             case .whisperTiny: return "~43.9 MiB"
@@ -4860,15 +4710,9 @@ final class SettingsStore: ObservableObject {
             switch self {
             case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudOllama, .cloudCustom:
                 return 0
-            case .parakeetTDT: return 483_288_717
-            case .parakeetTDTv2: return 464_421_712
-            case .parakeetRealtime: return 449_190_189
             case .qwen3Asr:
                 let variant = SettingsStore.shared.qwen3AsrVariant
                 return variant == .int8 ? (900 * 1024 * 1024) : (1750 * 1024 * 1024)
-            case .cohereTranscribeSixBit: return 1_650_748_785
-            case .nemotronOffline: return 556_552_620
-            case .nemotronStreaming, .nemotronStreaming320: return 700_685_415
             case .whisperTiny: return 45_981_088
             case .whisperBase: return 84_934_656
             case .whisperSmall: return 269_811_712
@@ -4881,15 +4725,29 @@ final class SettingsStore: ObservableObject {
 
         var requiresAppleSilicon: Bool {
             switch self {
-            case .parakeetTDT, .parakeetTDTv2, .parakeetRealtime, .qwen3Asr, .cohereTranscribeSixBit, .nemotronOffline, .nemotronStreaming, .nemotronStreaming320: return true
+            case .qwen3Asr: return true
             default: return false
             }
         }
 
         var isWhisperModel: Bool {
             switch self {
-            case .parakeetTDT, .parakeetTDTv2, .parakeetRealtime, .qwen3Asr, .cohereTranscribeSixBit, .nemotronOffline, .nemotronStreaming, .nemotronStreaming320, .appleSpeech, .appleSpeechAnalyzer: return false
+            case .qwen3Asr, .appleSpeech, .appleSpeechAnalyzer: return false
             default: return true
+            }
+        }
+
+        /// True when this model is served by the local MLX engine (Qwen3-ASR
+        /// card or a legacy local Whisper model). Cloud STT cards are excluded
+        /// — the ONLY engine that may run simultaneously with nothing else.
+        /// True when this model is served by the local MLX engine (the only
+        /// local engine now — all Whisper variants live on the MLX engine as
+        /// per-card downloads, so retired transcribe.cpp models never route
+        /// here). Apple built-ins and every cloud card are excluded.
+        var isMlxEngineModel: Bool {
+            switch self {
+            case .qwen3Asr: return true
+            default: return false
             }
         }
 
@@ -4953,24 +4811,20 @@ final class SettingsStore: ObservableObject {
         /// Requires macOS 15 or later.
         var requiresMacOS15: Bool {
             switch self {
-            case .qwen3Asr, .cohereTranscribeSixBit: return true
+            case .qwen3Asr: return true
             default: return false
             }
         }
 
         /// Returns models available for the current Mac's architecture and OS
+        /// All model types that the user may pick today. Legacy transcribe.cpp
+        /// Whisper variants (whisperTiny ... whisperLarge) are retired: Whisper
+        /// runs exclusively on the MLX engine via per-card selection, so those
+        /// enum cases stay for decoding old persisted values but never appear.
         static var availableModels: [SpeechModel] {
             allCases.filter { model in
-                if model == .whisperLargeTurbo, !CPUArchitecture.isAppleSilicon {
-                    return false
-                }
-                if model == .whisperLarge, !CPUArchitecture.isAppleSilicon {
-                    return false
-                }
+                if model.isRetiredLegacyWhisper { return false }
                 if model == .qwen3Asr, !Self.qwenPreviewEnabled {
-                    return false
-                }
-                if model == .nemotronStreaming320 {
                     return false
                 }
                 // Filter by Apple Silicon requirement
@@ -4993,9 +4847,23 @@ final class SettingsStore: ObservableObject {
             }
         }
 
+        /// True for the retired transcribe.cpp Whisper variants. Kept in the
+        /// enum only so previously persisted values still decode; they are
+        /// excluded from every picker and never offered again.
+        var isRetiredLegacyWhisper: Bool {
+            switch self {
+            case .whisperTiny, .whisperBase, .whisperSmall,
+                 .whisperMedium, .whisperLargeTurbo, .whisperLarge:
+                return true
+            default:
+                return false
+            }
+        }
+
         /// Default model for the current architecture
         static var defaultModel: SpeechModel {
-            CPUArchitecture.isAppleSilicon ? .parakeetTDT : .whisperBase
+            if CPUArchitecture.isAppleSilicon { return .qwen3Asr }
+            return .appleSpeech
         }
 
         // MARK: - UI Card Metadata
@@ -5008,14 +4876,7 @@ final class SettingsStore: ObservableObject {
             case .cloudGroq: return "Groq Ultra-Fast Cloud"
             case .cloudOllama: return "Ollama (Local / LAN ASR)"
             case .cloudCustom: return "Custom OpenAI-Compatible"
-            case .parakeetTDT: return "Blazing Fast - Multilingual"
-            case .parakeetTDTv2: return "Blazing Fast - English"
-            case .parakeetRealtime: return "Flash Dictation"
             case .qwen3Asr: return "Qwen3 - Multilingual"
-            case .cohereTranscribeSixBit: return "Cohere - High Accuracy"
-            case .nemotronOffline: return "Nemotron 3.5 Multilingual"
-            case .nemotronStreaming: return "Nemotron Speech 3.5 - Ultra Fast Low Latency"
-            case .nemotronStreaming320: return "Nemotron Speech 3.5 - Ultra Fast Low Latency"
             case .appleSpeech: return "Apple ASR Legacy"
             case .appleSpeechAnalyzer: return "Apple Speech - macOS 26+"
             case .whisperTiny: return "Fast & Light"
@@ -5040,25 +4901,8 @@ final class SettingsStore: ObservableObject {
                 return "Connect to your local or LAN Ollama instance running Qwen3-ASR, Whisper, or other ASR models."
             case .cloudCustom:
                 return "Connect to any OpenAI-compatible audio transcription endpoint (e.g. self-hosted Whisper, SiliconFlow)."
-            case .parakeetTDT:
-                return "Fast multilingual transcription. Supports Bulgarian, Croatian, Czech, Danish, " +
-                    "Dutch, English, Estonian, Finnish, French, German, Greek, Hungarian, Italian, " +
-                    "Latvian, Lithuanian, Maltese, Polish, Portuguese, Romanian, Russian, Slovak, " +
-                    "Slovenian, Spanish, Swedish, and Ukrainian."
-            case .parakeetTDTv2:
-                return "Optimized for English accuracy and fastest transcription."
-            case .parakeetRealtime:
-                return "English-only streaming local dictation with low-latency partial text and end-of-utterance detection."
             case .qwen3Asr:
-                return "Qwen3 multilingual ASR via FluidAudio. Higher quality, heavier memory footprint."
-            case .cohereTranscribeSixBit:
-                return "High-accuracy multilingual transcription. Select the language manually before dictation for best results."
-            case .nemotronOffline:
-                return "Slower but more accurate NVIDIA Nemotron 3.5 transcription. Supports 40 language-locales with auto or manual language selection."
-            case .nemotronStreaming:
-                return "NVIDIA Nemotron 3.5 streaming-capable transcription. Supports 40 language-locales with auto or manual language selection."
-            case .nemotronStreaming320:
-                return "NVIDIA Nemotron 3.5 streaming-capable transcription. Supports 40 language-locales with auto or manual language selection."
+                return "Qwen3 multilingual ASR via the built-in MLX engine. Higher quality, heavier memory footprint."
             case .appleSpeech:
                 return "Built-in macOS speech recognition. No model download required."
             case .appleSpeechAnalyzer:
@@ -5083,13 +4927,7 @@ final class SettingsStore: ObservableObject {
             switch self {
             case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudOllama, .cloudCustom:
                 return 0.1
-            case .parakeetTDT, .parakeetTDTv2, .parakeetRealtime:
-                return 1.0
             case .qwen3Asr:
-                return 1.5
-            case .cohereTranscribeSixBit:
-                return 1.5
-            case .nemotronOffline, .nemotronStreaming, .nemotronStreaming320:
                 return 1.5
             case .appleSpeech, .appleSpeechAnalyzer:
                 return 0.2 // Built-in, minimal overhead
@@ -5129,13 +4967,7 @@ final class SettingsStore: ObservableObject {
             switch self {
             case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudOllama, .cloudCustom:
                 return 5
-            case .parakeetTDT: return 5
-            case .parakeetTDTv2: return 5
-            case .parakeetRealtime: return 5
             case .qwen3Asr: return 3
-            case .cohereTranscribeSixBit: return 3
-            case .nemotronOffline: return 3
-            case .nemotronStreaming, .nemotronStreaming320: return 4
             case .appleSpeech: return 4
             case .appleSpeechAnalyzer: return 4
             case .whisperTiny: return 4
@@ -5152,13 +4984,7 @@ final class SettingsStore: ObservableObject {
             switch self {
             case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudOllama, .cloudCustom:
                 return 5
-            case .parakeetTDT: return 5
-            case .parakeetTDTv2: return 5
-            case .parakeetRealtime: return 4
             case .qwen3Asr: return 4
-            case .cohereTranscribeSixBit: return 5
-            case .nemotronOffline: return 5
-            case .nemotronStreaming, .nemotronStreaming320: return 4
             case .appleSpeech: return 4
             case .appleSpeechAnalyzer: return 4
             case .whisperTiny: return 2
@@ -5175,13 +5001,7 @@ final class SettingsStore: ObservableObject {
             switch self {
             case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudOllama, .cloudCustom:
                 return 0.95
-            case .parakeetTDT: return 1.0
-            case .parakeetTDTv2: return 1.0
-            case .parakeetRealtime: return 1.0
             case .qwen3Asr: return 0.45
-            case .cohereTranscribeSixBit: return 0.85
-            case .nemotronOffline: return 0.85
-            case .nemotronStreaming, .nemotronStreaming320: return 1.0
             case .appleSpeech: return 0.60
             case .appleSpeechAnalyzer: return 0.85
             case .whisperTiny: return 0.90
@@ -5198,13 +5018,7 @@ final class SettingsStore: ObservableObject {
             switch self {
             case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudOllama, .cloudCustom:
                 return 0.98
-            case .parakeetTDT: return 0.92
-            case .parakeetTDTv2: return 0.96
-            case .parakeetRealtime: return 0.75
             case .qwen3Asr: return 0.90
-            case .cohereTranscribeSixBit: return 0.98
-            case .nemotronOffline: return 0.90
-            case .nemotronStreaming, .nemotronStreaming320: return 0.85
             case .appleSpeech: return 0.60
             case .appleSpeechAnalyzer: return 0.80
             case .whisperTiny: return 0.40
@@ -5221,12 +5035,7 @@ final class SettingsStore: ObservableObject {
             switch self {
             case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudOllama, .cloudCustom:
                 return "Local / Cloud"
-            case .parakeetTDT: return "FluidVoice Pick"
-            case .parakeetTDTv2: return "FluidVoice Pick"
-            case .parakeetRealtime: return "Beta"
             case .qwen3Asr: return "Beta"
-            case .cohereTranscribeSixBit: return "New"
-            case .nemotronOffline, .nemotronStreaming, .nemotronStreaming320: return "New + Beta"
             case .appleSpeechAnalyzer: return "New"
             default: return nil
             }
@@ -5237,7 +5046,7 @@ final class SettingsStore: ObservableObject {
             switch self {
             case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudOllama, .cloudCustom:
                 return false
-            case .parakeetTDT, .parakeetTDTv2, .parakeetRealtime, .qwen3Asr, .cohereTranscribeSixBit, .nemotronOffline, .nemotronStreaming, .nemotronStreaming320, .appleSpeechAnalyzer:
+            case .qwen3Asr, .appleSpeechAnalyzer:
                 return true
             default:
                 return false
@@ -5258,56 +5067,26 @@ final class SettingsStore: ObservableObject {
         }
 
         var supportsPronunciationMatching: Bool {
-            #if arch(arm64)
-            switch self {
-            case .parakeetTDT, .parakeetTDTv2:
-                return true
-            default:
-                return false
-            }
-            #else
-            return false
-            #endif
+            false
         }
 
         /// Preview update cadence for real-time transcription.
         /// Models without native incremental decoding should use a slower interval.
         var streamingPreviewIntervalSeconds: Double {
-            switch self {
-            case .parakeetRealtime:
-                return 0.2
-            case .nemotronStreaming, .nemotronStreaming320:
-                return 0.32
-            case .cohereTranscribeSixBit:
-                return 1.0
-            default:
-                return 0.6
-            }
+            0.6
         }
 
         /// Minimum audio required before attempting a preview decode.
-        /// Cohere performs better with a slightly larger prefix than the default 1 second.
         var minimumStreamingPreviewSeconds: Double {
-            switch self {
-            case .parakeetRealtime:
-                return 0.2
-            case .nemotronStreaming, .nemotronStreaming320:
-                return 0.64
-            case .cohereTranscribeSixBit:
-                return 1.5
-            default:
-                return 1.0
-            }
+            1.0
         }
 
         /// Provider category for tab grouping
         enum Provider: String, CaseIterable {
             case cloud = "Cloud"
-            case nvidia = "NVIDIA"
             case apple = "Apple"
             case openai = "OpenAI"
             case qwen = "Qwen"
-            case cohere = "Cohere"
         }
 
         /// Which provider this model belongs to
@@ -5315,16 +5094,34 @@ final class SettingsStore: ObservableObject {
             switch self {
             case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudOllama, .cloudCustom:
                 return .cloud
-            case .parakeetTDT, .parakeetTDTv2, .parakeetRealtime, .nemotronOffline, .nemotronStreaming, .nemotronStreaming320:
-                return .nvidia
             case .appleSpeech, .appleSpeechAnalyzer:
                 return .apple
             case .qwen3Asr:
                 return .qwen
-            case .cohereTranscribeSixBit:
-                return .cohere
             case .whisperTiny, .whisperBase, .whisperSmall, .whisperMedium, .whisperLargeTurbo, .whisperLarge:
                 return .openai
+            }
+        }
+
+        /// Engine backend family used to group model cards in the UI.
+        enum EngineFamily: String, CaseIterable {
+            case cloud
+            case appleNative
+            case whisper
+            case qwen3Standalone
+        }
+
+        /// Which engine backend family this model belongs to.
+        var engineFamily: EngineFamily {
+            switch self {
+            case .cloudOpenRouter, .cloudOpenAI, .cloudGroq, .cloudOllama, .cloudCustom:
+                return .cloud
+            case .appleSpeech, .appleSpeechAnalyzer:
+                return .appleNative
+            case .qwen3Asr:
+                return .qwen3Standalone
+            case .whisperTiny, .whisperBase, .whisperSmall, .whisperMedium, .whisperLargeTurbo, .whisperLarge:
+                return .whisper
             }
         }
 
@@ -5340,117 +5137,28 @@ final class SettingsStore: ObservableObject {
                 return true
             case .appleSpeech, .appleSpeechAnalyzer:
                 return true
-            case .parakeetTDT:
-                #if canImport(FluidAudio)
-                return Self.parakeetModelsExist(version: .v3)
-                #else
-                return false
-                #endif
-            case .parakeetTDTv2:
-                #if canImport(FluidAudio)
-                return Self.parakeetModelsExist(version: .v2)
-                #else
-                return false
-                #endif
-            case .parakeetRealtime:
-                #if canImport(FluidAudio)
-                return Self.parakeetRealtimeModelsExist()
-                #else
-                return false
-                #endif
             case .qwen3Asr:
-                #if arch(arm64) && canImport(FluidAudio)
-                if #available(macOS 15.0, *) {
-                    let variant = SettingsStore.shared.qwen3AsrVariant
-                    let faVariant: Qwen3AsrVariant = variant == .int8 ? .int8 : .f32
-                    return Qwen3AsrModels.modelsExist(at: Qwen3AsrModels.defaultCacheDirectory(variant: faVariant))
-                }
-                return false
-                #else
-                return false
-                #endif
-            case .cohereTranscribeSixBit:
-                guard
-                    let spec = self.externalCoreMLSpec,
-                    let directory = SettingsStore.shared.externalCoreMLArtifactsDirectory(for: self)
-                else {
-                    return false
-                }
-                return spec.validatesInstalledArtifacts(at: directory)
-            case .nemotronOffline, .nemotronStreaming, .nemotronStreaming320:
-                let hint: String
-                switch self {
-                case .nemotronOffline:
-                    hint = "nemotron-3.5-asr-offline-6bit-CoreML"
-                default:
-                    hint = "nemotron-3.5-asr-streaming320-int8-CoreML"
-                }
-                let directory = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first?
-                    .appendingPathComponent(hint, isDirectory: true)
                 #if arch(arm64)
-                return directory.map { NemotronProvider.artifactsAreComplete(at: $0) } ?? false
+                if #available(macOS 15.0, *) {
+                    return Qwen3MlxEngine.modelsExist(
+                        modelID: "qwen3-asr",
+                        variantID: SettingsStore.shared.selectedMlxSttVariantID
+                    )
+                }
+                return false
                 #else
                 return false
                 #endif
             default:
-                // Whisper models
-                guard let whisperFile = self.whisperModelFile else { return false }
-                let directory = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first?
-                    .appendingPathComponent("WhisperModels")
-                let modelURL = directory?.appendingPathComponent(whisperFile)
-                guard
-                    let modelURL,
-                    let attributes = try? FileManager.default.attributesOfItem(atPath: modelURL.path),
-                    let size = attributes[.size] as? NSNumber,
-                    size.int64Value > 1_000_000
-                else {
-                    return false
-                }
-                let actual = size.int64Value
-                let expected = self.expectedDownloadBytes
-                if expected > 0 {
-                    let lowerBound = Int64(Double(expected) * 0.80)
-                    let upperBound = Int64(Double(expected) * 1.20)
-                    return actual >= lowerBound && actual <= upperBound
-                }
-                return true
+                // Whisper models run on the MLX engine as per-card downloads;
+                // installed state follows the matching MLX whisper card.
+                guard let cardID = MlxSttCatalog.whisperCardID(for: self) else { return false }
+                let parts = cardID.split(separator: "/")
+                guard parts.count == 2 else { return false }
+                return Qwen3MlxEngine.modelsExist(
+                    modelID: String(parts[0]), variantID: String(parts[1]))
             }
         }
-
-        #if canImport(FluidAudio)
-        private static func parakeetModelsExist(version: AsrModelVersion) -> Bool {
-            let directory = AsrModels.defaultCacheDirectory(for: version)
-            let vocabulary = directory.appendingPathComponent(ModelNames.ASR.vocabularyFile)
-            guard
-                AsrModels.modelsExist(at: directory, version: version),
-                HuggingFaceModelDownloader.artifactIsComplete(at: vocabulary, isDirectory: false)
-            else {
-                return false
-            }
-
-            return AsrModels.requiredModelNames.allSatisfy { modelName in
-                HuggingFaceModelDownloader.artifactIsComplete(
-                    at: directory.appendingPathComponent(modelName, isDirectory: true),
-                    isDirectory: true
-                )
-            }
-        }
-
-        private static func parakeetRealtimeModelsExist() -> Bool {
-            let modelsDirectory = AsrModels.defaultCacheDirectory().deletingLastPathComponent()
-            let modelDirectory = modelsDirectory
-                .appendingPathComponent("parakeet-eou-streaming", isDirectory: true)
-                .appendingPathComponent(Repo.parakeetEou160.folderName, isDirectory: true)
-
-            return ModelNames.ParakeetEOU.requiredModels.allSatisfy { modelName in
-                let artifact = modelDirectory.appendingPathComponent(modelName)
-                return HuggingFaceModelDownloader.artifactIsComplete(
-                    at: artifact,
-                    isDirectory: modelName.hasSuffix(".mlmodelc")
-                )
-            }
-        }
-        #endif
 
         /// Brand/provider name for the model (NVIDIA, Apple, OpenAI, Cloud)
         var brandName: String {
@@ -5465,12 +5173,8 @@ final class SettingsStore: ObservableObject {
                 return "Ollama"
             case .cloudCustom:
                 return "Custom"
-            case .parakeetTDT, .parakeetTDTv2, .parakeetRealtime, .nemotronOffline, .nemotronStreaming, .nemotronStreaming320:
-                return "NVIDIA"
             case .qwen3Asr:
                 return "Qwen"
-            case .cohereTranscribeSixBit:
-                return "Cohere"
             case .appleSpeech, .appleSpeechAnalyzer:
                 return "Apple"
             case .whisperTiny, .whisperBase, .whisperSmall, .whisperMedium, .whisperLargeTurbo, .whisperLarge:
@@ -5499,12 +5203,8 @@ final class SettingsStore: ObservableObject {
                 return "#334155"
             case .cloudCustom:
                 return "#3B82F6"
-            case .parakeetTDT, .parakeetTDTv2, .parakeetRealtime, .nemotronOffline, .nemotronStreaming, .nemotronStreaming320:
-                return "#76B900"
             case .qwen3Asr:
                 return "#E67E22"
-            case .cohereTranscribeSixBit:
-                return "#FA6B3C"
             case .appleSpeech, .appleSpeechAnalyzer:
                 return "#A2AAAD" // Apple Gray
             case .whisperTiny, .whisperBase, .whisperSmall, .whisperMedium, .whisperLargeTurbo, .whisperLarge:
@@ -5518,7 +5218,6 @@ final class SettingsStore: ObservableObject {
     /// Available transcription providers
     enum TranscriptionProviderOption: String, CaseIterable, Identifiable {
         case auto
-        case fluidAudio
         case whisper
 
         var id: String {
@@ -5528,15 +5227,13 @@ final class SettingsStore: ObservableObject {
         var displayName: String {
             switch self {
             case .auto: return "Automatic (Recommended)"
-            case .fluidAudio: return "FluidAudio (Apple Silicon)"
             case .whisper: return "Whisper (Intel/Universal)"
             }
         }
 
         var description: String {
             switch self {
-            case .auto: return "Uses FluidAudio on Apple Silicon, Whisper on Intel"
-            case .fluidAudio: return "Fast CoreML-based transcription optimized for M-series chips"
+            case .auto: return "Uses Qwen3 ASR on Apple Silicon, Whisper on Intel"
             case .whisper: return "whisper.cpp - CPU-based, works on any Mac"
             }
         }
@@ -5582,8 +5279,6 @@ private extension SettingsStore {
     enum Keys {
         static let enableAIProcessing = "EnableAIProcessing"
         static let showMainWindowAtLoginLaunch = "ShowMainWindowAtLoginLaunch"
-        static let fileTranscriptionSpeakerLabelsEnabled = "FileTranscriptionSpeakerLabelsEnabled"
-        static let fileTranscriptionExpectedSpeakerCount = "FileTranscriptionExpectedSpeakerCount"
         static let dictationPromptOff = "DictationPromptOff"
         static let enableDebugLogs = "EnableDebugLogs"
         static let availableAIModels = "AvailableAIModels"
@@ -5628,11 +5323,6 @@ private extension SettingsStore {
         static let enableAIStreaming = "EnableAIStreaming"
         static let copyTranscriptionToClipboard = "CopyTranscriptionToClipboard"
         static let textInsertionMode = "TextInsertionMode"
-        static let autoUpdateCheckEnabled = "AutoUpdateCheckEnabled"
-        static let betaReleasesEnabled = "BetaReleasesEnabled"
-        static let lastUpdateCheckDate = "LastUpdateCheckDate"
-        static let updatePromptSnoozedUntil = "UpdatePromptSnoozedUntil"
-        static let snoozedUpdateVersion = "SnoozedUpdateVersion"
         static let playgroundUsed = "PlaygroundUsed"
         static let onboardingCompleted = "OnboardingCompleted"
         static let onboardingGeneration = "OnboardingGeneration"
@@ -5644,16 +5334,9 @@ private extension SettingsStore {
         static let onboardingPlaygroundSkipped = "OnboardingPlaygroundSkipped"
         static let onboardingSelectedLanguageID = "OnboardingSelectedLanguageID"
 
-        // Command Mode Keys
-        static let commandModeSelectedModel = "CommandModeSelectedModel"
-        static let commandModeSelectedProviderID = "CommandModeSelectedProviderID"
-        static let commandModeHotkeyShortcut = "CommandModeHotkeyShortcut"
-        static let commandModeConfirmBeforeExecute = "CommandModeConfirmBeforeExecute"
         static let cancelRecordingHotkeyShortcut = "CancelRecordingHotkeyShortcut"
         static let pasteLastTranscriptionHotkeyShortcut = "PasteLastTranscriptionHotkeyShortcut"
         static let pasteLastTranscriptionShortcutEnabled = "PasteLastTranscriptionShortcutEnabled"
-        static let commandModeLinkedToGlobal = "CommandModeLinkedToGlobal"
-        static let commandModeShortcutEnabled = "CommandModeShortcutEnabled"
 
         // Prompt Mode Keys (Transcribe with Prompt)
         static let promptModeHotkeyShortcut = "PromptModeHotkeyShortcut"
@@ -5713,10 +5396,7 @@ private extension SettingsStore {
 
         /// Unified Speech Model (replaces above two)
         static let selectedSpeechModel = "SelectedSpeechModel"
-        static let selectedCohereLanguage = "SelectedCohereLanguage"
-        static let selectedNemotronLanguage = "SelectedNemotronLanguage"
         static let selectedAppleSpeechLocaleIdentifier = "SelectedAppleSpeechLocaleIdentifier"
-        static let externalCoreMLArtifactsDirectories = "ExternalCoreMLArtifactsDirectories"
 
         // Language
         static let appLanguage = "AppLanguagePreference"
@@ -5781,6 +5461,16 @@ private extension SettingsStore {
         /// Qwen3 ASR Precision Variant ("int8" or "f32")
         static let qwen3AsrVariant = "Qwen3AsrVariant"
 
+        /// Qwen3 ASR context/hotwords (Vocabulary: ... system prompt line)
+        static let qwen3ContextWords = "Qwen3ContextWords"
+
+        /// Selected MLX STT model card id (catalog: MlxSttCard.pathID)
+        static let selectedMlxSttCardID = "SelectedMlxSttCardID"
+        /// Legacy pre-card variant key (read for migration)
+        static let selectedMlxSttVariant = "SelectedMlxSttVariant"
+
+        /// Whisper punctuation prompt (initial_prompt conditioned during decoding)
+
         /// Hugging Face Mirror Setting
         static let huggingFaceMirror = "HuggingFaceMirror"
         static let customHuggingFaceMirrorURL = "CustomHuggingFaceMirrorURL"
@@ -5833,19 +5523,6 @@ extension SettingsStore {
         }
     }
 
-    var betaReleasesEnabled: Bool {
-        get {
-            let value = self.defaults.object(forKey: Keys.betaReleasesEnabled)
-            return value as? Bool ?? false // Default to stable-only updates
-        }
-        set {
-            objectWillChange.send()
-            self.defaults.set(newValue, forKey: Keys.betaReleasesEnabled)
-            self.lastUpdateCheckDate = nil
-            self.clearUpdateSnooze()
-        }
-    }
-
     /// Available Whisper model sizes
     enum WhisperModelSize: String, CaseIterable, Identifiable {
         case tiny = "ggml-tiny.bin"
@@ -5883,14 +5560,6 @@ extension SettingsStore {
 extension SettingsStore.SpeechModel {
     var supportedLanguageCodes: String? {
         switch self {
-        case .parakeetTDT:
-            return "BG, HR, CS, DA, NL, EN, ET, FI, FR, DE, EL, HU, IT, LV, LT, MT, PL, PT, RO, SK, SL, ES, SV, RU, UK"
-        case .parakeetRealtime:
-            return "EN"
-        case .cohereTranscribeSixBit:
-            return "AR, DE, EL, EN, ES, FR, IT, JA, KO, NL, PL, PT, VI, ZH"
-        case .nemotronOffline, .nemotronStreaming, .nemotronStreaming320:
-            return "40 language-locales"
         case .appleSpeechAnalyzer:
             return "EN, ES, FR, DE, IT, JA, KO, PT, ZH"
         default:
@@ -5899,68 +5568,11 @@ extension SettingsStore.SpeechModel {
     }
 
     var supportedLanguageNames: String? {
-        switch self {
-        case .parakeetTDT:
-            return """
-            Bulgarian, Croatian, Czech, Danish, Dutch, English, Estonian, Finnish, French, German, Greek, Hungarian, Italian, Latvian, Lithuanian, Maltese, Polish, Portuguese, Romanian, Slovak, Slovenian, Spanish, Swedish, Russian, and Ukrainian
-            """
-        case .cohereTranscribeSixBit:
-            return "Arabic, German, Greek, English, Spanish, French, Italian, Japanese, Korean, Dutch, Polish, Portuguese, Vietnamese, and Mandarin Chinese"
-        case .nemotronOffline, .nemotronStreaming, .nemotronStreaming320:
-            return "Spanish, Italian, Portuguese, Hindi, Korean, English, German, French, Russian, Turkish, Vietnamese, Dutch, Japanese, Arabic, " +
-                "Ukrainian; Polish, Norwegian Bokmal, Finnish, Mandarin, Czech, Bulgarian, Slovak, Swedish, Croatian, Romanian, Estonian, " +
-                "Danish, and Hungarian are Alpha; Greek, Hebrew, Lithuanian, Slovenian, Latvian, Maltese, Thai, and Norwegian Nynorsk are Experimental."
-        default:
-            return nil
-        }
+        nil
     }
 }
 
 extension SettingsStore {
-    enum CohereLanguage: String, CaseIterable, Identifiable, Codable {
-        case arabic = "ar"
-        case german = "de"
-        case greek = "el"
-        case english = "en"
-        case spanish = "es"
-        case french = "fr"
-        case italian = "it"
-        case japanese = "ja"
-        case korean = "ko"
-        case dutch = "nl"
-        case polish = "pl"
-        case portuguese = "pt"
-        case vietnamese = "vi"
-        case mandarinChinese = "zh"
-
-        var id: String {
-            self.rawValue
-        }
-
-        var displayName: String {
-            switch self {
-            case .arabic: return "Arabic"
-            case .german: return "German"
-            case .greek: return "Greek"
-            case .english: return "English"
-            case .spanish: return "Spanish"
-            case .french: return "French"
-            case .italian: return "Italian"
-            case .japanese: return "Japanese"
-            case .korean: return "Korean"
-            case .dutch: return "Dutch"
-            case .polish: return "Polish"
-            case .portuguese: return "Portuguese"
-            case .vietnamese: return "Vietnamese"
-            case .mandarinChinese: return "Mandarin Chinese"
-            }
-        }
-
-        var tokenString: String {
-            "<|\(self.rawValue)|>"
-        }
-    }
-
     // MARK: - Unified Speech Model Selection
 
     /// The selected speech recognition model.
@@ -5968,31 +5580,31 @@ extension SettingsStore {
     var selectedSpeechModel: SpeechModel {
         get {
             // Check if already using new system
-            if let rawValue = defaults.string(forKey: Keys.selectedSpeechModel),
-               let model = SpeechModel(rawValue: rawValue)
-            {
-                // If Qwen was previously selected, transparently fall back while preview is disabled.
-                if model == .qwen3Asr, !SpeechModel.qwenPreviewEnabled {
-                    return SpeechModel.defaultModel
+            if let rawValue = defaults.string(forKey: Keys.selectedSpeechModel) {
+                if let model = SpeechModel(rawValue: rawValue) {
+                    // If Qwen was previously selected, transparently fall back while preview is disabled.
+                    if model == .qwen3Asr, !SpeechModel.qwenPreviewEnabled {
+                        return SpeechModel.defaultModel
+                    }
+                    // Retired transcribe.cpp Whisper variants resolve to the
+                    // MLX engine model: Whisper now runs as MLX cards only.
+                    if model.isRetiredLegacyWhisper {
+                        return SpeechModel.defaultModel
+                    }
+                    // Validate model is available on this architecture
+                    if model.requiresAppleSilicon && !CPUArchitecture.isAppleSilicon {
+                        return SpeechModel.defaultModel
+                    }
+                    if model.requiresMacOS15, #unavailable(macOS 15.0) {
+                        return SpeechModel.defaultModel
+                    }
+                    if model.requiresMacOS26, #unavailable(macOS 26.0) {
+                        return SpeechModel.defaultModel
+                    }
+                    return model
                 }
-                if model == .nemotronStreaming320 {
-                    return .nemotronStreaming
-                }
-                let requiresAppleSiliconWhisper = model == .whisperLargeTurbo || model == .whisperLarge
-                if requiresAppleSiliconWhisper, !CPUArchitecture.isAppleSilicon {
-                    return .whisperBase
-                }
-                // Validate model is available on this architecture
-                if model.requiresAppleSilicon && !CPUArchitecture.isAppleSilicon {
-                    return .whisperBase
-                }
-                if model.requiresMacOS15, #unavailable(macOS 15.0) {
-                    return .whisperBase
-                }
-                if model.requiresMacOS26, #unavailable(macOS 26.0) {
-                    return .whisperBase
-                }
-                return model
+                // Retired FluidAudio ASR models fall back to the architecture default.
+                return SpeechModel.defaultModel
             }
 
             // Migration: Convert old settings to new SpeechModel
@@ -6000,67 +5612,15 @@ extension SettingsStore {
         }
         set {
             objectWillChange.send()
-            let model = newValue == .nemotronStreaming320 ? SpeechModel.nemotronStreaming : newValue
-            self.defaults.set(model.rawValue, forKey: Keys.selectedSpeechModel)
+            self.defaults.set(newValue.rawValue, forKey: Keys.selectedSpeechModel)
+            // Lets services (e.g. ASR) release provider-held model memory as
+            // soon as the user leaves a heavy engine (MLX / Whisper), no matter
+            // which code path performed the switch.
+            NotificationCenter.default.post(
+                name: .fluidVoiceSpeechModelDidChange,
+                object: newValue
+            )
         }
-    }
-
-    var selectedCohereLanguage: CohereLanguage {
-        get {
-            if let rawValue = self.defaults.string(forKey: Keys.selectedCohereLanguage),
-               let language = CohereLanguage(rawValue: rawValue)
-            {
-                return language
-            }
-            return .english
-        }
-        set {
-            objectWillChange.send()
-            self.defaults.set(newValue.rawValue, forKey: Keys.selectedCohereLanguage)
-        }
-    }
-
-    var selectedNemotronLanguage: NemotronLanguage {
-        get {
-            if let rawValue = self.defaults.string(forKey: Keys.selectedNemotronLanguage),
-               let language = NemotronLanguage.supportedLanguage(rawValue: rawValue)
-            {
-                return language
-            }
-            return .english
-        }
-        set {
-            objectWillChange.send()
-            self.defaults.set(newValue.rawValue, forKey: Keys.selectedNemotronLanguage)
-        }
-    }
-
-    func externalCoreMLArtifactsDirectory(for model: SpeechModel) -> URL? {
-        guard let spec = model.externalCoreMLSpec else { return nil }
-        let paths = self.defaults.dictionary(forKey: Keys.externalCoreMLArtifactsDirectories) as? [String: String] ?? [:]
-        if let storedPath = paths[model.rawValue], storedPath.isEmpty == false {
-            return URL(fileURLWithPath: storedPath, isDirectory: true)
-        }
-
-        let cachesDirectory = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first
-        let fallback = cachesDirectory?.appendingPathComponent(spec.artifactFolderHint, isDirectory: true)
-        guard let fallback else { return nil }
-        if FileManager.default.fileExists(atPath: fallback.path) {
-            return fallback
-        }
-        return nil
-    }
-
-    func setExternalCoreMLArtifactsDirectory(_ directory: URL?, for model: SpeechModel) {
-        guard model.requiresExternalArtifacts else { return }
-        objectWillChange.send()
-        var paths = self.defaults.dictionary(forKey: Keys.externalCoreMLArtifactsDirectories) as? [String: String] ?? [:]
-        if let directory {
-            paths[model.rawValue] = directory.standardizedFileURL.path
-        } else {
-            paths.removeValue(forKey: model.rawValue)
-        }
-        self.defaults.set(paths, forKey: Keys.externalCoreMLArtifactsDirectories)
     }
 
     /// Migrates old TranscriptionProviderOption + WhisperModelSize settings to new SpeechModel
@@ -6072,17 +5632,11 @@ extension SettingsStore {
 
         switch oldProvider {
         case "whisper":
-            // Map old whisper size to new model
-            switch oldWhisperSize {
-            case "ggml-tiny.bin": newModel = .whisperTiny
-            case "ggml-base.bin": newModel = .whisperBase
-            case "ggml-small.bin": newModel = .whisperSmall
-            case "ggml-medium.bin": newModel = .whisperMedium
-            case "ggml-large-v3.bin": newModel = CPUArchitecture.isAppleSilicon ? .whisperLarge : .whisperBase
-            default: newModel = .whisperBase
-            }
+            // Legacy transcribe.cpp Whisper settings all map to the current
+            // default engine (MLX Qwen3-ASR on Apple Silicon).
+            newModel = SpeechModel.defaultModel
         case "fluidAudio":
-            newModel = CPUArchitecture.isAppleSilicon ? .parakeetTDT : .whisperBase
+            newModel = SpeechModel.defaultModel
         default: // "auto"
             newModel = SpeechModel.defaultModel
         }
@@ -6280,4 +5834,14 @@ extension SettingsStore {
             self.defaults.set(newValue, forKey: "DictationCustomPromptText")
         }
     }
+}
+
+// MARK: - Model switch notification
+
+public extension Notification.Name {
+    /// Posted whenever `SettingsStore.selectedSpeechModel` changes; the object
+    /// is the new `SpeechModel`. Lets services release provider-held model
+    /// memory (MLX / Whisper engines) as soon as the switch happens.
+    static let fluidVoiceSpeechModelDidChange = Notification.Name(
+        "FluidVoice.SpeechModelDidChange")
 }

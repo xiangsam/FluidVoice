@@ -19,7 +19,7 @@ final class AnalyticsDatabaseTests: XCTestCase {
         let database = try self.makeDatabase()
         let firstDay = Date(timeIntervalSince1970: 1_735_689_600) // 2025-01-01 UTC
         let secondDay = firstDay.addingTimeInterval(24 * 60 * 60)
-        let descriptor = AnalyticsModelDescriptor(provider: "Fluid Audio", model: "Parakeet TDT")
+        let descriptor = AnalyticsModelDescriptor(provider: "Qwen", model: "Qwen3 ASR")
 
         try database.recordActivity(.app, at: firstDay)
         try database.recordActivity(.app, at: firstDay.addingTimeInterval(60))
@@ -35,8 +35,8 @@ final class AnalyticsDatabaseTests: XCTestCase {
         XCTAssertEqual(usage.properties["command_count"] as? Int, 0)
 
         let model = try XCTUnwrap(events.first { $0.name == AnalyticsEvent.modelUsageDailySummary.rawValue })
-        XCTAssertEqual(model.properties["provider"] as? String, "fluid_audio")
-        XCTAssertEqual(model.properties["model"] as? String, "parakeet_tdt")
+        XCTAssertEqual(model.properties["provider"] as? String, "qwen")
+        XCTAssertEqual(model.properties["model"] as? String, "qwen3_asr")
         XCTAssertEqual(model.properties["use_count"] as? Int, 2)
     }
 
