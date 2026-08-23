@@ -185,6 +185,9 @@ SettingsStore.xcuserstate
 
 .mcp_temp/
 
+# Release packaging output (zipped app bundles)
+release/
+
 # Build and release scripts (developer-specific)
 build_*
 build_dev.sh
@@ -212,7 +215,9 @@ scratch/
 
 assets/
 .swiftpm/
-scripts/
+# Keep the shared packaging script tracked; the rest of scripts/ is developer-specific.
+scripts/*
+!scripts/package-release.sh
 
 # Benchmark / eval reports (local-only)
 benchmark_reports/
