@@ -1,0 +1,65 @@
+name: Build & Release
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  DERIVED_DATA: DerivedData
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 120
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve Swift packages
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -project Fluid.xcodeproj -scheme Fluid \
+            -derivedDataPath "$DERIVED_DATA" -skipPackagePluginValidation
+
+      - name: Build Release (unsigned)
+        run: |
+          xcodebuild -project Fluid.xcodeproj -scheme Fluid \
+            -configuration Release -destination 'platform=macOS' \
+            -derivedDataPath "$DERIVED_DATA" -skipPackagePluginValidation \
+            build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
+
+      - name: Package app
+        shell: bash
+        run: |
+          set -euo pipefail
+          APP="$DERIVED_DATA/Build/Products/Release/FluidVoice.app"
+          VERSION="$(defaults read "$APP/Contents/Info" CFBundleShortVersionString)"
+          mkdir -p release
+          ditto -c -k --keepParent "$APP" "release/FluidVoice-v${VERSION}.zip"
+          echo "PACKAGED=release/FluidVoice-v${VERSION}.zip" >> "$GITHUB_ENV"
+          echo "APP_VERSION=${VERSION}" >> "$GITHUB_ENV"
+          ls -lh release/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FluidVoice-v${{ env.APP_VERSION }}
+          path: release/*.zip
+          if-no-files-found: error
+
+      - name: Publish to GitHub Releases
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/*.zip
+          generate_release_notes: true
+          fail_on_unmatched_files: true
