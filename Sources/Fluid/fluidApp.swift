@@ -17,6 +17,7 @@ struct FluidApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
     init() {
+        AppSupportPaths.migrateLegacyDirectoryIfNeeded()
         // Use the shared singleton instance
         _appServices = StateObject(wrappedValue: AppServices.shared)
     }
@@ -29,8 +30,8 @@ struct FluidApp: App {
                     .environmentObject(self.appServices)
                     .background(
                         WindowAccessor { window in
-                            window.title = "FluidVoice"
-                            window.identifier = NSUserInterfaceItemIdentifier("FluidVoice.MainWindow")
+                            window.title = "MlxVoice"
+                            window.identifier = NSUserInterfaceItemIdentifier("MlxVoice.MainWindow")
                             window.isReleasedWhenClosed = false
 
                             // Ensure launch window uses the comfortable 1000x700 size centered on screen

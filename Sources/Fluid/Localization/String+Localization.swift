@@ -1,6 +1,6 @@
 //
 //  String+Localization.swift
-//  FluidVoice
+//  MlxVoice
 //
 
 import Foundation

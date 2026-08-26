@@ -1,7 +1,7 @@
 import AppKit
 import Combine
 import CoreAudio
-@testable import FluidVoice_Debug
+@testable import MlxVoice_Debug
 import Foundation
 import XCTest
 

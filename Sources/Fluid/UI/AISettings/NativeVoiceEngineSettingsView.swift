@@ -1,6 +1,6 @@
 //
 //  NativeVoiceEngineSettingsView.swift
-//  FluidVoice
+//  MlxVoice
 //
 //  Modern, card-grouped native SwiftUI Voice Engine Settings View adhering to Apple HIG.
 //
@@ -244,7 +244,7 @@ struct NativeVoiceEngineSettingsView: View {
                 // Download Mirror Acceleration Bar
                 self.downloadAccelerationSection
 
-                // MLX Engine Group (built into FluidVoice, independent of the
+                // MLX Engine Group (built into MlxVoice, independent of the
                 // FluidAudio package): one engine, flat per-model cards.
                 self.mlxEngineGroupSection
             }

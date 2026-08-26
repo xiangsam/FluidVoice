@@ -239,7 +239,7 @@ struct SettingsView: View {
                             // Launch at startup
                             self.settingsToggleRow(
                                 title: "Launch at startup".loc,
-                                description: "Automatically start FluidVoice when you log in".loc,
+                                description: "Automatically start MlxVoice when you log in".loc,
                                 footnote: self.settings.launchAtStartupStatusMessage,
                                 errorMessage: self.settings.launchAtStartupErrorMessage,
                                 isOn: self.launchAtStartupBinding
@@ -249,7 +249,7 @@ struct SettingsView: View {
                             // Show window when launched at login
                             self.settingsToggleRow(
                                 title: "Show window when launched at login".loc,
-                                description: "When off, FluidVoice starts silently in the menu bar at login. Opening the app yourself always shows the window.".loc,
+                                description: "When off, MlxVoice starts silently in the menu bar at login. Opening the app yourself always shows the window.".loc,
                                 isOn: Binding(
                                     get: { SettingsStore.shared.showMainWindowAtLoginLaunch },
                                     set: { SettingsStore.shared.showMainWindowAtLoginLaunch = $0 }
@@ -260,7 +260,7 @@ struct SettingsView: View {
                             // Hide from Dock & App Switcher
                             self.settingsToggleRow(
                                 title: "Hide from Dock & App Switcher".loc,
-                                description: "Keep FluidVoice in the menu bar only (hides Dock icon and Cmd+Tab entry)".loc,
+                                description: "Keep MlxVoice in the menu bar only (hides Dock icon and Cmd+Tab entry)".loc,
                                 footnote: "Note: May require app restart to take effect.".loc,
                                 isOn: Binding(
                                     get: { SettingsStore.shared.hideFromDockAndAppSwitcher },
@@ -416,26 +416,26 @@ struct SettingsView: View {
                             // Info & Links
                             HStack(spacing: 12) {
                                 Button {
-                                    if let url = URL(string: "https://github.com/xiangsam/FluidVoice") {
+                                    if let url = URL(string: "https://github.com/xiangsam/MlxVoice") {
                                         NSWorkspace.shared.open(url)
                                     }
                                 } label: {
                                     HStack(spacing: 4) {
                                         Image(systemName: "arrow.triangle.branch")
-                                        Text("Fork Repository (GitHub)".loc)
+                                        Text("GitHub Repository".loc)
                                     }
                                 }
                                 .buttonStyle(.bordered)
                                 .controlSize(.small)
 
                                 Button {
-                                    if let url = URL(string: "https://github.com/altic-dev/Fluid-oss/releases") {
+                                    if let url = URL(string: "https://github.com/xiangsam/MlxVoice/releases") {
                                         NSWorkspace.shared.open(url)
                                     }
                                 } label: {
                                     HStack(spacing: 4) {
                                         Image(systemName: "arrow.up.right.square")
-                                        Text("Upstream Releases".loc)
+                                        Text("Releases".loc)
                                     }
                                 }
                                 .buttonStyle(.bordered)
@@ -782,7 +782,7 @@ struct SettingsView: View {
 
                                     self.optionToggleRow(
                                         title: "Pause Media During Transcription".loc,
-                                        description: "Automatically pause currently playing audio/video when transcription starts. Resumes only if FluidVoice paused it.".loc,
+                                        description: "Automatically pause currently playing audio/video when transcription starts. Resumes only if MlxVoice paused it.".loc,
                                         isOn: Binding(
                                             get: { SettingsStore.shared.pauseMediaDuringTranscription },
                                             set: { SettingsStore.shared.pauseMediaDuringTranscription = $0 }
@@ -932,7 +932,7 @@ struct SettingsView: View {
 
                             self.optionToggleRow(
                                 title: "Microphone Changes".loc,
-                                description: "Show an alert when FluidVoice changes or loses its microphone.".loc,
+                                description: "Show an alert when MlxVoice changes or loses its microphone.".loc,
                                 isOn: Binding(
                                     get: { self.settings.showMicrophoneChangeAlerts },
                                     set: { enabled in
@@ -1391,7 +1391,7 @@ struct SettingsView: View {
     }
 
     private func openIssueReportingPage() {
-        guard let url = URL(string: "https://github.com/altic-dev/Fluid-oss/issues/new/choose") else { return }
+        guard let url = URL(string: "https://github.com/xiangsam/MlxVoice/issues/new/choose") else { return }
         NSWorkspace.shared.open(url)
     }
 
@@ -1414,7 +1414,7 @@ struct SettingsView: View {
 
             self.presentInfoAlert(
                 title: "Backup Exported".loc,
-                message: "Saved your FluidVoice backup to:\n\(url.path)"
+                message: "Saved your MlxVoice backup to:\n\(url.path)"
             )
         } catch {
             self.presentErrorAlert(
@@ -1502,7 +1502,7 @@ struct SettingsView: View {
             let confirm = NSAlert()
             confirm.messageText = "Prune saved audio?"
             confirm.informativeText = """
-            This budget is below current audio usage. FluidVoice will delete the oldest saved audio first and keep transcript history.
+            This budget is below current audio usage. MlxVoice will delete the oldest saved audio first and keep transcript history.
             """
             confirm.alertStyle = .warning
             confirm.addButton(withTitle: "Apply and Prune")
@@ -2094,7 +2094,7 @@ private extension SettingsView {
             )
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
 
-            Text("FluidVoice tries microphones from top to bottom. Drag to reorder; unavailable devices keep their place.")
+            Text("MlxVoice tries microphones from top to bottom. Drag to reorder; unavailable devices keep their place.")
                 .font(self.theme.typography.bodySmall)
                 .foregroundStyle(self.settingsSecondaryText)
                 .fixedSize(horizontal: false, vertical: true)
@@ -2281,7 +2281,7 @@ private extension SettingsView {
             )
         } else {
             self.microphoneQualityGuidanceRow(
-                message: "This order applies only to FluidVoice and does not change your macOS input.",
+                message: "This order applies only to MlxVoice and does not change your macOS input.",
                 systemImage: "info.circle",
                 color: self.settingsSecondaryText
             )

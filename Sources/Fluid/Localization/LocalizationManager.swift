@@ -1,6 +1,6 @@
 //
 //  LocalizationManager.swift
-//  FluidVoice
+//  MlxVoice
 //
 
 import Combine
@@ -8,7 +8,7 @@ import Foundation
 import SwiftUI
 
 public extension Notification.Name {
-    static let appLanguageDidChange = Notification.Name("FluidVoiceAppLanguageDidChange")
+    static let appLanguageDidChange = Notification.Name("MlxVoiceAppLanguageDidChange")
 }
 
 public final class LocalizationManager: ObservableObject {

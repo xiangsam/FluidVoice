@@ -292,7 +292,7 @@ actor PrivateAIIntegrationService {
         let modelDirectoryPath = modelDirectoryURL.path
         let targetURLs = Array(Set(urls.map { $0.resolvingSymlinksInPath().standardizedFileURL }))
         guard targetURLs.allSatisfy({ $0.path.hasPrefix(modelDirectoryPath + "/") }) else {
-            throw PrivateAIModelRemovalError(message: "A model file is not in FluidVoice's model folder.")
+            throw PrivateAIModelRemovalError(message: "A model file is not in MlxVoice's model folder.")
         }
         return targetURLs
     }
@@ -426,11 +426,11 @@ private struct UnavailableAIIntegrationShim: PrivateAIIntegrationProviding {
     var modelDirectoryURL: URL {
         FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)
             .first?
-            .appendingPathComponent("FluidVoice", isDirectory: true)
+            .appendingPathComponent("MlxVoice", isDirectory: true)
             .appendingPathComponent(PrivateAIProviderFeature.shared.modelDirectoryName, isDirectory: true)
             .appendingPathComponent("Models", isDirectory: true)
             ?? URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
-            .appendingPathComponent("FluidVoice", isDirectory: true)
+            .appendingPathComponent("MlxVoice", isDirectory: true)
             .appendingPathComponent(PrivateAIProviderFeature.shared.modelDirectoryName, isDirectory: true)
             .appendingPathComponent("Models", isDirectory: true)
     }

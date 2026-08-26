@@ -36,7 +36,7 @@ jobs:
           ARTIFACT=$(
             gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID/artifacts" \
               --jq '.artifacts
-                | map(select((.expired == false) and (.name | startswith("FluidVoice-PR-"))))
+                | map(select((.expired == false) and (.name | startswith("MlxVoice-PR-"))))
                 | sort_by(.created_at)
                 | last
                 | [.id, .name]
@@ -44,7 +44,7 @@ jobs:
           )
           IFS=$'\t' read -r ARTIFACT_ID ARTIFACT_NAME <<< "$ARTIFACT"
 
-          EXPECTED_PREFIX="FluidVoice-PR-$EVENT_PR_NUMBER-"
+          EXPECTED_PREFIX="MlxVoice-PR-$EVENT_PR_NUMBER-"
           if [[ ! "$ARTIFACT_ID" =~ ^[0-9]+$ ]]; then
             echo "No valid archive artifact was found for PR #$EVENT_PR_NUMBER." >&2
             exit 1
@@ -66,11 +66,11 @@ jobs:
 
           ARTIFACT_URL="https://github.com/$GITHUB_REPOSITORY/actions/runs/$RUN_ID/artifacts/$ARTIFACT_ID"
           RUN_URL="https://github.com/$GITHUB_REPOSITORY/actions/runs/$RUN_ID"
-          APP_NAME="FluidVoice #$EVENT_PR_NUMBER"
+          APP_NAME="MlxVoice #$EVENT_PR_NUMBER"
           MARKER='<!-- fluidvoice-pr-archive -->'
           BODY=$(cat <<EOF
           $MARKER
-          ### FluidVoice PR build ready
+          ### MlxVoice PR build ready
 
           [Download **$ARTIFACT_NAME**]($ARTIFACT_URL)
 
@@ -78,7 +78,7 @@ jobs:
 
           #### Install the app
 
-          1. Extract the downloaded artifact, then extract **FluidVoice-PR-$EVENT_PR_NUMBER.app.zip**.
+          1. Extract the downloaded artifact, then extract **MlxVoice-PR-$EVENT_PR_NUMBER.app.zip**.
           2. Move **$APP_NAME.app** into the **/Applications** folder.
           3. Open Terminal and remove the download quarantine marker:
 
@@ -87,7 +87,7 @@ jobs:
           4. In Applications, Control-click **$APP_NAME.app** and choose **Open**.
           5. If macOS still blocks it, open **System Settings → Privacy & Security**, click **Open Anyway**, and confirm.
 
-          This build has its own app identity, so its permissions are separate from the release version of FluidVoice.
+          This build has its own app identity, so its permissions are separate from the release version of MlxVoice.
 
           [View workflow run]($RUN_URL)
           EOF

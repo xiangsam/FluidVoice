@@ -59,7 +59,7 @@
 
 /* Begin PBXFileReference section */
 		343B29013F4441D6A797D12D /* LLMClientRequestBodyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMClientRequestBodyTests.swift; sourceTree = "<group>"; };
-		7C078D8F2E3B339200FB7CAC /* FluidVoice Debug.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "FluidVoice Debug.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		7C078D8F2E3B339200FB7CAC /* MlxVoice Debug.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "MlxVoice Debug.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		7C91B0022F42AA0100C0DEF0 /* HotkeyShortcutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyShortcutTests.swift; sourceTree = "<group>"; };
 		7CDB0A202F3C4D5600FB7CAD /* FluidDictationIntegrationTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FluidDictationIntegrationTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		7CDB0A292F3C4D5600FB7CAD /* DictationE2ETests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictationE2ETests.swift; sourceTree = "<group>"; };
@@ -125,7 +125,7 @@
 		7C078D902E3B339200FB7CAC /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				7C078D8F2E3B339200FB7CAC /* FluidVoice Debug.app */,
+				7C078D8F2E3B339200FB7CAC /* MlxVoice Debug.app */,
 				7CDB0A202F3C4D5600FB7CAD /* FluidDictationIntegrationTests.xctest */,
 			);
 			name = Products;
@@ -213,8 +213,8 @@
 				7C3697882ED70F9C005874CE /* DynamicNotchKit */,
 				7C5AF14A2F15041600DE21B0 /* MediaRemoteAdapter */,
 			);
-			productName = FluidVoice;
-			productReference = 7C078D8F2E3B339200FB7CAC /* FluidVoice Debug.app */;
+			productName = MlxVoice;
+			productReference = 7C078D8F2E3B339200FB7CAC /* MlxVoice Debug.app */;
 			productType = "com.apple.product-type.application";
 		};
 		7CDB0A1F2F3C4D5600FB7CAD /* FluidDictationIntegrationTests */ = {
@@ -506,9 +506,9 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 1.5.1;
-				PRODUCT_BUNDLE_IDENTIFIER = com.FluidApp.app;
-				PRODUCT_NAME = "FluidVoice Debug";
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.xiangsam.mlxvoice;
+				PRODUCT_NAME = "MlxVoice Debug";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -564,9 +564,9 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 1.5.1;
-				PRODUCT_BUNDLE_IDENTIFIER = com.FluidApp.app;
-				PRODUCT_NAME = FluidVoice;
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.xiangsam.mlxvoice;
+				PRODUCT_NAME = MlxVoice;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -589,7 +589,7 @@
 					"$(ARCHS_STANDARD)",
 					arm64,
 				);
-				BUNDLE_LOADER = "$(BUILT_PRODUCTS_DIR)/FluidVoice Debug.app/Contents/MacOS/FluidVoice Debug";
+				BUNDLE_LOADER = "$(BUILT_PRODUCTS_DIR)/MlxVoice Debug.app/Contents/MacOS/MlxVoice Debug";
 				CLANG_ENABLE_MODULES = YES;
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
@@ -601,11 +601,11 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.FluidApp.FluidDictationIntegrationTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.xiangsam.mlxvoice.tests;
 				PRODUCT_NAME = FluidDictationIntegrationTests;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/FluidVoice Debug.app/Contents/MacOS/FluidVoice Debug";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/MlxVoice Debug.app/Contents/MacOS/MlxVoice Debug";
 			};
 			name = Debug;
 		};
@@ -617,7 +617,7 @@
 					"$(ARCHS_STANDARD)",
 					arm64,
 				);
-				BUNDLE_LOADER = "$(BUILT_PRODUCTS_DIR)/FluidVoice.app/Contents/MacOS/FluidVoice";
+				BUNDLE_LOADER = "$(BUILT_PRODUCTS_DIR)/MlxVoice.app/Contents/MacOS/MlxVoice";
 				CLANG_ENABLE_MODULES = YES;
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
@@ -629,10 +629,10 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.FluidApp.FluidDictationIntegrationTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.xiangsam.mlxvoice.tests;
 				PRODUCT_NAME = FluidDictationIntegrationTests;
 				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/FluidVoice.app/Contents/MacOS/FluidVoice";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/MlxVoice.app/Contents/MacOS/MlxVoice";
 			};
 			name = Release;
 		};

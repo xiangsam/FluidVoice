@@ -23,7 +23,7 @@ concurrency:
 
 jobs:
   archive:
-    name: "Archive FluidVoice PR #${{ github.event.pull_request.number }}"
+    name: "Archive MlxVoice PR #${{ github.event.pull_request.number }}"
     if: github.event.pull_request.draft == false
     runs-on: macos-latest
     timeout-minutes: 45
@@ -32,8 +32,8 @@ jobs:
       AUTHOR_ASSOCIATION: ${{ github.event.pull_request.author_association }}
       PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
       PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
-      APP_NAME: "FluidVoice #${{ github.event.pull_request.number }}"
-      BUNDLE_IDENTIFIER: com.FluidApp.app.pr${{ github.event.pull_request.number }}
+      APP_NAME: "MlxVoice #${{ github.event.pull_request.number }}"
+      BUNDLE_IDENTIFIER: com.xiangsam.mlxvoice.pr${{ github.event.pull_request.number }}
 
     steps:
       - name: Validate PR commits
@@ -90,7 +90,7 @@ jobs:
 
       - name: Archive PR build
         env:
-          ARCHIVE_PATH: ${{ runner.temp }}/FluidVoice-PR-${{ github.event.pull_request.number }}.xcarchive
+          ARCHIVE_PATH: ${{ runner.temp }}/MlxVoice-PR-${{ github.event.pull_request.number }}.xcarchive
         run: |
           set -euo pipefail
 
@@ -109,26 +109,26 @@ jobs:
       - name: Validate and package archive
         id: package
         env:
-          ARCHIVE_PATH: ${{ runner.temp }}/FluidVoice-PR-${{ github.event.pull_request.number }}.xcarchive
-          STAGING_PATH: ${{ runner.temp }}/FluidVoice-PR-${{ github.event.pull_request.number }}
+          ARCHIVE_PATH: ${{ runner.temp }}/MlxVoice-PR-${{ github.event.pull_request.number }}.xcarchive
+          STAGING_PATH: ${{ runner.temp }}/MlxVoice-PR-${{ github.event.pull_request.number }}
         run: |
           set -euo pipefail
 
-          ORIGINAL_APP_PATH="$ARCHIVE_PATH/Products/Applications/FluidVoice.app"
+          ORIGINAL_APP_PATH="$ARCHIVE_PATH/Products/Applications/MlxVoice.app"
           APP_PATH="$ARCHIVE_PATH/Products/Applications/$APP_NAME.app"
-          EXECUTABLE_PATH="$APP_PATH/Contents/MacOS/FluidVoice"
+          EXECUTABLE_PATH="$APP_PATH/Contents/MacOS/MlxVoice"
           INFO_PLIST="$APP_PATH/Contents/Info.plist"
           ARCHIVE_INFO_PLIST="$ARCHIVE_PATH/Info.plist"
           MANIFEST_PATH="$STAGING_PATH/build-manifest.json"
           MANIFEST_PLIST="$STAGING_PATH/build-manifest.plist"
           README_PATH="$STAGING_PATH/README.txt"
-          ARCHIVE_ZIP="$STAGING_PATH/FluidVoice-PR-$PR_NUMBER.xcarchive.zip"
-          APP_ZIP="$STAGING_PATH/FluidVoice-PR-$PR_NUMBER.app.zip"
-          VERIFY_PATH="$RUNNER_TEMP/FluidVoice-PR-$PR_NUMBER-verify"
-          EFFECTIVE_ENTITLEMENTS="$RUNNER_TEMP/FluidVoice-PR-$PR_NUMBER.entitlements"
-          VERIFIED_ENTITLEMENTS="$RUNNER_TEMP/FluidVoice-PR-$PR_NUMBER-verified.entitlements"
+          ARCHIVE_ZIP="$STAGING_PATH/MlxVoice-PR-$PR_NUMBER.xcarchive.zip"
+          APP_ZIP="$STAGING_PATH/MlxVoice-PR-$PR_NUMBER.app.zip"
+          VERIFY_PATH="$RUNNER_TEMP/MlxVoice-PR-$PR_NUMBER-verify"
+          EFFECTIVE_ENTITLEMENTS="$RUNNER_TEMP/MlxVoice-PR-$PR_NUMBER.entitlements"
+          VERIFIED_ENTITLEMENTS="$RUNNER_TEMP/MlxVoice-PR-$PR_NUMBER-verified.entitlements"
           SHORT_SHA="${PR_HEAD_SHA:0:12}"
-          ARTIFACT_NAME="FluidVoice-PR-$PR_NUMBER-$SHORT_SHA"
+          ARTIFACT_NAME="MlxVoice-PR-$PR_NUMBER-$SHORT_SHA"
 
           test -d "$ARCHIVE_PATH"
           test -d "$ORIGINAL_APP_PATH"
@@ -251,7 +251,7 @@ jobs:
           rm "$MANIFEST_PLIST"
 
           cat > "$README_PATH" <<EOF
-          FluidVoice PR #$PR_NUMBER
+          MlxVoice PR #$PR_NUMBER
           ========================
 
           This is an ad-hoc-signed test build from pull request #$PR_NUMBER.
@@ -288,7 +288,7 @@ jobs:
 
           ditto -x -k "$APP_ZIP" "$VERIFY_PATH"
           VERIFIED_APP_PATH="$VERIFY_PATH/$APP_NAME.app"
-          test -x "$VERIFIED_APP_PATH/Contents/MacOS/FluidVoice"
+          test -x "$VERIFIED_APP_PATH/Contents/MacOS/MlxVoice"
           test -L "$VERIFIED_APP_PATH/Contents/Frameworks/CTranscribe.framework/Versions/Current"
           codesign --verify --deep --strict --verbose=2 "$VERIFIED_APP_PATH"
           if [[ "$(codesign -d --entitlements - --xml "$VERIFIED_APP_PATH" 2>/dev/null | plutil -extract 'com\.apple\.security\.device\.audio-input' raw -o - -)" != "true" ]]; then

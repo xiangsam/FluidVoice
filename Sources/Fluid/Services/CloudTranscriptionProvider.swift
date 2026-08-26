@@ -1,6 +1,6 @@
 //
 //  CloudTranscriptionProvider.swift
-//  FluidVoice
+//  MlxVoice
 //
 
 import Foundation
@@ -497,8 +497,8 @@ final class CloudTranscriptionProvider: TranscriptionProvider {
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
 
         if self.type == .openRouter {
-            request.setValue("https://github.com/xiangsam/FluidVoice", forHTTPHeaderField: "HTTP-Referer")
-            request.setValue("FluidVoice macOS App", forHTTPHeaderField: "X-Title")
+            request.setValue("https://github.com/xiangsam/MlxVoice", forHTTPHeaderField: "HTTP-Referer")
+            request.setValue("MlxVoice macOS App", forHTTPHeaderField: "X-Title")
         }
 
         let boundary = "Boundary-\(UUID().uuidString)"

@@ -117,7 +117,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
             return true
         }
 
-        // Ensure dock-icon reopen always foregrounds FluidVoice.
+        // Ensure dock-icon reopen always foregrounds MlxVoice.
         sender.activate(ignoringOtherApps: true)
 
         return !self.bringMainWindowToFrontIfPresent()
@@ -337,11 +337,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         guard !className.contains("Notch") && !className.contains("Overlay") && !className.contains("Popover") && !className.contains("StatusBar") else { return false }
 
         // Identifier check
-        if window.identifier?.rawValue == "main" || window.identifier?.rawValue == "FluidVoice.MainWindow" {
+        if window.identifier?.rawValue == "main" || window.identifier?.rawValue == "MlxVoice.MainWindow" {
             return true
         }
         // Title check
-        if window.title == "FluidVoice" || window.title.contains("FluidVoice") || window.title.contains("fluid") {
+        if window.title == "MlxVoice" || window.title.contains("MlxVoice") {
             return true
         }
         // Resizable main window fallback

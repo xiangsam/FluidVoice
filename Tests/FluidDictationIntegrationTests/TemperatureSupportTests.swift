@@ -1,4 +1,4 @@
-@testable import FluidVoice_Debug
+@testable import MlxVoice_Debug
 import XCTest
 
 // Regression tests for the Anthropic `temperature` deprecation handling.

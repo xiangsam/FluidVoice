@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# FluidVoice Release Packaging
+# MlxVoice Release Packaging
 #
 # Builds a signed Release app, validates its code signature and produces a
 # distributable zip. Useful for publishing builds to GitHub Releases or
@@ -12,8 +12,8 @@
 #   ./scripts/package-release.sh --unsigned     # skip signing (CI / fallback)
 #
 # Output:
-#   release/FluidVoice-v<MARKETING_VERSION>.zip
-#   release/FluidVoice-v<MARKETING_VERSION>-dSYM.zip   (debug symbols, optional)
+#   release/MlxVoice-v<MARKETING_VERSION>.zip
+#   release/MlxVoice-v<MARKETING_VERSION>-dSYM.zip   (debug symbols, optional)
 
 set -euo pipefail
 
@@ -21,8 +21,8 @@ PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "${PROJECT_DIR}"
 
 DERIVED_DATA_PATH="${FLUIDVOICE_DERIVED_DATA_PATH:-${PROJECT_DIR}/DerivedData}"
-APP_PATH="${DERIVED_DATA_PATH}/Build/Products/Release/FluidVoice.app"
-DSYM_PATH="${DERIVED_DATA_PATH}/Build/Products/Release/FluidVoice.app.dSYM"
+APP_PATH="${DERIVED_DATA_PATH}/Build/Products/Release/MlxVoice.app"
+DSYM_PATH="${DERIVED_DATA_PATH}/Build/Products/Release/MlxVoice.app.dSYM"
 OUT_DIR="${PROJECT_DIR}/release"
 NO_BUILD=0
 UNSIGNED=0
@@ -92,8 +92,8 @@ package() {
 
     local version
     version="$(defaults read "${APP_PATH}/Contents/Info" CFBundleShortVersionString 2>/dev/null || echo "dev")"
-    local app_zip="${OUT_DIR}/FluidVoice-v${version}.zip"
-    local dsym_zip="${OUT_DIR}/FluidVoice-v${version}-dSYM.zip"
+    local app_zip="${OUT_DIR}/MlxVoice-v${version}.zip"
+    local dsym_zip="${OUT_DIR}/MlxVoice-v${version}-dSYM.zip"
 
     echo "==> Packaging app (v${version})..."
     rm -f "${app_zip}"
@@ -111,7 +111,7 @@ package() {
     [ -f "${dsym_zip}" ] && echo "  ${dsym_zip}  ($(du -h "${dsym_zip}" | cut -f1))"
     echo
     echo "Publish the app zip to GitHub Releases; users download, unzip and drag"
-    echo "FluidVoice.app into /Applications."
+    echo "MlxVoice.app into /Applications."
 }
 
 if [ "${NO_BUILD}" = "1" ]; then

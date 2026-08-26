@@ -706,7 +706,7 @@ final nonisolated class ProgressiveFileDownloader: @unchecked Sendable {
         fileManager: FileManager = .default
     ) throws -> URL {
         let retainedURL = fileManager.temporaryDirectory
-            .appendingPathComponent("FluidVoiceDownload-\(UUID().uuidString)")
+            .appendingPathComponent("MlxVoiceDownload-\(UUID().uuidString)")
         try fileManager.moveItem(at: location, to: retainedURL)
         return retainedURL
     }

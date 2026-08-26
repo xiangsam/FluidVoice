@@ -18,11 +18,11 @@ actor Qwen3MlxEngine {
         ).first {
             return
                 appSupport
-                .appendingPathComponent("FluidVoice", isDirectory: true)
+                .appendingPathComponent("MlxVoice", isDirectory: true)
                 .appendingPathComponent("Models", isDirectory: true)
         }
         return FileManager.default.temporaryDirectory
-            .appendingPathComponent("FluidVoice", isDirectory: true)
+            .appendingPathComponent("MlxVoice", isDirectory: true)
             .appendingPathComponent("Models", isDirectory: true)
     }
 

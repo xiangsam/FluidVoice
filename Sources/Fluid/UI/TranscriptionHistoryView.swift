@@ -75,7 +75,7 @@ struct TranscriptionHistoryView: View {
         .alert("Report Sent", isPresented: self.$showReportConfirmation) {
             Button("OK".loc, role: .cancel) {}
         } message: {
-            Text("Thank you for helping improve FluidVoice dictation.")
+            Text("Thank you for helping improve MlxVoice dictation.")
         }
         .sheet(item: self.$selectedReportEntry) { entry in
             TranscriptionFeedbackReportSheet(entry: entry) {
@@ -369,7 +369,7 @@ struct TranscriptionHistoryView: View {
                         }
                         .buttonStyle(.bordered)
                         .controlSize(.small)
-                        .help("Review and send this example to FluidVoice")
+                        .help("Review and send this example to MlxVoice")
 
                         if entry.wasAIProcessed {
                             Button {

@@ -42,7 +42,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          APP="$RUNNER_TEMP/DerivedData/Build/Products/Release/FluidVoice.app"
+          APP="$RUNNER_TEMP/DerivedData/Build/Products/Release/MlxVoice.app"
           test -d "$APP"
           # Unsigned xcodebuild builds produce a linker-signed bundle whose
           # signature no longer matches after zip/re-disk, so macOS reports
@@ -55,26 +55,26 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          APP="$RUNNER_TEMP/DerivedData/Build/Products/Release/FluidVoice.app"
+          APP="$RUNNER_TEMP/DerivedData/Build/Products/Release/MlxVoice.app"
           echo "Using APP=$APP"
           test -d "$APP"
           if [[ "$GITHUB_REF" == refs/tags/* ]]; then
-            # Tag builds (v1.7.0) name the artifact after the tag so the zip
+            # Tag builds (v1.0.0) name the artifact after the tag so the zip
             # always matches the release it was published under. Strip a
-            # leading 'v' from the tag to avoid "FluidVoice-vv1.7.0.zip".
+            # leading 'v' from the tag to avoid "MlxVoice-vv1.0.0.zip".
             VERSION="${GITHUB_REF_NAME#v}"
           else
             VERSION="$(defaults read "$APP/Contents/Info" CFBundleShortVersionString)"
           fi
           mkdir -p release
-          ditto -c -k --keepParent "$APP" "release/FluidVoice-v${VERSION}.zip"
+          ditto -c -k --keepParent "$APP" "release/MlxVoice-v${VERSION}.zip"
           echo "APP_VERSION=${VERSION}" >> "$GITHUB_ENV"
           ls -lh release/
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: FluidVoice-v${{ env.APP_VERSION }}
+          name: MlxVoice-v${{ env.APP_VERSION }}
           path: release/*.zip
           if-no-files-found: error
 

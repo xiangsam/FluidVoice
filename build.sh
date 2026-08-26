@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# FluidVoice Build Profile Router
+# MlxVoice Build Profile Router
 # Defaults to the public OSS build, which skips private Fluid Intelligence.
 #
 # Usage:
@@ -54,7 +54,7 @@ run_public_build() {
     cd "${PROJECT_DIR}"
 
     if [ "${signing_mode}" = "unsigned" ]; then
-        echo "Running unsigned public FluidVoice build (${config})..."
+        echo "Running unsigned public MlxVoice build (${config})..."
         exec xcodebuild "${build_args[@]}" CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
     fi
 
@@ -69,7 +69,7 @@ run_public_build() {
         exit 1
     fi
 
-    echo "Running signed public FluidVoice build (${config})..."
+    echo "Running signed public MlxVoice build (${config})..."
     exec xcodebuild "${build_args[@]}" DEVELOPMENT_TEAM="${development_team}"
 }
 

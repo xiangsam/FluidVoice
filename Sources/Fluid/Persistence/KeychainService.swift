@@ -19,11 +19,12 @@ enum KeychainServiceError: Error, LocalizedError {
 }
 
 /// Lightweight helper for storing provider API keys in the system Keychain.
-/// Keys are stored as generic passwords scoped to the FluidVoice service.
+/// Keys are stored as generic passwords scoped to the MlxVoice service.
 final class KeychainService {
     static let shared = KeychainService()
 
-    private let service = "com.fluidvoice.provider-api-keys"
+    private let service = "com.xiangsam.mlxvoice.provider-api-keys"
+    private let legacyService = "com.fluidvoice.provider-api-keys"
     private let account = "fluidApiKeys"
 
     private init() {}
@@ -131,7 +132,20 @@ final class KeychainService {
     // MARK: - Private helpers
 
     private func loadStoredKeys() throws -> [String: String] {
-        var query = self.aggregatedQuery()
+        let current = try self.loadStoredKeys(service: self.service)
+        if !current.isEmpty {
+            return current
+        }
+        let legacy = try self.loadStoredKeys(service: self.legacyService)
+        if !legacy.isEmpty {
+            try? self.saveStoredKeys(legacy)
+            return legacy
+        }
+        return current
+    }
+
+    private func loadStoredKeys(service: String) throws -> [String: String] {
+        var query = self.aggregatedQuery(service: service)
         query[kSecReturnData as String] = kCFBooleanTrue
         query[kSecMatchLimit as String] = kSecMatchLimitOne
 
@@ -187,10 +201,10 @@ final class KeychainService {
         }
     }
 
-    private func aggregatedQuery() -> [String: Any] {
+    private func aggregatedQuery(service: String? = nil) -> [String: Any] {
         [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: self.service,
+            kSecAttrService as String: service ?? self.service,
             kSecAttrAccount as String: self.account,
         ]
     }
@@ -198,7 +212,7 @@ final class KeychainService {
     private func legacyQuery(for providerID: String) -> [String: Any] {
         [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: self.service,
+            kSecAttrService as String: self.legacyService,
             kSecAttrAccount as String: providerID,
         ]
     }

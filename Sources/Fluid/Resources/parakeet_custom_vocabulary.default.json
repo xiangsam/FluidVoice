@@ -6,8 +6,8 @@
   "minTermLength": 3,
   "terms": [
     {
-      "text": "FluidVoice",
-      "aliases": ["fluid voice", "fluid boys"],
+      "text": "MlxVoice",
+      "aliases": ["mlx voice"],
       "weight": 10.0
     }
   ]

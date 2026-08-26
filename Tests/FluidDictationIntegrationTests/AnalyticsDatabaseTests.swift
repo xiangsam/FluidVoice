@@ -1,4 +1,4 @@
-@testable import FluidVoice_Debug
+@testable import MlxVoice_Debug
 import Foundation
 import XCTest
 
@@ -7,7 +7,7 @@ final class AnalyticsDatabaseTests: XCTestCase {
 
     override func setUpWithError() throws {
         self.temporaryDirectory = FileManager.default.temporaryDirectory
-            .appendingPathComponent("FluidVoiceAnalyticsTests-\(UUID().uuidString)", isDirectory: true)
+            .appendingPathComponent("MlxVoiceAnalyticsTests-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: self.temporaryDirectory, withIntermediateDirectories: true)
     }
 

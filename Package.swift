@@ -4,7 +4,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "FluidVoice",
+    name: "MlxVoice",
     platforms: [
         .macOS("15.0"),
     ],
@@ -22,7 +22,7 @@ let package = Package(
             ]
         ),
         .executableTarget(
-            name: "FluidVoice",
+            name: "MlxVoice",
             dependencies: [
                 "CoreAudioCaptureSupport",
                 "FluidAudio",

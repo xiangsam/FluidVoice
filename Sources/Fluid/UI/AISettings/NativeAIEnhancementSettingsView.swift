@@ -1,6 +1,6 @@
 //
 //  NativeAIEnhancementSettingsView.swift
-//  FluidVoice
+//  MlxVoice
 //
 //  Modern, card-styled native SwiftUI AI Enhancement View adhering to Apple HIG.
 //

@@ -126,7 +126,7 @@ enum MlxModelDownloader {
                 request.timeoutInterval = 180
                 request.setValue("bytes=\(start)-\(end)", forHTTPHeaderField: "Range")
                 request.setValue(
-                    "Mozilla/5.0 (Macintosh; Apple Mac OS X) FluidVoice",
+                    "Mozilla/5.0 (Macintosh; Apple Mac OS X) MlxVoice",
                     forHTTPHeaderField: "User-Agent"
                 )
                 let (data, response) = try await URLSession.shared.data(for: request)
@@ -203,7 +203,7 @@ enum MlxModelDownloader {
         request.httpMethod = "HEAD"
         request.timeoutInterval = 30
         request.setValue(
-            "Mozilla/5.0 (Macintosh; Apple Mac OS X) FluidVoice",
+            "Mozilla/5.0 (Macintosh; Apple Mac OS X) MlxVoice",
             forHTTPHeaderField: "User-Agent"
         )
         if let (_, response) = try? await URLSession.shared.data(for: request),
@@ -220,7 +220,7 @@ enum MlxModelDownloader {
         probe.setValue("bytes=0-0", forHTTPHeaderField: "Range")
         probe.timeoutInterval = 30
         probe.setValue(
-            "Mozilla/5.0 (Macintosh; Apple Mac OS X) FluidVoice",
+            "Mozilla/5.0 (Macintosh; Apple Mac OS X) MlxVoice",
             forHTTPHeaderField: "User-Agent"
         )
         let (_, response) = try await URLSession.shared.data(for: probe)

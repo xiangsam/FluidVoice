@@ -425,7 +425,7 @@ final class MenuBarManager: NSObject, ObservableObject, NSMenuDelegate {
         menu.addItem(.separator())
 
         // Open Main Window
-        let openItem = NSMenuItem(title: "Open Fluid Voice".loc, action: #selector(openMainWindow), keyEquivalent: "")
+        let openItem = NSMenuItem(title: "Open MlxVoice".loc, action: #selector(openMainWindow), keyEquivalent: "")
         openItem.target = self
         menu.addItem(openItem)
 
@@ -452,7 +452,7 @@ final class MenuBarManager: NSObject, ObservableObject, NSMenuDelegate {
 
         // Quit
         let quitItem = NSMenuItem(
-            title: "Quit Fluid Voice".loc,
+            title: "Quit MlxVoice".loc,
             action: #selector(NSApplication.terminate(_:)),
             keyEquivalent: "q"
         )
@@ -655,11 +655,11 @@ final class MenuBarManager: NSObject, ObservableObject, NSMenuDelegate {
         guard !className.contains("Notch") && !className.contains("Overlay") && !className.contains("Popover") && !className.contains("StatusBar") else { return false }
 
         // Identifier check
-        if window.identifier?.rawValue == "main" || window.identifier?.rawValue == "FluidVoice.MainWindow" {
+        if window.identifier?.rawValue == "main" || window.identifier?.rawValue == "MlxVoice.MainWindow" {
             return true
         }
         // Title check
-        if window.title == "FluidVoice" || window.title.contains("FluidVoice") || window.title.contains("fluid") {
+        if window.title == "MlxVoice" || window.title.contains("MlxVoice") {
             return true
         }
         // Resizable main window fallback
@@ -728,7 +728,7 @@ final class MenuBarManager: NSObject, ObservableObject, NSMenuDelegate {
             backing: .buffered,
             defer: false
         )
-        window.title = "FluidVoice"
+        window.title = "MlxVoice"
         window.titlebarAppearsTransparent = true
         window.titleVisibility = .hidden
         window.animationBehavior = .none

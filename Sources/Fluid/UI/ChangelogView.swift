@@ -21,7 +21,7 @@ struct ChangelogView: View {
                             .font(self.theme.typography.body)
                             .foregroundStyle(self.theme.palette.primaryText)
                         Button {
-                            if let url = URL(string: "https://github.com/xiangsam/FluidVoice/releases") {
+                            if let url = URL(string: "https://github.com/xiangsam/MlxVoice/releases") {
                                 NSWorkspace.shared.open(url)
                             }
                         } label: {

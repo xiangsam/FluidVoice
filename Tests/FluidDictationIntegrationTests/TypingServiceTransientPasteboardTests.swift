@@ -1,5 +1,5 @@
 import AppKit
-@testable import FluidVoice_Debug
+@testable import MlxVoice_Debug
 import XCTest
 
 // The temporary clipboard write used to drive synthetic Cmd+V must be tagged so clipboard

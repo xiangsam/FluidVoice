@@ -4,7 +4,7 @@ import MLX
 
 // MARK: - Qwen3-ASR MLX Engine Provider
 //
-// Self-contained MLX (Apple GPU) Qwen3-ASR engine inside FluidVoice.
+// Self-contained MLX (Apple GPU) Qwen3-ASR engine inside MlxVoice.
 // The app manages download / load / unload exactly like the Whisper provider.
 // Model + quantization variant come from MlxSttCatalog; the matching
 // mlx-community repository is resolved automatically.

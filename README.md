@@ -1,4 +1,4 @@
-# 🎙️ FluidVoice
+# 🎙️ MlxVoice
 
 <p align="center">
   <b>原生 Swift + MLX 架构的 macOS 语音听写工具</b>
@@ -7,18 +7,18 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/xiangsam/FluidVoice/releases/latest"><img src="https://img.shields.io/badge/macOS-15.0%2B%20%7C%20Apple%20Silicon-blue?logo=apple" alt="macOS Version"/></a>
-  <a href="https://github.com/xiangsam/FluidVoice/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-GPLv3-green.svg" alt="License: GPLv3"/></a>
-  <a href="https://github.com/xiangsam/FluidVoice"><img src="https://img.shields.io/badge/Language-Swift-red?logo=swift" alt="Swift"/></a>
+  <a href="https://github.com/xiangsam/MlxVoice/releases/latest"><img src="https://img.shields.io/badge/macOS-15.0%2B%20%7C%20Apple%20Silicon-blue?logo=apple" alt="macOS Version"/></a>
+  <a href="https://github.com/xiangsam/MlxVoice/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-GPLv3-green.svg" alt="License: GPLv3"/></a>
+  <a href="https://github.com/xiangsam/MlxVoice"><img src="https://img.shields.io/badge/Language-Swift-red?logo=swift" alt="Swift"/></a>
   <a href="https://github.com/ml-explore/mlx-swift"><img src="https://img.shields.io/badge/MLX-Native-blueviolet" alt="MLX"/></a>
-  <a href="https://github.com/xiangsam/FluidVoice"><img src="https://img.shields.io/badge/SwiftUI-100%25-teal" alt="SwiftUI"/></a>
+  <a href="https://github.com/xiangsam/MlxVoice"><img src="https://img.shields.io/badge/SwiftUI-100%25-teal" alt="SwiftUI"/></a>
 </p>
 
 ---
 
 ## ✨ 项目亮点
 
-FluidVoice 是一个 **100% 原生 SwiftUI + MLX 架构** 的 macOS 语音听写工具。所有本地模型都运行在 Apple Silicon 的 **MLX 引擎** 上——不依赖 transcribe.cpp、不依赖 CoreML 包装、不依赖 Python 运行时，纯净的 Swift 实现。
+MlxVoice 是一个 **100% 原生 SwiftUI + MLX 架构** 的 macOS 语音听写工具。所有本地模型都运行在 Apple Silicon 的 **MLX 引擎** 上——不依赖 transcribe.cpp、不依赖 CoreML 包装、不依赖 Python 运行时，纯净的 Swift 实现。
 
 - **🍎 原生 Swift MLX 架构** —— 离线模型全部由自研 `Sources/Fluid/Engines/` 下的 MLX Swift 引擎驱动（Qwen3-ASR / Parakeet / Nemotron / GLM / Fun-ASR / Whisper 六大引擎），直接调用 `mlx-swift`，无任何桥接层。
 - **📦 六大离线模型家族，一键下载切换** —— 模型卡 UI：下载、卸载、切换独立进行，互不干扰。
@@ -146,21 +146,21 @@ Sources/Fluid/
 
 > 直接从 GitHub Releases 下载编译好的应用，无需 Xcode。
 
-1. 打开 **Releases 页面**：<https://github.com/xiangsam/FluidVoice/releases>
-2. 找到最新版本（如 `v1.6.9`），下载 **`FluidVoice-vX.Y.Z.zip`**
-3. 解压 zip（双击即可），得到 `FluidVoice.app`
-4. 把 `FluidVoice.app` **拖入「应用程序」文件夹**（/Applications）
+1. 打开 **Releases 页面**：<https://github.com/xiangsam/MlxVoice/releases>
+2. 找到最新版本（如 `v1.0.0`），下载 **`MlxVoice-vX.Y.Z.zip`**
+3. 解压 zip（双击即可），得到 `MlxVoice.app`
+4. 把 `MlxVoice.app` **拖入「应用程序」文件夹**（/Applications）
 
 **首次打开提示「无法验证开发者」怎么办？**
 
 因为发布版未做 Apple 公证（notarization），macOS Gatekeeper 会拦截，按下面任一方式放行：
 
-- **右键点击** `FluidVoice.app` → 选择 **「打开」** → 在弹出的警告窗中再点 **「打开」**，之后即可正常双击启动
+- **右键点击** `MlxVoice.app` → 选择 **「打开」** → 在弹出的警告窗中再点 **「打开」**，之后即可正常双击启动
 - 或打开「系统设置 → 隐私与安全性」，在「安全性」一栏点击 **「仍要打开」**
 - 或终端执行（一次性放行隔离属性）：
 
 ```bash
-xattr -dr com.apple.quarantine /Applications/FluidVoice.app
+xattr -dr com.apple.quarantine /Applications/MlxVoice.app
 ```
 
 > **系统要求**：macOS 15.0+，Apple Silicon（M 系列芯片）。Intel Mac 不支持 MLX 离线模型。
@@ -172,15 +172,15 @@ xattr -dr com.apple.quarantine /Applications/FluidVoice.app
 ### 源码编译
 
 ```bash
-git clone https://github.com/xiangsam/FluidVoice.git
-cd FluidVoice
+git clone https://github.com/xiangsam/MlxVoice.git
+cd MlxVoice
 
 # Release 构建（Apple Silicon）
 xcodebuild -project Fluid.xcodeproj -scheme Fluid \
   -configuration Release -destination 'platform=macOS,arch=arm64' build
 
 # 运行
-open DerivedData/Build/Products/Release/FluidVoice.app
+open DerivedData/Build/Products/Release/MlxVoice.app
 ```
 
 ### 一键打包（可选）
@@ -191,8 +191,8 @@ open DerivedData/Build/Products/Release/FluidVoice.app
 ```
 
 ### 自动构建（GitHub Actions）
-每次 push / PR 自动在 `macos-26-arm64` runner 上构建 Release 并上传 zip artifact；
-打 `v*` 标签时自动发布到 GitHub Releases。详见 `.github/workflows/build-release.yml`。
+每次 push / PR 自动构建 Release 并上传 zip artifact；
+打 `v*` 标签（如 `v1.0.0`）时自动发布 `MlxVoice-v1.0.0.zip` 到 GitHub Releases。详见 `.github/workflows/build-release.yml`。
 
 ### 模型下载
 模型通过 `hf-mirror.com`（国内镜像）加速下载，可在设置页切换镜像源。首次下载后**完全离线**运行。
@@ -220,3 +220,5 @@ open DerivedData/Build/Products/Release/FluidVoice.app
 ## 📄 许可证
 
 本项目遵循 [GPL-3.0 License](LICENSE)。
+
+最初 fork 自 [altic-dev/FluidVoice](https://github.com/altic-dev/FluidVoice)，已在原生 Swift MLX 推理上做了大量重构，现作为独立项目 **MlxVoice** 维护。

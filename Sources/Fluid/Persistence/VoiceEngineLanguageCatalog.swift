@@ -43,7 +43,7 @@ struct VoiceEngineLanguageRoute: Identifiable, Equatable {
     var badgeText: String? {
         switch self.model {
         case .qwen3Asr:
-            return "Optimized for FluidVoice"
+            return "Optimized for MlxVoice"
         default:
             return nil
         }
